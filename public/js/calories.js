@@ -11,11 +11,29 @@ const totalKcalEl = document.getElementById("totalKcal"); // affichage du total 
 const totalGlucidesEl = document.getElementById("totalGlucides"); // affichage du total de glucides
 const totalProteinesEl = document.getElementById("totalProteines"); // affichage du total de protéines
 const totalLipidesEl = document.getElementById("totalLipides"); // affichage du total de lipides
+const journalTotaux = document.querySelector(".journal-totaux");
+const journalTotauxSentinel = document.querySelector(".journal-totaux-sentinel");
 
 const selectRecettePlat = document.getElementById("selectRecettePlat"); // menu déroulant pour choisir une recette de plat
 const selectRecetteFraicheur = document.getElementById("selectRecetteFraicheur"); // même chose, mais pour les recettes "fraîcheur" (boissons + glaces)
 const btnToutEffacer = document.getElementById("btnToutEffacer"); // bouton rond "X" pour tout effacer
 const btnEnregistrerRecette = document.getElementById("btnEnregistrerRecette"); // bouton "Enregistrer comme recette" (conditionnel)
+
+// Sur mobile, le résumé complet se réduit aux calories une fois collé sous le header.
+function mettreAJourTotauxSticky() {
+  if (!journalTotaux || !journalTotauxSentinel) return;
+  if (!window.matchMedia("(max-width: 768px)").matches) {
+    journalTotaux.classList.remove("compacte");
+    return;
+  }
+
+  const hauteurHeader = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 57;
+  journalTotaux.classList.toggle("compacte", journalTotauxSentinel.getBoundingClientRect().top <= hauteurHeader);
+}
+
+window.addEventListener("scroll", mettreAJourTotauxSticky, { passive: true });
+window.addEventListener("resize", mettreAJourTotauxSticky);
+mettreAJourTotauxSticky();
 
 // Renvoie le menu déroulant "appliquer une recette" correspondant à une catégorie donnée
 function selectRecettePourCategorie(categorie) {

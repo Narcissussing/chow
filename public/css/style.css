@@ -4109,11 +4109,136 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   .journal-totaux {
-    grid-template-columns: repeat(
-      2,
-      1fr
-    ); /* 2 colonnes au lieu de 4 sur mobile */
+    grid-template-columns: minmax(0, 1.15fr) minmax(120px, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    column-gap: 8px;
+    row-gap: 0;
+    position: sticky;
+    top: var(--header-h, 57px);
+    z-index: 90;
+    margin: 0 -20px 20px;
+    padding: 6px 20px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 8px 14px rgba(0, 0, 0, 0.05);
+    transition: padding 0.24s ease;
   }
+
+  .journal-totaux .macro-card {
+    min-width: 0;
+    padding: 2px 6px;
+    gap: 3px;
+    line-height: 1.15;
+    border: 0;
+  }
+
+  .journal-totaux .macro-calories {
+    grid-row: 1 / -1;
+    padding: 6px 8px;
+    justify-content: center;
+    border-radius: 9px;
+    transition:
+      width 0.24s ease,
+      padding 0.24s ease,
+      background-color 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .journal-totaux .macro-calories .macro-valeur {
+    font-size: 1.4rem;
+  }
+
+  .journal-totaux .macro-card:not(.macro-calories) {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr);
+    align-items: center;
+    column-gap: 8px;
+    padding: 4px 6px;
+    background: transparent;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    max-height: 34px;
+    overflow: hidden;
+    transition:
+      max-height 0.2s ease,
+      padding 0.2s ease,
+      opacity 0.16s ease,
+      transform 0.2s ease;
+  }
+
+  .journal-totaux .macro-card:last-child {
+    border-bottom: 0;
+  }
+
+  .journal-totaux.compacte {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    border-top: 0;
+    border-bottom: 2px solid var(--accent);
+    box-shadow: none;
+  }
+
+  .journal-totaux.compacte .macro-card:not(.macro-calories) {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-bottom: 0;
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+
+  .journal-totaux.compacte .macro-calories {
+    grid-column: 1 / -1;
+    grid-row: 1 / -1;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: flex-start;
+    gap: 5px;
+    background: transparent;
+    color: var(--accent);
+    border-radius: 0;
+  }
+
+  .journal-totaux.compacte .macro-calories .macro-valeur {
+    font-size: 1.15rem;
+  }
+
+  .journal-totaux.compacte .macro-calories .macro-label {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .journal-totaux,
+    .journal-totaux .macro-calories,
+    .journal-totaux .macro-card:not(.macro-calories) {
+      transition: none;
+    }
+  }
+
+  .journal-totaux .macro-card:not(.macro-calories) .macro-valeur {
+    font-size: 0.78rem;
+    line-height: 1;
+    text-align: right;
+  }
+
+  .journal-totaux .macro-card:not(.macro-calories) .macro-label {
+    font-size: 0.5rem;
+    letter-spacing: 0.1px;
+    line-height: 1;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .journal-totaux .macro-label {
+    font-size: 0.52rem;
+    letter-spacing: 0.2px;
+  }
+
   #autocompleteCalories {
     width: 100%;
   }

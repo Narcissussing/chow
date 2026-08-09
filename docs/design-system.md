@@ -61,6 +61,10 @@ Un état normal ne doit pas ressembler à une erreur.
 - barres d’outils sticky positionnées sous la hauteur réelle du header ;
 - breakpoint mobile principal à 768 px ;
 - une seule structure HTML pour les vues grille et liste.
+- sur Calories mobile, le résumé sticky place une grande carte Calories à
+  gauche et les trois macros compactes empilées à droite ; le desktop conserve
+  quatre cartes alignées. Au défilement, le résumé sticky se réduit à une
+  barre Calories compacte.
 
 ## Animations
 
