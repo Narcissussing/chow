@@ -136,6 +136,10 @@ Chow n’a pas d’API publique. Les routes HTTP et réponses JSON restent class
 Les sections inutiles peuvent être retirées : les modèles guident la rédaction
 sans ajouter du remplissage.
 
+Aller droit au but. Ne pas ajouter de commentaire d’avancement lorsqu’une mise
+à jour du statut ou de la description suffit, et ne pas recopier dans un
+commentaire une information déjà présente dans le ticket.
+
 ### Epic
 
 ```markdown
@@ -283,12 +287,15 @@ Correction implémentée et documentée
         ↓
 Vérification technique par l’agent
         ↓
-BFV exécutée et enregistrée par Olumide
+BFV créée `En attente` par l’agent
+        ↓
+BFV exécutée et renseignée par Olumide
         ↓
 Bug passé à Terminé par Olumide
 ```
 
-- L’agent prépare la checklist, mais ne la valide pas au nom d’Olumide.
+- Après la correction, l’agent crée la BFV et prépare une courte checklist,
+  mais ne la valide pas au nom d’Olumide.
 - Dans Notion, Bug, Correction et BFV restent trois entrées séparées et
   horodatées.
 - La checklist Jira décrit quoi vérifier ; l’entrée Notion conserve le

@@ -26,25 +26,33 @@ s’agit d’un miroir explicitement identifié.
 
 ## Workflow d’une anomalie
 
+Seuls les bugs signalés par Olumide sont créés dans Jira et Notion.
+
 1. Enregistrer le Bug comme **Ouvert** avant de modifier le code.
-2. Décrire les étapes, le résultat attendu, le résultat obtenu et la sévérité.
-3. Créer la Correction séparément.
-4. Corriger et vérifier techniquement le chemin réel lorsque l’environnement
+2. Noter uniquement le titre, les étapes, le résultat attendu, le résultat
+   obtenu et la sévérité.
+3. Corriger et vérifier techniquement le chemin réel lorsque l’environnement
    le permet.
-5. Laisser la BFV à Olumide.
+4. Créer la Correction, puis une BFV `En attente` avec une courte checklist.
+5. Laisser Olumide exécuter et compléter la BFV.
 
 Les étapes Bug, Correction et BFV ont des horodatages distincts. Une
 vérification technique par un agent ne remplace jamais la BFV utilisateur.
 
 ## Responsabilités
 
-- Claude crée les entrées Bug et Correction dans le périmètre convenu.
-- ChatGPT/Jira maintient les tickets d’exécution et leur structure.
-- Olumide réalise la validation humaine et crée la BFV.
+- L’agent d’implémentation crée le Bug, la Correction et la BFV en attente
+  lorsqu’Olumide a signalé le bug.
+- Tout agent disposant d’un accès Jira en écriture peut maintenir les tickets
+  d’exécution et leur structure. Sans cet accès, il transmet l’action à un
+  agent qui le possède via `docs/sync-log.md`.
+- Olumide exécute la validation humaine et renseigne le résultat de la BFV.
 - L’agent qui effectue une action met immédiatement à jour le document local
   correspondant et, si l’autre agent doit la connaître, `docs/sync-log.md`.
-- Un bug découvert incidemment peut être corrigé et vérifié localement, mais
-  son enregistrement hors du dépôt exige l’accord d’Olumide.
+- Un bug découvert par un agent est signalé à Olumide, sans création Jira ou
+  Notion et sans correction automatique. Il est corrigé immédiatement
+  uniquement s’il bloque la tâche en cours ou présente un risque de sécurité,
+  de perte de données ou d’aggravation.
 
 ## Organisation Jira et BFV
 
@@ -52,8 +60,9 @@ La hiérarchie, les modèles, Gherkin, les labels et les statuts sont définis
 dans [Organisation Jira](jira.md).
 
 Dans Chow, **BFV signifie Bug Fix Verification** et concerne uniquement les
-Bugs. Une checklist Jira peut être préparée par un agent, mais seule la
-vérification exécutée par Olumide produit l’entrée BFV dans Notion.
+Bugs. Après la correction, l’agent crée une BFV `En attente` et prépare une
+courte checklist. Seul Olumide exécute la vérification et en renseigne le
+résultat.
 
 ## Niveaux
 

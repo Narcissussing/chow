@@ -9,8 +9,9 @@ attendu · Résultat obtenu · Fichiers concernés · Niveau
 (Critique/Majeure/Mineure) · Statut (Ouvert/En cours/Corrigé) · Date de
 signalement · Date de correction.
 
-**Workflow** : Bug ouvert → Correction → BFV, comme étapes séparées et
-horodatées. La validation finale appartient à Olumide, jamais à l’agent.
+**Workflow** : Bug ouvert → Correction → BFV `En attente`, comme étapes
+séparées et horodatées. L’agent crée la BFV après correction ; Olumide seul
+l’exécute et renseigne son résultat.
 
 ---
 
