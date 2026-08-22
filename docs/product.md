@@ -58,6 +58,7 @@ Journal nutritionnel de la journée courante.
 Groupes réutilisables d’aliments et de quantités.
 
 - création, consultation, modification et suppression ;
+- consultation et modification des étapes de préparation ;
 - catégories Plat, Fraîcheur et Glace ;
 - tri et vues grille/liste indépendantes ;
 - application au journal du jour.

@@ -892,12 +892,11 @@ function construireRecetteCardDOM(recette) {
   return div;
 }
 
-// Toucher la carte ouvre son détail (édition) : c'est la SEULE action sur une carte, plus de
-// bouton "−" séparé dessus — supprimer la recette ne se fait plus que depuis le panneau détail
-// (voir btnSupprimerRecetteSheet), une fois qu'on l'a vraiment ouverte
+// Toucher la carte ouvre la recette en lecture. La modification reste une action
+// explicite dans ce panneau, pour éviter d'afficher directement tous les champs d'édition.
 function activerCarteRecette(card) {
   card.addEventListener("click", function () {
-    ouvrirSheetEdition(card.dataset.id);
+    ouvrirSheetLecture(card.dataset.id, card.dataset.ingr, card.dataset.kcal);
   });
 }
 
@@ -957,15 +956,24 @@ function supprimerRecette(idRecette) {
 const sheet = document.getElementById("sheet");
 const sheetBackdrop = document.getElementById("sheetBackdrop");
 const sheetCloseBtn = document.getElementById("sheetCloseBtn");
+const recetteLecture = document.getElementById("recetteLecture");
+const recetteLectureNom = document.getElementById("recetteLectureNom");
+const recetteLectureMeta = document.getElementById("recetteLectureMeta");
+const recetteLectureIngredients = document.getElementById("recetteLectureIngredients");
+const recetteLectureEtapes = document.getElementById("recetteLectureEtapes");
+const recetteLectureEtapesVides = document.getElementById("recetteLectureEtapesVides");
+const btnModifierRecette = document.getElementById("btnModifierRecette");
 const btnSupprimerRecetteSheet = document.getElementById("btnSupprimerRecetteSheet");
 const formRecette = document.getElementById("formRecette");
 const btnEnregistrerSheet = document.getElementById("btnEnregistrerSheet");
 const recetteIdInput = document.getElementById("recetteId");
 const recetteNomInput = document.getElementById("recetteNom");
+const recetteEtapesInput = document.getElementById("recetteEtapes");
 const recetteCategoriePicker = document.getElementById("recetteCategoriePicker");
 const listeIngredientsRecette = document.getElementById("listeIngredientsRecette");
 const btnToggleAjoutIngredient = document.getElementById("btnToggleAjoutIngredient");
 const autocompleteIngredient = document.getElementById("autocompleteIngredient");
+let recetteChargee = null;
 
 // Le "+" ouvre/ferme la recherche d'ingrédient, repliée par défaut, juste après le dernier
 // ingrédient de la liste (voir calories.ejs) : elle se comporte comme la ligne du "prochain"
@@ -1143,6 +1151,7 @@ function reinitialiserSheet() {
   btnEnregistrerSheet.textContent = "Enregistrer";
   recetteIdInput.value = "";
   recetteNomInput.value = "";
+  recetteEtapesInput.value = "";
   choisirCategorie("plat");
   // On retire seulement les lignes d'ingrédients : innerHTML="" viderait aussi
   // #autocompleteIngredient, qui vit maintenant DANS cette liste (voir calories.ejs)
@@ -1166,6 +1175,9 @@ function reinitialiserSheet() {
 // "Enregistrer comme recette" [ingrédients du journal])
 function ouvrirSheet(options) {
   reinitialiserSheet();
+  recetteChargee = null;
+  recetteLecture.classList.add("hidden");
+  formRecette.classList.remove("hidden");
   if (options.categorie) choisirCategorie(options.categorie);
   (options.ingredients || []).forEach(function (ing) {
     ajouterLigneIngredient(ing.food_id, ing.nom, ing.quantite_g, ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.poids_unite_g, ing.unite_piece, ing.emoji);
@@ -1174,8 +1186,37 @@ function ouvrirSheet(options) {
   recetteNomInput.focus();
 }
 
-// Ouvre le panneau en mode "édition" : va chercher la recette complète au serveur, puis pré-remplit tout
-function ouvrirSheetEdition(idRecette) {
+function remplirLectureRecette(data, nbIngredients, kcalTotal) {
+  recetteChargee = data;
+  recetteLectureNom.textContent = data.recette.nom;
+  recetteLectureMeta.textContent = nbIngredients != null && kcalTotal != null
+    ? `${nbIngredients} ingrédient${nbIngredients > 1 ? "s" : ""} · ${kcalTotal} kcal`
+    : "";
+  recetteLectureIngredients.replaceChildren();
+  data.ingredients.forEach(function (ingredient) {
+    const item = document.createElement("li");
+    item.innerHTML = `
+      <span class="recette-lecture-ing-emoji">${ingredient.emoji || ""}</span>
+      <span class="recette-lecture-ing-nom">${escapeHtml(ingredient.nom)}</span>
+      <span class="recette-lecture-ing-qte">${parseFloat(ingredient.quantite_g)} g</span>
+    `;
+    recetteLectureIngredients.appendChild(item);
+  });
+
+  recetteLectureEtapes.replaceChildren();
+  const etapes = (data.recette.etapes || "").split("\n").map(function (etape) {
+    return etape.trim();
+  }).filter(Boolean);
+  etapes.forEach(function (etape) {
+    const item = document.createElement("li");
+    item.textContent = etape;
+    recetteLectureEtapes.appendChild(item);
+  });
+  recetteLectureEtapes.classList.toggle("hidden", etapes.length === 0);
+  recetteLectureEtapesVides.classList.toggle("hidden", etapes.length > 0);
+}
+
+function ouvrirSheetLecture(idRecette, nbIngredients, kcalTotal) {
   fetch("/recettes/" + idRecette)
     .then(function (response) { return response.json(); })
     .then(function (data) {
@@ -1184,9 +1225,21 @@ function ouvrirSheetEdition(idRecette) {
         return;
       }
 
+      remplirLectureRecette(data, nbIngredients, kcalTotal);
+      formRecette.classList.add("hidden");
+      recetteLecture.classList.remove("hidden");
+      afficherSheet();
+    });
+}
+
+// Passe la recette déjà chargée en mode édition et pré-remplit tous ses champs.
+function ouvrirSheetEdition(data) {
+      recetteLecture.classList.add("hidden");
+      formRecette.classList.remove("hidden");
       reinitialiserSheet();
       recetteIdInput.value = data.recette.id;
       recetteNomInput.value = data.recette.nom;
+      recetteEtapesInput.value = data.recette.etapes || "";
       choisirCategorie(data.recette.categorie);
       data.ingredients.forEach(function (ing) {
         const poidsPiece = ing.tracking_type === "unite" ? ing.poids_unite_g : null;
@@ -1195,7 +1248,6 @@ function ouvrirSheetEdition(idRecette) {
       // On sait maintenant qu'il y a bien une recette existante à supprimer
       btnSupprimerRecetteSheet.classList.remove("hidden");
       afficherSheet();
-    });
 }
 
 function afficherSheet() {
@@ -1219,7 +1271,14 @@ function fermerSheet() {
 }
 
 sheetCloseBtn.addEventListener("click", fermerSheet);
+document.querySelectorAll("[data-sheet-close]").forEach(function (bouton) {
+  bouton.addEventListener("click", fermerSheet);
+});
 sheetBackdrop.addEventListener("click", fermerSheet);
+
+btnModifierRecette.addEventListener("click", function () {
+  if (recetteChargee) ouvrirSheetEdition(recetteChargee);
+});
 
 btnSupprimerRecetteSheet.addEventListener("click", function () {
   supprimerRecette(recetteIdInput.value);
@@ -1310,6 +1369,7 @@ formRecette.addEventListener("submit", function (event) {
   const idRecette = recetteIdInput.value;
   const nom = recetteNomInput.value.trim();
   const categorie = categorieChoisie();
+  const etapes = recetteEtapesInput.value.trim();
   const ingredients = [];
   // Les 3 premiers émojis d'ingrédients (dans l'ordre d'ajout) composent l'icône de la carte
   // recette, plutôt qu'une icône générique de catégorie (voir construireRecetteCardDOM)
@@ -1342,7 +1402,7 @@ formRecette.addEventListener("submit", function (event) {
   fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ nom: nom, categorie: categorie, ingredients: ingredients })
+    body: JSON.stringify({ nom: nom, categorie: categorie, etapes: etapes, ingredients: ingredients })
   })
     .then(function (response) { return response.json(); })
     .then(function (data) {
@@ -1361,6 +1421,7 @@ formRecette.addEventListener("submit", function (event) {
         id: idRecette || data.recette.id,
         nom: nom,
         categorie: categorie,
+        etapes: etapes,
         nb_ingredients: data.recette.nb_ingredients,
         kcal_total: data.recette.kcal_total,
         food_ids: ingredients.map(function (ing) { return ing.food_id; }),

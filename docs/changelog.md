@@ -6,6 +6,7 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 
 ## 2026-08
 
+- Consultation et modification des étapes de préparation des recettes.
 - Protection contre les doubles ajouts dans Courses et signalement bloquant
   des erreurs serveur.
 - Protection du Journal contre les ajouts multiples et les aliments déjà

@@ -11,6 +11,13 @@ instructions directes d’Olumide priment toujours.
 
 ## À faire
 
+### CHOW-56 — étapes de recette à valider
+
+- **Responsable** : Olumide.
+- **État** : implémentation locale terminée ; Jira et Notion créés.
+- **Action** : vérifier la lecture par l’œil, puis la modification des étapes.
+- **Production** : appliquer la migration via le prochain déploiement.
+
 ### CHOW-52 — données nutritionnelles en attente d’étiquettes
 
 - **Responsable** : agent d’implémentation.

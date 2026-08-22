@@ -3421,12 +3421,12 @@ body.mode-magasin .panneau-ajout__interieur {
 
 .vue-liste .recette-card {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) 68px;
   grid-template-areas:
     "nom   kcal"
     "emoji kcal";
   align-items: center;
-  column-gap: 12px;
+  column-gap: 14px;
   padding: 10px;
 }
 
@@ -3462,6 +3462,7 @@ body.mode-magasin .panneau-ajout__interieur {
 .vue-liste .recette-kcal {
   grid-area: kcal;
   justify-self: end;
+  align-self: center;
   white-space: nowrap;
 }
 
@@ -3558,6 +3559,139 @@ body.mode-magasin .panneau-ajout__interieur {
   min-height: 0;
 }
 
+#formRecette.hidden {
+  display: none;
+}
+
+.recette-lecture {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recette-lecture.hidden {
+  display: none;
+}
+
+.recette-lecture-titre {
+  flex: 1;
+  min-width: 0;
+}
+
+.recette-lecture-nom {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  color: var(--text);
+}
+
+.recette-lecture-meta {
+  margin: 3px 0 0;
+  font-size: 0.8rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.recette-lecture h3 {
+  margin: 8px 0 0;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.recette-lecture-ingredients {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.recette-lecture-ingredients li {
+  display: grid;
+  grid-template-columns: 24px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.recette-lecture-ingredients li:last-child {
+  border-bottom: 0;
+}
+
+.recette-lecture-ing-emoji {
+  font-size: 1.05rem;
+  text-align: center;
+}
+
+.recette-lecture-ing-nom {
+  min-width: 0;
+  font-size: 0.92rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recette-lecture-ing-qte {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.recette-lecture-etapes {
+  list-style: none;
+  counter-reset: etape;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recette-lecture-etapes li {
+  counter-increment: etape;
+  position: relative;
+  padding-left: 30px;
+  color: var(--text);
+  line-height: 1.5;
+  font-size: 0.92rem;
+}
+
+.recette-lecture-etapes li::before {
+  content: counter(etape);
+  position: absolute;
+  left: 0;
+  top: 0.05em;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--accent);
+  color: white;
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.recette-lecture-vide {
+  margin: 4px 0 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 20px 0;
+  border-top: 1px dashed var(--border);
+}
+
 .sheet.ouvert {
   transform: translateY(0);
 }
@@ -3616,6 +3750,29 @@ body.mode-magasin .panneau-ajout__interieur {
   border: 1.5px solid var(--border);
   background: var(--bg);
   color: var(--text-muted);
+}
+
+.btn-modifier-recette {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  background: var(--bg);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.btn-modifier-recette::before {
+  content: "";
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  -webkit-mask: url("/images/svg/note.svg") center / 14px 14px no-repeat;
+  mask: url("/images/svg/note.svg") center / 14px 14px no-repeat;
 }
 
 /* Pleine largeur, tout en bas, jamais collée au "✕" fermer : un tap malheureux ne peut pas la déclencher. */
@@ -3696,6 +3853,32 @@ body.mode-magasin .panneau-ajout__interieur {
   font-size: 0.85rem;
   padding: 24px 0;
   margin: 0 0 12px;
+}
+
+.recette-etapes-label {
+  margin: 4px 0 6px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.recette-etapes-input {
+  width: 100%;
+  min-height: 110px;
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  resize: vertical;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.45;
+}
+
+.recette-etapes-input:focus {
+  outline: none;
+  border-color: #d77a4291;
 }
 
 /* Toujours dernier enfant de #listeIngredientsRecette (voir ajouterLigneIngredient dans calories.js) : se comporte comme la ligne du prochain ingrédient. */

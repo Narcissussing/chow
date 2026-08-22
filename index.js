@@ -28,6 +28,8 @@ await db.connect();
 
 // Pas d'outil de migration : ces ALTER TABLE (IF NOT EXISTS) tournent à chaque démarrage, sûrs à rejouer.
 await db.query("ALTER TABLE recettes ADD COLUMN IF NOT EXISTS categorie TEXT NOT NULL DEFAULT 'plat'");
+// Une ligne de texte = une étape ; suffisant pour les recettes courtes du foyer, sans table supplémentaire.
+await db.query("ALTER TABLE recettes ADD COLUMN IF NOT EXISTS etapes TEXT NOT NULL DEFAULT ''");
 
 // Poids par cuillère : pas de conversion universelle, mesuré et stocké par aliment (voir /aliments/:id/equivalences).
 await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS grammes_par_cuil_a_cafe NUMERIC");
@@ -215,6 +217,7 @@ async function chercherRecettes() {
             recettes.id,
             recettes.nom,
             recettes.categorie,
+            recettes.etapes,
             COUNT(recette_ingredients.food_id) AS nb_ingredients,
             COALESCE(SUM(ROUND(foods.calories * recette_ingredients.quantite_g / 100)), 0) AS kcal_total,
             COALESCE(
@@ -959,6 +962,7 @@ app.post("/recettes/creer", async (req, res) => {
     try {
         const nom = req.body.nom;
         const categorie = req.body.categorie || "plat";
+        const etapes = typeof req.body.etapes === "string" ? req.body.etapes.trim() : "";
         const ingredients = req.body.ingredients;
 
         if (!nom || !ingredients || ingredients.length === 0) {
@@ -966,8 +970,8 @@ app.post("/recettes/creer", async (req, res) => {
         }
 
         const recetteResult = await db.query(
-            "INSERT INTO recettes (nom, categorie) VALUES ($1, $2) RETURNING id",
-            [nom, categorie]
+            "INSERT INTO recettes (nom, categorie, etapes) VALUES ($1, $2, $3) RETURNING id",
+            [nom, categorie, etapes]
         );
         const idRecette = recetteResult.rows[0].id;
 
@@ -979,7 +983,7 @@ app.post("/recettes/creer", async (req, res) => {
         }
 
         const totaux = await calculerTotauxRecette(idRecette);
-        res.json({ succes: true, recette: { id: idRecette, nom: nom, categorie: categorie, nb_ingredients: totaux.nb_ingredients, kcal_total: totaux.kcal_total } });
+        res.json({ succes: true, recette: { id: idRecette, nom: nom, categorie: categorie, etapes: etapes, nb_ingredients: totaux.nb_ingredients, kcal_total: totaux.kcal_total } });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
@@ -991,7 +995,7 @@ app.get("/recettes/:id", async (req, res) => {
         const idRecette = req.params.id;
 
         const recetteResult = await db.query(
-            "SELECT id, nom, categorie FROM recettes WHERE id = $1",
+            "SELECT id, nom, categorie, etapes FROM recettes WHERE id = $1",
             [idRecette]
         );
         if (recetteResult.rows.length === 0) {
@@ -1027,6 +1031,7 @@ app.post("/recettes/:id/modifier", async (req, res) => {
         const idRecette = req.params.id;
         const nom = req.body.nom;
         const categorie = req.body.categorie || "plat";
+        const etapes = typeof req.body.etapes === "string" ? req.body.etapes.trim() : "";
         const ingredients = req.body.ingredients;
 
         if (!nom || !ingredients || ingredients.length === 0) {
@@ -1037,8 +1042,8 @@ app.post("/recettes/:id/modifier", async (req, res) => {
         transactionStarted = true;
 
         await db.query(
-            "UPDATE recettes SET nom = $1, categorie = $2 WHERE id = $3",
-            [nom, categorie, idRecette]
+            "UPDATE recettes SET nom = $1, categorie = $2, etapes = $3 WHERE id = $4",
+            [nom, categorie, etapes, idRecette]
         );
 
         // DELETE + réinsertion plutôt qu'un diff ingrédient par ingrédient : plus simple, liste toujours courte.
@@ -1055,7 +1060,7 @@ app.post("/recettes/:id/modifier", async (req, res) => {
         transactionStarted = false;
 
         const totaux = await calculerTotauxRecette(idRecette);
-        res.json({ succes: true, recette: { nb_ingredients: totaux.nb_ingredients, kcal_total: totaux.kcal_total } });
+        res.json({ succes: true, recette: { etapes: etapes, nb_ingredients: totaux.nb_ingredients, kcal_total: totaux.kcal_total } });
     } catch (err) {
         if (transactionStarted) {
             await db.query("ROLLBACK");

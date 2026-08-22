@@ -89,7 +89,8 @@ Les calories et macros calculées ne sont pas stockées :
 
 ### `recettes` et `recette_ingredients`
 
-`recettes` contient `id`, `nom` et `categorie`.
+`recettes` contient `id`, `nom`, `categorie` et `etapes`. `etapes` stocke une
+étape de préparation par ligne ; l’interface les numérote à l’affichage.
 `recette_ingredients` relie une recette à `food_id` avec
 `quantite_g`. Une modification remplace les lignes d’ingrédients existantes.
 

@@ -183,6 +183,23 @@
 <div class="sheet-backdrop" id="sheetBackdrop"></div>
 <div class="sheet" id="sheet">
   <div class="sheet-handle"></div>
+  <div id="recetteLecture" class="recette-lecture hidden">
+    <div class="detail-header">
+      <div class="recette-lecture-titre">
+        <h2 id="recetteLectureNom" class="recette-lecture-nom"></h2>
+        <p id="recetteLectureMeta" class="recette-lecture-meta"></p>
+      </div>
+      <div class="detail-header-actions">
+        <button type="button" id="btnModifierRecette" class="btn-modifier-recette" title="Modifier" aria-label="Modifier la recette"></button>
+        <button type="button" class="sheet-close-btn" data-sheet-close title="Fermer">✕</button>
+      </div>
+    </div>
+    <h3>Ingrédients</h3>
+    <ul id="recetteLectureIngredients" class="recette-lecture-ingredients"></ul>
+    <h3>Étapes</h3>
+    <ol id="recetteLectureEtapes" class="recette-lecture-etapes"></ol>
+    <p id="recetteLectureEtapesVides" class="recette-lecture-vide">Aucune étape ajoutée — juste les ingrédients, cette fois.</p>
+  </div>
   <form id="formRecette">
     <input type="hidden" id="recetteId" value="" />
 
@@ -219,6 +236,9 @@
     </div>
 
     <p class="ingredients-vide" id="ingredientsVide">Aucun ingrédient pour l'instant — touche "+" pour en ajouter.</p>
+
+    <label for="recetteEtapes" class="recette-etapes-label">Étapes</label>
+    <textarea id="recetteEtapes" class="recette-etapes-input" rows="5" placeholder="Une étape par ligne"></textarea>
 
     <button type="submit" id="btnEnregistrerSheet">Enregistrer</button>
 
