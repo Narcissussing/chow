@@ -297,7 +297,8 @@ Bug passé à Terminé par Olumide
 - Après la correction, l’agent crée la BFV et prépare une courte checklist,
   mais ne la valide pas au nom d’Olumide.
 - Dans Notion, Bug, Correction et BFV restent trois entrées séparées et
-  horodatées.
+  horodatées. Les Bugs se trouvent dans `Qualité (QA) → Anomalies` ; les
+  Corrections et BFV se trouvent dans `Qualité (QA) → BFV`.
 - La checklist Jira décrit quoi vérifier ; l’entrée Notion conserve le
   résultat réel de la BFV.
 - Si la BFV échoue, le Bug reste ou retourne `En cours`, la Correction est

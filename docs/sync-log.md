@@ -11,6 +11,21 @@ instructions directes d’Olumide priment toujours.
 
 ## À faire
 
+### Nouveau bug — achat compté deux fois (Courses)
+
+- **Responsable** : agent disposant d'un accès Jira/Notion.
+- **État** : corrigé localement le 2026-10-01, non commité (sera commité avec
+  la migration) ; entrée complète dans `docs/bugs.md`.
+- **Action** : créer Bug, Correction et BFV `En attente`, reporter la clé.
+
+### Nouveau bug — en-tête de rayon vide (Courses)
+
+- **Responsable** : agent disposant d'un accès Jira/Notion.
+- **État** : corrigé localement le 2026-10-01, non commité ; entrée complète
+  dans `docs/bugs.md` (clé à attribuer).
+- **Action** : créer Bug, Correction et BFV `En attente`, puis reporter la clé
+  dans `docs/bugs.md`.
+
 ### CHOW-56 — étapes de recette à valider
 
 - **Responsable** : Olumide.

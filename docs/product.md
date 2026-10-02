@@ -46,12 +46,13 @@ Un achat passe `achete` à `true` ; il ne supprime pas l’historique.
 
 ### Calories
 
-Journal nutritionnel de la journée courante.
+Cuisine : suivi nutritionnel de la journée courante (onglet appelé « Journal »
+jusqu'au 2026-10-01).
 
 - ajout d’aliments en grammes, cuillères ou pièces ;
 - calcul des calories et macronutriments à partir des valeurs pour 100 g ;
 - modification, suppression, réordonnancement et vidage ;
-- conversion du journal en recette.
+- conversion de la Cuisine en recette.
 
 ### Recettes
 
@@ -61,9 +62,9 @@ Groupes réutilisables d’aliments et de quantités.
 - consultation et modification des étapes de préparation ;
 - catégories Plat, Fraîcheur et Glace ;
 - tri et vues grille/liste indépendantes ;
-- application au journal du jour.
+- application à la Cuisine du jour.
 
-Appliquer une recette remplace le journal du jour. À l’inverse, appliquer le
+Appliquer une recette remplace la Cuisine du jour. À l’inverse, appliquer le
 preset hebdomadaire ajoute uniquement les courses manquantes.
 
 ## Utilisateurs et accès
