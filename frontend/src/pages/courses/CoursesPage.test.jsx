@@ -258,7 +258,7 @@ test("achat : la liste du serveur apporte l'article ajouté ailleurs, le Stock �
   expect(carte("Puck")).toHaveClass("disparait-achete");
   expect(carte("Lait").querySelector(".course-stock-dot")).toHaveAttribute("title", "En stock : plein");
   expect(toasts.some((t) => t.includes("entre-temps"))).toBe(false);
-  expect(document.querySelector(".badge-ajout")).toHaveTextContent("+1");
+  expect(document.querySelector(".annonce-ajout")).toHaveTextContent("+1");
   act(() => jest.advanceTimersByTime(300));
   expect(ordreListe()).toEqual(["🥛 Lait", "🍞 Pain", "panneauAjoutCourse"]);
   desabonner();
@@ -300,7 +300,7 @@ test("suppression et note : la réponse rafraîchit la liste ; une note changée
   expect(carte("Lait").querySelector(".note-affichee")).toHaveTextContent("Demi-écrémé");
 });
 
-test("articles de l'autre téléphone : un par un dans l'ordre d'ajout, rythme selon leur nombre, halo à l'arrivée, compteur +1", async () => {
+test("articles de l'autre téléphone : annonce +N vers le compteur, montrés un par un, ajoutés au compteur à la fin", async () => {
   jest.useFakeTimers();
   const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
   const beurre = { id: 20, food_id: "beurre", nom: "Beurre", emoji: "🧈", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
@@ -310,31 +310,35 @@ test("articles de l'autre téléphone : un par un dans l'ordre d'ajout, rythme s
   const vus = [];
   Element.prototype.scrollIntoView = function () { vus.push(this.querySelector(".course-nom").textContent.trim()); };
   const compteur = () => document.getElementById("badgeNbCourses").textContent;
+  const bulle = () => document.querySelector(".badge-ajout")?.textContent ?? null;
+  const annonce = () => document.querySelector(".annonce-ajout")?.textContent ?? null;
   fireEvent.click(carte("Riz").querySelector(".course-nom-emoji"));
   const champ = carte("Riz").querySelector(".input-commentaire");
   fireEvent.change(champ, { target: { value: "Thaï" } });
   await act(async () => fireEvent.blur(champ));
-  const bulle = () => document.querySelector(".badge-ajout")?.textContent ?? null;
+  // 1. Annonce au centre, compteur inchangé.
+  expect(annonce()).toBe("+2");
+  expect(bulle()).toBeNull();
   expect(compteur()).toBe("3");
+  act(() => jest.advanceTimersByTime(1000));
+  expect(annonce()).toBeNull();
   expect(bulle()).toBe("+2");
-  act(() => jest.advanceTimersByTime(499));
-  expect(vus).toEqual([]);
-  act(() => jest.advanceTimersByTime(1));
+  // 2. Un article toutes les 1,3 s, halo à l'arrivée ; le compteur attend.
+  act(() => jest.advanceTimersByTime(300));
   expect(vus).toEqual(["🧈 Beurre"]);
-  expect(compteur()).toBe("4");
-  expect(bulle()).toBe("+1");
-  expect(carte("Beurre")).not.toHaveClass("vient-d-arriver");
   act(() => jest.advanceTimersByTime(450));
   expect(carte("Beurre")).toHaveClass("vient-d-arriver");
-  // 2 articles : 2 s d'écart.
-  act(() => jest.advanceTimersByTime(1549));
+  act(() => jest.advanceTimersByTime(849));
   expect(vus).toEqual(["🧈 Beurre"]);
   act(() => jest.advanceTimersByTime(1));
   expect(vus).toEqual(["🧈 Beurre", "🍞 Pain"]);
-  expect(compteur()).toBe("5");
+  expect(compteur()).toBe("3");
+  // 3. Fin : la bulle se fond, le compteur prend le total.
+  act(() => jest.advanceTimersByTime(450 + 1560));
+  expect(document.querySelector(".badge-ajout")).toHaveClass("fusion");
+  act(() => jest.advanceTimersByTime(350));
   expect(bulle()).toBeNull();
-  act(() => jest.advanceTimersByTime(450 + 2400));
-  expect(carte("Pain")).not.toHaveClass("vient-d-arriver");
+  expect(compteur()).toBe("5");
   delete Element.prototype.scrollIntoView;
 });
 

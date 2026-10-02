@@ -137,27 +137,47 @@ function Courses({ donnees }) {
     synchroniserPhotosLocales(donnees.courses.filter((c) => c.has_photo).map((c) => c.id));
   }, [donnees]);
 
-  // Articles venus de l'autre téléphone, dans l'ordre d'ajout : défilement jusqu'à chacun, halo à l'arrivée,
-  // compteur +1 à chaque article. Peu d'articles : on prend son temps ; 5 et plus : 1 s chacun.
+  // Articles venus de l'autre téléphone : annonce « +N » qui vole jusqu'au compteur, puis chaque article
+  // montré (défilement + halo) dans l'ordre d'ajout, et enfin la bulle se fond dans le compteur.
   const [aReveler, setAReveler] = useState(0);
+  const [annonce, setAnnonce] = useState(null);
+  const [fusion, setFusion] = useState(false);
   function revelerNouveaux(lignes) {
-    const ecart = [0, 0, 2000, 1600, 1300][lignes.length] ?? 1000;
-    const dureeHalo = lignes.length === 1 ? 2400 : Math.min(2400, Math.round(ecart * 1.2));
-    setAReveler((n) => n + lignes.length);
+    const n = lignes.length;
+    const reduit = mouvementReduit();
+    const DUREE_ANNONCE = reduit ? 0 : 1000;
+    const ECART = 1300;
+    const HALO = 1560;
+    setAReveler((r) => r + n);
+    if (!reduit) {
+      // Trajet du centre de l'écran jusqu'au badge, mesuré maintenant (le badge peut être dans la barre d'outils).
+      const cible = badge.current?.getBoundingClientRect();
+      const dx = cible ? cible.left + cible.width / 2 - window.innerWidth / 2 : 0;
+      const dy = cible ? cible.top + cible.height / 2 - window.innerHeight / 2 : 0;
+      setAnnonce({ n, dx, dy, cle: Date.now() });
+      planifier(() => setAnnonce(null), DUREE_ANNONCE);
+    }
     lignes.forEach((ligne, index) => {
       planifier(() => {
         // Rayon masqué en mode magasin : réactivé, sinon la carte resterait invisible.
         setActives((a) => (a.has(categorieDe(ligne)) ? a : new Set([...a, categorieDe(ligne)])));
-        cartes.current[ligne.id]?.scrollIntoView?.({ behavior: mouvementReduit() ? "auto" : "smooth", block: "center" });
-        setAReveler((n) => Math.max(0, n - 1));
+        cartes.current[ligne.id]?.scrollIntoView?.({ behavior: reduit ? "auto" : "smooth", block: "center" });
         // Halo lancé quand la carte arrive à l'écran (fin du défilement), sur un calque à part (::after).
         planifier(() => {
-          cartes.current[ligne.id]?.style.setProperty("--duree-halo", dureeHalo + "ms");
+          cartes.current[ligne.id]?.style.setProperty("--duree-halo", HALO + "ms");
           majEffets(ligne.id, { vientDArriver: true });
-          planifier(() => majEffets(ligne.id, { vientDArriver: false }), dureeHalo);
+          planifier(() => majEffets(ligne.id, { vientDArriver: false }), HALO);
         }, 450);
-      }, 500 + index * ecart);
+      }, DUREE_ANNONCE + 300 + index * ECART);
     });
+    // Fin : la bulle se fond dans le compteur, qui prend le nouveau total avec son pop.
+    planifier(() => {
+      setFusion(true);
+      planifier(() => {
+        setFusion(false);
+        setAReveler((r) => Math.max(0, r - n));
+      }, 350);
+    }, DUREE_ANNONCE + 300 + (n - 1) * ECART + 450 + HALO);
   }
   const nombreAffiche = items.length - aReveler;
 
@@ -228,8 +248,8 @@ function Courses({ donnees }) {
         {nombreAffiche}
       </span>
       {/* Articles de l'autre téléphone encore à compter : la bulle se vide à mesure que le compteur monte. */}
-      {aReveler > 0 && (
-        <span key={aReveler} className="badge-ajout" aria-live="polite">
+      {aReveler > 0 && !annonce && (
+        <span key={aReveler} className={"badge-ajout" + (fusion ? " fusion" : "")} aria-live="polite">
           +{aReveler}
         </span>
       )}
@@ -657,6 +677,11 @@ function Courses({ donnees }) {
           onSupprimer={supprimerPhoto}
         />
       </div>
+      {annonce && (
+        <div key={annonce.cle} className="annonce-ajout" style={{ "--dx": annonce.dx + "px", "--dy": annonce.dy + "px" }} aria-hidden="true">
+          +{annonce.n}
+        </div>
+      )}
     </main>
   );
 }

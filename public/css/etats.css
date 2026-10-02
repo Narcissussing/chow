@@ -427,3 +427,56 @@
     animation: none !important;
   }
 }
+
+/* Grand « +N » au centre de l'écran : apparaît, marque une pause, puis vole jusqu'au badge (--dx, --dy posés en JS). */
+.annonce-ajout {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 400;
+  pointer-events: none;
+  font-family: var(--font-display);
+  font-size: 5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--accent);
+  text-shadow: 0 6px 24px rgba(200, 71, 43, 0.25);
+  transform: translate(-50%, -50%);
+  animation: annonceAjout 1s cubic-bezier(0.5, 0, 0.3, 1) both;
+}
+
+@keyframes annonceAjout {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  35%,
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px))) scale(0.2);
+  }
+}
+
+/* Fin de la séquence : la bulle descend dans le chiffre du compteur. */
+.badge-ajout.fusion {
+  animation: bulleFusion 0.35s ease-in both;
+}
+
+@keyframes bulleFusion {
+  0% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-14px, 14px) scale(0.3);
+  }
+}
