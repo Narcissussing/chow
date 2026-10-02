@@ -53,7 +53,7 @@ privée doit rester déclarée après `app.use(requireAuth)`.
 | Stock | `GET /stock`, ajouter, modifier, supprimer |
 | Courses | `GET /courses`, ajouter, acheter, supprimer, notes, photos, preset |
 | Calories | `GET /calories`, ajouter, modifier, supprimer, déplacer, vider |
-| Recettes | créer, consulter, modifier, supprimer, appliquer au journal |
+| Recettes | créer, consulter, modifier, supprimer, appliquer à la Cuisine |
 
 La liste exacte et les contrats de réponse restent définis par `index.js`.
 Ce document décrit l’architecture, pas chaque gestionnaire ligne par ligne.

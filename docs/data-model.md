@@ -81,7 +81,7 @@ remplace l’ensemble de ses lignes dans une opération, sans calcul de diff.
 | `id` | Clé primaire |
 | `food_id` | Référence vers `foods.id` |
 | `quantite_g` | Quantité consommée en grammes |
-| `date_entree` | Journée du journal |
+| `date_entree` | Journée de la Cuisine |
 | `ordre` | Position manuelle dans la journée |
 
 Les calories et macros calculées ne sont pas stockées :

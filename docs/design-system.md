@@ -116,7 +116,7 @@ transition puis libéré pour permettre le débordement des suggestions.
 ### Réordonnancement FLIP
 
 Le code mesure la position avant et après une mutation du DOM, puis anime la
-différence. Ce comportement évite les déplacements instantanés dans le journal
+différence. Ce comportement évite les déplacements instantanés dans la Cuisine
 et les éléments sticky.
 
 ### Grille et liste

@@ -2,13 +2,13 @@
 
 Application privée de suivi alimentaire pour un foyer de deux personnes.
 Elle réunit un catalogue nutritionnel, le stock domestique, une liste de
-courses et un journal de calories avec recettes.
+courses et une Cuisine (calories du jour) avec recettes.
 
 ## Stack
 
 - Node.js et Express 5
 - EJS et JavaScript vanilla
-- PostgreSQL en local, Neon en production
+- PostgreSQL sur Neon : branche `family-hub-dev` en local, `production` sur Fly
 - Passport Local, bcrypt et sessions PostgreSQL
 - Fly.io
 
@@ -21,11 +21,7 @@ npm install
 Créer un fichier `.env` :
 
 ```dotenv
-DB_USER=
-DB_HOST=
-DB_NAME=
-DB_PASSWORD=
-DB_PORT=
+DATABASE_URL=   # URL de la branche Neon dev, jamais production
 PORT=3000
 SECRET_KEY=
 ```
@@ -76,6 +72,15 @@ actuel ou une modification externe.
 - **Git** : code et historique détaillé des changements.
 - **Documentation du dépôt** : contrats techniques nécessaires pour
   maintenir et exploiter l’application.
+
+La page Notion `Chow → Qualité (QA)` donne accès à :
+
+- `Campagnes de test` pour les exécutions et leurs bilans ;
+- `Scénarios de test` pour les parcours complets ;
+- `Anomalies` pour tous les Bugs ;
+- `Cas de test — Projet Chow` pour la bibliothèque permanente ;
+- `BFV` pour les Corrections et leurs vérifications ;
+- `Stratégie de test` et `Plan de test` comme documents séparés.
 
 ## Déploiement
 

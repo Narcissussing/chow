@@ -3,7 +3,8 @@
 ## Sources de vérité
 
 - **Jira** : exécution, priorité et statut des Bugs et Corrections.
-- **Notion** : bases Bugs, Corrections et BFV, campagnes et connaissance QA.
+- **Notion** : scénarios, bibliothèque de cas de test, campagnes, anomalies,
+  corrections, BFV et documents QA.
 - **`docs/bugs.md`** : registre local opérationnel, autonome et à jour des
   Bugs, Corrections et BFV. Un agent doit pouvoir y comprendre une anomalie
   sans ouvrir Notion.
@@ -11,6 +12,26 @@
 
 Un même fait ne doit être réécrit dans plusieurs documents que lorsqu’il
 s’agit d’un miroir explicitement identifié.
+
+## Organisation Notion
+
+La page `Chow → Qualité (QA)` reste une page de navigation courte :
+
+- **Campagnes de test** : une page par campagne, avec le périmètre, le cahier
+  de recette exécuté et le bilan ;
+- **Scénarios de test** : parcours complets rédigés avec un objectif, des
+  préconditions, un déroulé, les IDs de cas couverts et le résultat attendu ;
+- **Anomalies** : contient uniquement la base de tous les Bugs Chow ;
+- **Cas de test — Projet Chow** : bibliothèque permanente des tests, séparée
+  de leurs exécutions en campagne ;
+- **BFV** : contient les bases Corrections et BFV ;
+- **Stratégie de test** et **Plan de test** : documents séparés accessibles
+  directement depuis la page QA.
+
+Un cas de test permanent ne porte pas le résultat d’une campagne. Lorsqu’une
+campagne est créée, les cas concernés sont repris dans son cahier de recette ;
+le statut, les observations et les anomalies liées appartiennent à cette
+exécution. Les étapes sont numérotées, avec une action simple par ligne.
 
 ## Politique de lecture locale
 
@@ -62,7 +83,9 @@ dans [Organisation Jira](jira.md).
 Dans Chow, **BFV signifie Bug Fix Verification** et concerne uniquement les
 Bugs. Après la correction, l’agent crée une BFV `En attente` et prépare une
 courte checklist. Seul Olumide exécute la vérification et en renseigne le
-résultat.
+résultat. Dans Notion, les Corrections et les vérifications sont regroupées
+dans le fichier `Qualité (QA) → BFV` ; les Bugs restent dans
+`Qualité (QA) → Anomalies`.
 
 ## Niveaux
 

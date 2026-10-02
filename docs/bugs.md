@@ -1,7 +1,8 @@
 # Bugs
 
 Registre local des anomalies Chow, synchronisé avec Notion
-(Chow → Qualité → Bugs/Corrections/BFV, voir `sync-log.md`). Les entrées
+(Chow → Qualité (QA) → Anomalies pour les Bugs, puis
+Chow → Qualité (QA) → BFV pour les Corrections et vérifications). Les entrées
 les plus récentes apparaissent en premier.
 
 **Champs** : clé Jira (`CHOW-N`) · Titre · Étapes de reproduction · Résultat
@@ -31,6 +32,53 @@ l’exécute et renseigne son résultat.
 
 Correction :
 -->
+
+### CHOW-? — Achat compté deux fois dans le Stock
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `index.js` (`POST /courses/acheter`)
+- **Date de signalement** : 2026-10-01
+- **Date de correction** : 2026-10-01
+- **Jira** : à créer (agent avec accès Jira)
+
+**Étapes de reproduction** :
+
+1. En magasin, réseau instable : marquer un article comme acheté.
+2. La réponse se perd ; `fetchAvecRetry` renvoie la requête après 800 ms.
+
+**Résultat attendu** : la quantité est ajoutée une seule fois au Stock.
+
+**Résultat obtenu** : chaque envoi ajoutait la quantité, l'achat pouvait
+compter deux fois.
+
+**Correction** : l'achat est marqué d'abord, dans une transaction,
+seulement si `achete = false` ; un envoi répété ne touche plus au Stock.
+Vérifié sur la branche Neon dev : deux envois de +3 → +3, trois envois
+simultanés de +2 → +2 ; données de test supprimées. BFV : en magasin, acheter
+un article avec un réseau faible et contrôler le Stock.
+
+### CHOW-? — En-tête de rayon vide après un achat (tri Catégorie)
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `public/js/courses.js`
+- **Date de signalement** : 2026-10-01
+- **Date de correction** : 2026-10-01
+- **Jira** : à créer (agent avec accès Jira)
+
+**Étapes de reproduction** :
+
+1. Courses, trier par « Catégorie ».
+2. Marquer comme acheté (ou supprimer) le dernier article d'un rayon.
+
+**Résultat attendu** : l'en-tête du rayon disparaît avec son dernier article.
+
+**Résultat obtenu** : l'en-tête reste affiché jusqu'au rechargement.
+
+**Correction** : `retirerItem` retire désormais les en-têtes qui ne sont
+plus suivis d'un article (`retirerEntetesVides`). BFV : trier par Catégorie,
+acheter puis supprimer le dernier article de deux rayons, sans recharger.
 
 ### CHOW-52 — Valeurs nutritionnelles incohérentes entre portion et 100 g
 

@@ -4,15 +4,19 @@
 
 | Environnement | Base | Configuration |
 |---|---|---|
-| Local | PostgreSQL local | Variables `DB_*` |
-| Production | Neon PostgreSQL | `DATABASE_URL` |
+| Local | Neon, branche `family-hub-dev` (`ep-spring-river-aslzwhz5`) | `DATABASE_URL` dans `.env` |
+| Production | Neon, branche `production` (`ep-steep-glade-as56jlgu`) | `DATABASE_URL` en secret Fly |
 
 Variables requises :
 
-- `DB_USER`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD`, `DB_PORT` en local ;
-- `DATABASE_URL` en production ;
+- `DATABASE_URL` ;
 - `PORT` ;
 - `SECRET_KEY`.
+
+`index.js` accepte aussi `DB_USER`, `DB_HOST`, `DB_NAME`, `DB_PASSWORD` et
+`DB_PORT` pour un PostgreSQL local lorsque `DATABASE_URL` est absente. Avant
+tout test qui écrit en base, vérifier que `.env` vise bien l'endpoint de la
+branche dev, jamais celui de production.
 
 Les secrets ne doivent jamais être ajoutés au dépôt.
 

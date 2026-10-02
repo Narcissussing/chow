@@ -85,6 +85,9 @@ app.use(function (req, res, next) {
 // Sessions en base (pas en mémoire) : les machines Fly s'arrêtent automatiquement et effaceraient tout.
 const PgSession = connectPgSimple(session);
 
+// Fly termine le HTTPS devant l'app : sans ça, le cookie "secure" ne serait jamais envoyé.
+app.set("trust proxy", 1);
+
 app.use(session({
     store: new PgSession({
         conObject: process.env.DATABASE_URL
@@ -101,8 +104,12 @@ app.use(session({
     secret: process.env.SECRET_KEY,
     resave: false,
     saveUninitialized: false,
+    rolling: true, // chaque visite relance les 360 jours : jamais déconnecté tant que l'app sert
     cookie: {
         maxAge: 1000 * 60 * 60 * 24 * 30 * 12, // 1 an
+        sameSite: "lax", // bloque les actions déclenchées depuis un autre site
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production", // HTTPS seulement en prod, le local reste en HTTP
     },
 }));
 app.use(passport.initialize());
@@ -148,7 +155,24 @@ function requireAuth(req, res, next) {
     if (req.isAuthenticated()) {
         return next();
     }
+    // L'app React lit du JSON : une redirection vers la page HTML de connexion serait illisible pour elle.
+    if (req.path.startsWith("/api/")) {
+        return res.status(401).json({ erreur: "Non connecté." });
+    }
     res.redirect("/login");
+}
+
+// Écritures /api en JSON uniquement : un autre site ne peut pas en envoyer sans CORS (aucun n'est activé).
+app.use("/api", function (req, res, next) {
+    if (req.method === "POST" && !req.is("application/json")) {
+        return res.status(415).json({ erreur: "Format JSON requis." });
+    }
+    next();
+});
+
+// Jamais l'objet "users" complet : il contient le hash du mot de passe.
+function utilisateurPublic(utilisateur) {
+    return { id: utilisateur.id, email: utilisateur.email };
 }
 
 app.get("/login", function (req, res) {
@@ -164,6 +188,33 @@ app.post("/logout", function (req, res) {
     req.logout(function () {
         res.redirect("/login");
     });
+});
+
+app.post("/api/login", function (req, res, next) {
+    passport.authenticate("local", function (err, utilisateur) {
+        if (err) return next(err);
+        if (!utilisateur) {
+            return res.status(401).json({ erreur: "Email ou mot de passe incorrect." });
+        }
+        req.logIn(utilisateur, function (errLogin) {
+            if (errLogin) return next(errLogin);
+            res.json({ succes: true, utilisateur: utilisateurPublic(utilisateur) });
+        });
+    })(req, res, next);
+});
+
+app.post("/api/logout", function (req, res, next) {
+    req.logout(function (err) {
+        if (err) return next(err);
+        res.json({ succes: true });
+    });
+});
+
+app.get("/api/session", function (req, res) {
+    if (!req.isAuthenticated()) {
+        return res.status(401).json({ erreur: "Non connecté." });
+    }
+    res.json({ utilisateur: utilisateurPublic(req.user) });
 });
 
 // Tout ce qui est déclaré APRÈS cette ligne exige d'être connecté.
@@ -270,6 +321,52 @@ async function chercherJournalDuJour() {
     return result.rows;
 }
 
+// Données de chaque page, partagées entre le rendu EJS et l'API lue par React.
+async function chercherAliment(idAliment) {
+    const result = await db.query("SELECT * FROM foods WHERE id = $1", [idAliment]);
+    return result.rows[0];
+}
+
+async function chargerPageStock() {
+    return { stock: await chercherStock(), aliments: await chercherAliments() };
+}
+
+async function chargerPageCourses() {
+    const courses = await chercherCourses();
+    const aliments = await chercherAliments();
+    const stock = await chercherStock();
+    // Transmis au client pour comparer en direct à la liste actuelle et activer/désactiver "Enregistrer" (voir courses.js).
+    const presetHebdo = await db.query("SELECT food_id, nom_libre FROM courses_preset");
+    return { courses, aliments, stock, presetHebdo: presetHebdo.rows };
+}
+
+async function chargerPageCalories() {
+    return { journal: await chercherJournalDuJour(), aliments: await chercherAliments(), recettes: await chercherRecettes() };
+}
+
+// Réponse JSON commune des lectures /api : même erreur 500 que les mutations.
+function lectureApi(charger) {
+    return async function (req, res) {
+        try {
+            const donnees = await charger(req);
+            if (!donnees) return res.status(404).json({ erreur: "Aliment introuvable." });
+            res.json(donnees);
+        } catch (err) {
+            console.log("ERREUR:", err.message);
+            res.status(500).json({ erreur: err.message });
+        }
+    };
+}
+
+app.get("/api/aliments", lectureApi(async () => ({ aliments: await chercherAliments() })));
+app.get("/api/aliments/:idAliment", lectureApi(async (req) => {
+    const aliment = await chercherAliment(req.params.idAliment);
+    return aliment ? { aliment } : null;
+}));
+app.get("/api/stock", lectureApi(chargerPageStock));
+app.get("/api/courses", lectureApi(chargerPageCourses));
+app.get("/api/calories", lectureApi(chargerPageCalories));
+
 // ============================================
 // PAGE D'ACCUEIL
 // ============================================
@@ -303,9 +400,7 @@ app.get("/aliments", async (req, res) => {
 
 app.get("/aliments/:idAliment", async (req, res) => {
     try {
-        const idAliment = req.params.idAliment;
-        const result = await db.query("SELECT * FROM foods WHERE id = $1", [idAliment]);
-        const aliment = result.rows[0];
+        const aliment = await chercherAliment(req.params.idAliment);
         if (!aliment) { return res.status(404).render("aliment-detail.ejs", { title: "Aliment introuvable", aliment: null }); }
         res.render("aliment-detail.ejs", {
             title: aliment.nom,
@@ -317,7 +412,7 @@ app.get("/aliments/:idAliment", async (req, res) => {
     }
 });
 
-app.post("/aliments/:idAliment/equivalences", async (req, res) => {
+app.post(["/aliments/:idAliment/equivalences", "/api/aliments/:idAliment/equivalences"], async (req, res) => {
     try {
         const idAliment = req.params.idAliment;
         // Vide (non pesé) stocké en NULL, pas 0, pour distinguer "non renseigné" de "pèse 0g".
@@ -349,20 +444,14 @@ app.post("/aliments/:idAliment/equivalences", async (req, res) => {
 
 app.get("/stock", async (req, res) => {
     try {
-        const stock = await chercherStock()
-        const aliments = await chercherAliments()
-        res.render("stock.ejs", {
-            title: "Stock",
-            stock: stock,
-            aliments: aliments,
-        });
+        res.render("stock.ejs", { title: "Stock", ...(await chargerPageStock()) });
     } catch (err) {
         console.error(err);
         res.status(500).send("Internal Server Error");
     }
 });
 
-app.post("/stock/ajouter", async (req, res) => {
+app.post(["/stock/ajouter", "/api/stock/ajouter"], async (req, res) => {
     const idAliment = req.body.idAliment;
     const quantiteAliment = req.body.quantiteAliment;
     try {
@@ -411,7 +500,7 @@ app.post("/stock/ajouter", async (req, res) => {
     }
 });
 
-app.post("/stock/modifier", async (req, res) => {
+app.post(["/stock/modifier", "/api/stock/modifier"], async (req, res) => {
     try {
         const nouvelleQuantite = req.body.nouvelleQuantite;
         const idStock = req.body.idStock;
@@ -429,7 +518,7 @@ app.post("/stock/modifier", async (req, res) => {
     }
 });
 
-app.post("/stock/supprimer", async (req, res) => {
+app.post(["/stock/supprimer", "/api/stock/supprimer"], async (req, res) => {
     try {
         const idStock = req.body.idStock;
         if (!idStock) {
@@ -450,19 +539,7 @@ app.post("/stock/supprimer", async (req, res) => {
 
 app.get("/courses", async (req, res) => {
     try {
-        const courses = await chercherCourses()
-        const aliments = await chercherAliments()
-        const stock = await chercherStock()
-        // Transmis au client pour comparer en direct à la liste actuelle et activer/désactiver "Enregistrer" (voir courses.js).
-        const presetHebdo = await db.query("SELECT food_id, nom_libre FROM courses_preset");
-
-        res.render("courses.ejs", {
-            title: "Courses",
-            courses: courses,
-            aliments: aliments,
-            stock: stock,
-            presetHebdo: presetHebdo.rows
-        });
+        res.render("courses.ejs", { title: "Courses", ...(await chargerPageCourses()) });
     } catch (err) {
         console.error(err);
         res.status(500).send("Internal Server Error");
@@ -470,7 +547,7 @@ app.get("/courses", async (req, res) => {
 });
 
 // idAliment pour un aliment connu, sinon nom_libre pour un texte tapé qui n'existe pas encore dans "foods".
-app.post("/courses/ajouter", async (req, res) => {
+app.post(["/courses/ajouter", "/api/courses/ajouter"], async (req, res) => {
     const idAliment = req.body.idAliment || null;
     const texteTape = req.body.rechercheAliment;
     try {
@@ -502,7 +579,7 @@ app.post("/courses/ajouter", async (req, res) => {
 });
 
 // N'ajoute que les articles du preset absents de la liste en attente, pour éviter les doublons si on clique plusieurs fois.
-app.post("/courses/preset-hebdo", async (req, res) => {
+app.post(["/courses/preset-hebdo", "/api/courses/preset-hebdo"], async (req, res) => {
     try {
         const presetResult = await db.query("SELECT food_id, nom_libre FROM courses_preset");
 
@@ -554,7 +631,7 @@ app.post("/courses/preset-hebdo", async (req, res) => {
 });
 
 // DELETE + réinsertion plutôt qu'un diff ligne à ligne (comme /recettes/:id/modifier) : plus simple, liste toujours courte.
-app.post("/courses/preset-hebdo/enregistrer", async (req, res) => {
+app.post(["/courses/preset-hebdo/enregistrer", "/api/courses/preset-hebdo/enregistrer"], async (req, res) => {
     let transactionStarted = false;
     try {
         await db.query("BEGIN");
@@ -581,7 +658,7 @@ app.post("/courses/preset-hebdo/enregistrer", async (req, res) => {
     }
 });
 
-app.post("/courses/commentaire", async (req, res) => {
+app.post(["/courses/commentaire", "/api/courses/commentaire"], async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         const commentaire = req.body.commentaire;
@@ -599,7 +676,7 @@ app.post("/courses/commentaire", async (req, res) => {
 });
 
 // Photo envoyée en base64, déjà compressée côté client (voir courses.js) ; le serveur ne fait que décoder et stocker.
-app.post("/courses/photo", async (req, res) => {
+app.post(["/courses/photo", "/api/courses/photo"], async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         const photoBase64 = req.body.photo;
@@ -617,7 +694,7 @@ app.post("/courses/photo", async (req, res) => {
     }
 });
 
-app.post("/courses/photo/supprimer", async (req, res) => {
+app.post(["/courses/photo/supprimer", "/api/courses/photo/supprimer"], async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         if (!idCourse) {
@@ -632,7 +709,7 @@ app.post("/courses/photo/supprimer", async (req, res) => {
 });
 
 // Sert l'image elle-même, appelée seulement à l'ouverture de la photo (voir has_photo dans chercherCourses).
-app.get("/courses/:id/photo", async (req, res) => {
+app.get(["/courses/:id/photo", "/api/courses/:id/photo"], async (req, res) => {
     try {
         const result = await db.query("SELECT photo FROM courses WHERE id = $1", [req.params.id]);
         if (result.rows.length === 0 || !result.rows[0].photo) {
@@ -646,7 +723,7 @@ app.get("/courses/:id/photo", async (req, res) => {
     }
 });
 
-app.post("/courses/supprimer", async (req, res) => {
+app.post(["/courses/supprimer", "/api/courses/supprimer"], async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         if (!idCourse) {
@@ -661,9 +738,10 @@ app.post("/courses/supprimer", async (req, res) => {
     }
 });
 
-app.post("/courses/acheter", async (req, res) => {
+app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
+    let transactionStarted = false;
     try {
-        let tracking_type = null;
+        let quantiteEntiere = null;
         const idCourse = req.body.idCourse;
         const quantiteAchetee = req.body.quantiteAchetee;
 
@@ -678,22 +756,37 @@ app.post("/courses/acheter", async (req, res) => {
         const foodId = courseResult.rows[0].food_id;
 
         // Un nom_libre n'a pas de food_id : rien à mettre à jour dans le stock.
+        let trackingType = null;
         if (foodId) {
             const resultFood = await db.query("SELECT tracking_type FROM foods WHERE id = $1", [foodId]);
-            tracking_type = resultFood.rows[0].tracking_type;
+            trackingType = resultFood.rows[0].tracking_type;
+            if (trackingType !== 'cl') {
+                // Arrondi côté serveur : ce formulaire passe par fetch, donc la validation native (min/type=number) du champ n'a jamais lieu.
+                quantiteEntiere = Math.round(Number(quantiteAchetee));
+                if (!quantiteAchetee || !Number.isFinite(quantiteEntiere) || quantiteEntiere < 1) {
+                    return res.status(400).json({ erreur: "Quantité invalide." });
+                }
+            }
+        }
 
-            if (tracking_type === 'cl') {
+        await db.query("BEGIN");
+        transactionStarted = true;
+
+        // Marque l'achat d'abord et une seule fois : une requête rejouée (réseau du magasin) ne touche plus au stock.
+        // La photo n'a plus d'utilité une fois l'achat fait (elle servait à reconnaître le produit au magasin).
+        const achatResult = await db.query(
+            "UPDATE courses SET achete = true, photo = NULL WHERE id = $1 AND achete = false RETURNING id",
+            [idCourse]
+        );
+
+        if (achatResult.rows.length > 0 && foodId) {
+            if (trackingType === 'cl') {
                 // "cl" (bouteille) : acheter = remettre à "plein". ON CONFLICT évite un doublon si déjà en stock.
                 await db.query(
                     "INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, 'plein', NOW()) ON CONFLICT (food_id) DO UPDATE SET quantite = 'plein', date_maj = NOW()",
                     [foodId]
                 );
             } else {
-                // Arrondi côté serveur : ce formulaire passe par fetch, donc la validation native (min/type=number) du champ n'a jamais lieu.
-                const quantiteEntiere = Math.round(Number(quantiteAchetee));
-                if (!quantiteAchetee || !Number.isFinite(quantiteEntiere) || quantiteEntiere < 1) {
-                    return res.status(400).json({ erreur: "Quantité invalide." });
-                }
                 // Regex avant le cast ::integer : protège contre une ancienne valeur "cl" (ex: "plein") laissée par un changement de type de suivi.
                 await db.query(
                     `INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, $2, NOW())
@@ -708,10 +801,11 @@ app.post("/courses/acheter", async (req, res) => {
             }
         }
 
-        // La photo n'a plus d'utilité une fois l'achat fait (elle servait à reconnaître le produit au magasin).
-        await db.query("UPDATE courses SET achete = true, photo = NULL WHERE id = $1", [idCourse]);
+        await db.query("COMMIT");
+        transactionStarted = false;
         res.json({ succes: true });
     } catch (err) {
+        if (transactionStarted) await db.query("ROLLBACK");
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
     }
@@ -723,22 +817,14 @@ app.post("/courses/acheter", async (req, res) => {
 
 app.get("/calories", async (req, res) => {
     try {
-        const journal = await chercherJournalDuJour();
-        const aliments = await chercherAliments();
-        const recettes = await chercherRecettes();
-        res.render("calories.ejs", {
-            title: "Calories",
-            journal: journal,
-            aliments: aliments,
-            recettes: recettes
-        });
+        res.render("calories.ejs", { title: "Calories", ...(await chargerPageCalories()) });
     } catch (err) {
         console.error(err);
         res.status(500).send("Internal Server Error");
     }
 });
 
-app.post("/calories/ajouter", async (req, res) => {
+app.post(["/calories/ajouter", "/api/calories/ajouter"], async (req, res) => {
     try {
         const idAliment = req.body.idAliment;
         const quantiteG = req.body.quantiteG || 100;
@@ -776,7 +862,7 @@ app.post("/calories/ajouter", async (req, res) => {
     }
 });
 
-app.post("/calories/modifier", async (req, res) => {
+app.post(["/calories/modifier", "/api/calories/modifier"], async (req, res) => {
     try {
         const idEntree = req.body.idEntree;
         const nouvelleQuantite = req.body.nouvelleQuantite;
@@ -808,7 +894,7 @@ app.post("/calories/modifier", async (req, res) => {
 
 // -- POST /calories/supprimer : identique à avant, garder tel quel --
 // Supprimer une entrée du journal alimentaire
-app.post("/calories/supprimer", async (req, res) => {
+app.post(["/calories/supprimer", "/api/calories/supprimer"], async (req, res) => {
     try {
         const idEntree = req.body.idEntree;
         if (!idEntree) {
@@ -824,7 +910,7 @@ app.post("/calories/supprimer", async (req, res) => {
 });
 
 // Échange l'ordre avec la voisine ("haut"/"bas") plutôt que de renvoyer toute la liste réordonnée.
-app.post("/calories/deplacer", async (req, res) => {
+app.post(["/calories/deplacer", "/api/calories/deplacer"], async (req, res) => {
     try {
         const idEntree = req.body.idEntree;
         const direction = req.body.direction;
@@ -861,7 +947,7 @@ app.post("/calories/deplacer", async (req, res) => {
     }
 });
 
-app.post("/calories/vider", async (req, res) => {
+app.post(["/calories/vider", "/api/calories/vider"], async (req, res) => {
     try {
         await db.query("DELETE FROM journal_repas WHERE date_entree = CURRENT_DATE");
         res.json({ succes: true });
@@ -872,7 +958,7 @@ app.post("/calories/vider", async (req, res) => {
 });
 
 // Remplace le journal du jour par tous les ingrédients d'une recette.
-app.post("/calories/ajouter-recette", async (req, res) => {
+app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (req, res) => {
     let transactionStarted = false;
 
     try {
@@ -958,7 +1044,7 @@ app.post("/calories/ajouter-recette", async (req, res) => {
     }
 });
 
-app.post("/recettes/creer", async (req, res) => {
+app.post(["/recettes/creer", "/api/recettes/creer"], async (req, res) => {
     try {
         const nom = req.body.nom;
         const categorie = req.body.categorie || "plat";
@@ -990,7 +1076,7 @@ app.post("/recettes/creer", async (req, res) => {
     }
 });
 
-app.get("/recettes/:id", async (req, res) => {
+app.get(["/recettes/:id", "/api/recettes/:id"], async (req, res) => {
     try {
         const idRecette = req.params.id;
 
@@ -1024,7 +1110,7 @@ app.get("/recettes/:id", async (req, res) => {
     }
 });
 
-app.post("/recettes/:id/modifier", async (req, res) => {
+app.post(["/recettes/:id/modifier", "/api/recettes/:id/modifier"], async (req, res) => {
     let transactionStarted = false;
 
     try {
@@ -1070,7 +1156,7 @@ app.post("/recettes/:id/modifier", async (req, res) => {
     }
 });
 
-app.post("/recettes/:id/supprimer", async (req, res) => {
+app.post(["/recettes/:id/supprimer", "/api/recettes/:id/supprimer"], async (req, res) => {
     let transactionStarted = false;
 
     try {
@@ -1109,7 +1195,7 @@ app.post("/recettes/depuis-journal", async (req, res) => {
         );
 
         if (journalResult.rows.length === 0) {
-            return res.status(400).json({ erreur: "Le journal du jour est vide." });
+            return res.status(400).json({ erreur: "La cuisine du jour est vide." });
         }
 
         const recetteResult = await db.query(
@@ -1130,6 +1216,11 @@ app.post("/recettes/depuis-journal", async (req, res) => {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
     }
+});
+
+// Une URL /api inconnue répond en JSON, jamais avec la page d'erreur HTML d'Express.
+app.use("/api", function (req, res) {
+    res.status(404).json({ erreur: "Route inconnue." });
 });
 
 app.listen(port, () => {

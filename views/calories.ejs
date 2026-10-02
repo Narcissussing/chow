@@ -41,7 +41,7 @@
 
     <!-- Journal et Recettes : deux onglets d'une même page, changer d'onglet ne recharge rien (voir calories.js). -->
     <div class="calories-tabs">
-      <button type="button" class="calories-tab-btn actif" data-tab="journal">Journal</button>
+      <button type="button" class="calories-tab-btn actif" data-tab="journal">Cuisine</button>
       <button type="button" class="calories-tab-btn" data-tab="recettes">Recettes</button>
     </div>
 
@@ -67,7 +67,7 @@
 
         <!-- Applique une recette de plat au journal ; aria-label compense l'icône seule, sans texte (voir custom-selects.js). -->
         <% const recettesPlat = recettes.filter(function(r) { return r.categorie === 'plat'; }).sort(function(a, b) { return a.nom.localeCompare(b.nom); }); %>
-        <select id="selectRecettePlat" aria-label="Remplacer le journal du jour avec une recette" <%= recettesPlat.length === 0 ? 'disabled title="Aucune recette de plat pour le moment"' : '' %>>
+        <select id="selectRecettePlat" aria-label="Remplacer la cuisine du jour par une recette" <%= recettesPlat.length === 0 ? 'disabled title="Aucune recette de plat pour le moment"' : '' %>>
           <option value=""><%= recettesPlat.length === 0 ? 'Aucune recette de plat' : '' %></option>
           <% recettesPlat.forEach(function(recette) { %>
           <option value="<%= recette.id %>"><%= recette.nom %></option>
@@ -76,7 +76,7 @@
 
         <!-- Même principe que #selectRecettePlat, pour "Fraîcheur" (boissons + glaces). -->
         <% const recettesFraicheur = recettes.filter(function(r) { return r.categorie === 'fraicheur'; }).sort(function(a, b) { return a.nom.localeCompare(b.nom); }); %>
-        <select id="selectRecetteFraicheur" aria-label="Remplacer le journal du jour avec une recette de fraîcheur" <%= recettesFraicheur.length === 0 ? 'disabled title="Aucune recette de fraîcheur pour le moment"' : '' %>>
+        <select id="selectRecetteFraicheur" aria-label="Remplacer la cuisine du jour par une recette de fraîcheur" <%= recettesFraicheur.length === 0 ? 'disabled title="Aucune recette de fraîcheur pour le moment"' : '' %>>
           <option value=""><%= recettesFraicheur.length === 0 ? 'Aucune recette de fraîcheur' : '' %></option>
           <% recettesFraicheur.forEach(function(recette) { %>
           <option value="<%= recette.id %>"><%= recette.nom %></option>
