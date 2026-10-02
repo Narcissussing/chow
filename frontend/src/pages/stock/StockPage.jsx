@@ -9,7 +9,7 @@ import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
 import { correspondFiltres, suggestionsARacheter, trierStock } from "../../utils/stock.js";
-import StockSuggestions from "./StockSuggestions.jsx";
+import StockSuggestions, { BoutonRacheter } from "./StockSuggestions.jsx";
 import BadgeCompteur from "../../components/BadgeCompteur.jsx";
 import { normaliserTexte } from "../../utils/texte.js";
 import StockItem, { boutonCoursesVisible } from "./StockItem.jsx";
@@ -47,6 +47,7 @@ function Stock({ donnees }) {
   const verrousAjout = useRef(new Set());
 
   const [items, setItems] = useState(() => trierStock(donnees.stock.map(preparer), "alpha"));
+  const [racheterOuvert, setRacheterOuvert] = useState(false);
   const [aRacheter, setARacheter] = useState(() => suggestionsARacheter(donnees.suggestions || []));
   const [emplacement, setEmplacement] = useState("tous");
   const [type, setType] = useState("tous");
@@ -265,6 +266,7 @@ function Stock({ donnees }) {
     <main>
       <div className="page-header titre-page">
         <h1>Stock</h1>
+        <BoutonRacheter suggestions={aRacheter} ouvert={racheterOuvert} onBasculer={() => setRacheterOuvert((o) => !o)} />
         <BadgeCompteur
           icone="stock"
           nombre={filtreActif ? visibles : items.length}
@@ -273,7 +275,7 @@ function Stock({ donnees }) {
         />
       </div>
 
-      <StockSuggestions suggestions={aRacheter} onAjouter={ajouterSuggestion} />
+      {racheterOuvert && <StockSuggestions suggestions={aRacheter} onAjouter={ajouterSuggestion} />}
 
       <div className="filters">
         <div className="filters__inner">

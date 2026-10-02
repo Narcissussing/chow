@@ -21,7 +21,8 @@ function cibleVisible(selecteurs) {
     const el = document.querySelector(selecteur);
     if (!el) continue;
     const r = el.getBoundingClientRect();
-    if (r.width > 0 && r.bottom > 0 && r.top < window.innerHeight) return el;
+    // offsetWidth (sans transform) : la balance qui se retourne (rotateY 90°) a 0 de large à l'écran mais est bien là.
+    if (el.offsetWidth > 0 && r.bottom > 0 && r.top < window.innerHeight) return el;
   }
   return null;
 }
@@ -72,6 +73,7 @@ function volee(emojis, a, selecteurs, classeArrivee) {
 }
 
 export const MARMITE = [".badge-compteur--cuisine", ".calories-tab-btn:first-child"];
+// La balance du badge (titre ou barre des kcal) ; l'onglet seulement si elle est hors écran.
 export const BALANCE = [".badge-compteur--regle", "#ongletAdapter"];
 
 // L'emoji de l'aliment est lancé depuis la ligne touchée jusque dans la marmite du titre, qui fait « plouf ».

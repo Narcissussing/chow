@@ -212,6 +212,12 @@ const SUGGESTIONS = [
 test("À racheter : bas ou épuisés seulement, achetés ce mois d'abord, « + » envoie aux Courses", async () => {
   ouvrirStock({ "/stock": [200, { stock: STOCK, aliments: ALIMENTS, suggestions: SUGGESTIONS }] });
   await attendrePage();
+  // Fermé au départ : un bouton avec le nombre à racheter l'ouvre.
+  expect(screen.queryByRole("region", { name: "À racheter" })).toBeNull();
+  const bouton = screen.getByRole("button", { name: "À racheter" });
+  expect(bouton.closest(".titre-page")).not.toBeNull();
+  expect(bouton).toHaveTextContent("2");
+  fireEvent.click(bouton);
   const encart = screen.getByRole("region", { name: "À racheter" });
   const noms = [...encart.querySelectorAll(".stock-suggestions__nom")].map((n) => n.textContent);
   // Œuf (6 restants) n'est pas bas ; Beurre acheté ce mois passe avant Lait.

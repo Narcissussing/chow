@@ -905,10 +905,9 @@
   background: url("/images/svg/scale.svg") center / contain no-repeat;
 }
 
+/* En couleurs, comme la balance à côté. */
 .btn-outil--cuisiner .btn-outil__icone {
-  background-color: var(--accent);
-  -webkit-mask: url("/images/svg/cuisiner.svg") center / contain no-repeat;
-  mask: url("/images/svg/cuisiner.svg") center / contain no-repeat;
+  background: url("/images/svg/cuisiner.svg") center / contain no-repeat;
 }
 
 /* En-tête d'une recette ouverte : à la taille de Modifier et ✕. */
@@ -1357,7 +1356,7 @@
   }
 }
 
-/* Badges de total : même gabarit que le sac des Courses, autre icône (boîte de rangement pour le Stock, marmite pour la Cuisine). */
+/* Badges de total : même gabarit que le sac des Courses, autre icône (boîte de rangement pour le Stock ; marmite et balance pour Calories, plus bas). */
 .titre-page .badge-compteur {
   width: 52px;
   height: 52px;
@@ -1381,15 +1380,6 @@
 .badge-compteur--filtre::before {
   background-color: var(--accent-2);
   transition: background-color 0.2s ease;
-}
-
-.badge-compteur--cuisine::before {
-  -webkit-mask-image: url("/images/svg/marmite.svg");
-  mask-image: url("/images/svg/marmite.svg");
-}
-
-.badge-compteur--cuisine {
-  padding-bottom: 9px;
 }
 
 /* ---------- Cuisine vide : une des quatre animations « on cuisine », tirée au hasard ---------- */
@@ -1978,21 +1968,179 @@
 
 /* Titre caché sous le header (mobile) : marmite ou balance glisse dans la barre des kcal, à droite, comme le sac des Courses. */
 /* La barre est déjà en position: sticky (mobile) : elle sert de repère au badge en absolute. */
-.journal-totaux .badge-compteur {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  width: 34px;
-  height: 34px;
-  margin-top: -17px;
-  padding-bottom: 5px;
-  z-index: 1;
+
+/* ---------- Badges Calories : marmite (marmite.svg) et balance (scale.svg) d'une seule couleur, nombre dedans ---------- */
+.badge-compteur--cuisine::before {
+  -webkit-mask-image: url("/images/svg/marmite.svg");
+  mask-image: url("/images/svg/marmite.svg");
 }
 
-.journal-totaux .badge-compteur span {
-  font-size: 0.8rem;
+.badge-compteur--cuisine {
+  padding-bottom: 9px;
+}
+
+/* Dans la barre des kcal (mobile) : kcal à gauche, marmite / balance de 36 px à droite, posées sur la même ligne :
+   le bas du badge s'aligne sur le bas du chiffre des kcal (.macro-valeur). Dans le flux de la grille, pas en absolute. */
+@media (max-width: 768px) {
+  .journal-totaux.compacte {
+    align-items: end;
+  }
+
+  .journal-totaux.compacte .macro-calories {
+    grid-column: 1 / 2;
+    align-self: end;
+  }
+
+  /* Chiffre des kcal plus grand, à l'échelle de la marmite. */
+  .journal-totaux.compacte .macro-calories .macro-valeur {
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .journal-totaux.compacte .macro-calories .macro-label {
+    font-size: 0.68rem;
+  }
+}
+
+.journal-totaux .badge-compteur--cuisine,
+.journal-totaux .badge-compteur--regle {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1 / -1;
+  justify-self: end;
+  align-self: end;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding-bottom: 4px;
 }
 
 .journal-totaux .badge-compteur--regle {
-  padding-bottom: 4px;
+  padding-bottom: 3px;
+}
+
+.journal-totaux .badge-compteur--cuisine span,
+.journal-totaux .badge-compteur--regle span {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+/* Nombre plus lisible dans la marmite et la balance du titre. */
+.titre-page .badge-compteur--cuisine span,
+.titre-page .badge-compteur--regle span {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+/* Stock : « À racheter » est un bouton (nombre dans une bulle) ; la liste s'ouvre en dessous. */
+/* Même largeur et mêmes marges que le titre (.page-header), pour ne pas coller au bord de l'écran. */
+.stock-suggestions-zone {
+  max-width: 1200px;
+  margin: 0 auto 14px;
+  padding: 0 40px;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .stock-suggestions-zone {
+    padding: 0 20px;
+  }
+}
+
+/* Bouton « À racheter » du titre, entre « Stock » et le compteur : icône de réassort, nombre dans une bulle. */
+.btn-racheter {
+  position: relative;
+  flex-shrink: 0;
+  margin-left: auto;
+  margin-right: 28px; /* de l'air avant le compteur */
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--accent);
+  background: var(--surface);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.15s ease;
+}
+
+.btn-racheter:active {
+  transform: scale(0.92);
+}
+
+.btn-racheter.actif {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-racheter__icone {
+  width: 28px;
+  height: 28px;
+  background-color: currentColor;
+  -webkit-mask: url("/images/svg/racheter.svg") center / contain no-repeat;
+  mask: url("/images/svg/racheter.svg") center / contain no-repeat;
+}
+
+.btn-racheter.actif .btn-racheter__icone {
+  animation: racheterTourne 0.5s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+@keyframes racheterTourne {
+  from {
+    transform: rotate(-180deg);
+  }
+}
+
+.btn-racheter__nombre {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.btn-racheter.actif .btn-racheter__nombre {
+  background: var(--surface);
+  color: var(--accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-racheter.actif .btn-racheter__icone {
+    animation: none;
+  }
+}
+
+.stock-suggestions-zone .stock-suggestions {
+  margin: 8px 0 0;
+  animation: slideDownNote 0.18s ease both;
+}
+
+/* Cuisine : recherche et boutons sur une seule ligne ; la recherche prend la place qui reste et rétrécit pour leur laisser la leur. */
+.calories-tab-panel .journal-actions-row {
+  flex-wrap: nowrap;
+  gap: 8px;
+  position: relative; /* repère de la liste d'aliments, qui garde toute la largeur de la ligne */
+}
+
+.calories-tab-panel #autocompleteCalories {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  position: static;
+}
+
+.calories-tab-panel .journal-actions-row > :not(#autocompleteCalories) {
+  flex-shrink: 0;
 }
