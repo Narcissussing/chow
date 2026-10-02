@@ -242,3 +242,59 @@ test("photo : bouton œil en dernier enfant de la carte ; aperçu lu depuis le c
   expect(document.getElementById("photoBackdrop")).toHaveClass("ouvert");
   expect(document.getElementById("imgApercuPhoto")).toHaveAttribute("src", "data:image/jpeg;base64,QUJD");
 });
+
+test("achat : la liste du serveur apporte l'article ajouté ailleurs, le Stock à jour et retire celui acheté ailleurs", async () => {
+  jest.useFakeTimers();
+  const toasts = [];
+  const desabonner = abonnerToast((m) => m && toasts.push(m));
+  const pain = { id: 20, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
+  // Serveur après l'achat du Riz : Puck acheté sur l'autre téléphone, Pain ajouté, Lait passé à "plein".
+  const apres = [{ ...COURSES[0], quantite_stock: "plein" }, pain];
+  ouvrirCourses({ "/courses/acheter": [200, { succes: true, courses: apres }] });
+  await act(async () => jest.runOnlyPendingTimers());
+  await attendrePage();
+  await act(async () => fireEvent.click([...carte("Riz").querySelectorAll(".suggestion")].find((b) => b.textContent === "+2")));
+  expect(carte("Pain")).toHaveClass("entree", "mise-en-avant");
+  expect(carte("Puck")).toHaveClass("disparait-achete");
+  expect(carte("Lait").querySelector(".course-stock-dot")).toHaveAttribute("title", "En stock : plein");
+  expect(toasts).toContain("Ajouté entre-temps : Pain");
+  act(() => jest.advanceTimersByTime(300));
+  expect(ordreListe()).toEqual(["🥛 Lait", "🍞 Pain", "panneauAjoutCourse"]);
+  desabonner();
+});
+
+test("ajout : son propre article n'est pas signalé ; une réponse plus ancienne que la dernière est ignorée", async () => {
+  const toasts = [];
+  const desabonner = abonnerToast((m) => m && toasts.push(m));
+  let liberer;
+  const pomme = { id: 10, food_id: "pomme", nom: "Pomme", emoji: "🍎", categorie: "Fruits", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
+  ouvrirCourses({
+    // Achat lent (réponse périmée qui contient encore Riz), puis ajout rapide.
+    "/courses/acheter": () => new Promise((r) => { liberer = () => r([200, { succes: true, courses: COURSES }]); }),
+    "/courses/ajouter": [200, { succes: true, item: pomme, courses: [COURSES[0], COURSES[2], pomme] }],
+  });
+  await attendrePage();
+  fireEvent.click([...carte("Riz").querySelectorAll(".suggestion")].find((b) => b.textContent === "+2"));
+  fireEvent.click(document.getElementById("btnToggleAjoutCourse"));
+  fireEvent.change(document.getElementById("rechercheAlimentCourses"), { target: { value: "pomme" } });
+  await act(async () => fireEvent.click(within(document.getElementById("listeAlimentsCourses")).getByText(/Pomme/)));
+  expect(carte("Pomme")).not.toHaveClass("mise-en-avant");
+  expect(toasts.some((t) => t.includes("entre-temps"))).toBe(false);
+  await act(async () => liberer());
+  expect(carte("Pomme")).toBeDefined();
+  desabonner();
+});
+
+test("suppression et note : la réponse rafraîchit la liste ; une note changée ailleurs s'affiche si le champ est fermé", async () => {
+  const lait = { ...COURSES[0], commentaire: "Demi-écrémé" };
+  ouvrirCourses({
+    "/courses/commentaire": [200, { succes: true, courses: [lait, COURSES[1], COURSES[2]] }],
+  });
+  await attendrePage();
+  fireEvent.click(carte("Riz").querySelector(".course-nom-emoji"));
+  const champ = carte("Riz").querySelector(".input-commentaire");
+  fireEvent.change(champ, { target: { value: "Thaï" } });
+  await act(async () => fireEvent.blur(champ));
+  expect(requetes).toEqual([{ chemin: "/courses/commentaire", corps: { idCourse: "2", commentaire: "Thaï" } }]);
+  expect(carte("Lait").querySelector(".note-affichee")).toHaveTextContent("Demi-écrémé");
+});

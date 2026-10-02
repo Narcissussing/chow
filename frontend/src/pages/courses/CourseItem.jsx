@@ -1,8 +1,7 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { relancerClasse } from "../../utils/animation.js";
 import { classeNiveauCL } from "../../utils/stock.js";
-import { fetchAvecRetry, gererErreurReseau } from "./reseau.js";
 
 // "Pop" quand le panier devient cliquable ; classe gérée hors React (le className du bouton ne change jamais).
 export function jouerPopPanier(bouton) {
@@ -23,7 +22,7 @@ function IndicateurStock({ item }) {
   return <span className={"course-stock-indicator course-stock-dot " + classeNiveauCL(item.quantite_stock)} title={`En stock : ${item.quantite_stock}`}></span>;
 }
 
-export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvoyer, onPhoto, refPanier, refPhoto, refCarte, onFinEntree }) {
+export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvoyer, onPhoto, onNote, refPanier, refPhoto, refCarte, onFinEntree }) {
   const planifier = useMinuteurs();
   const champNote = useRef(null);
   const panierQuantite = useRef(null);
@@ -33,6 +32,14 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
   const [saisieNote, setSaisieNote] = useState(item.commentaire || "");
   const [quantite, setQuantite] = useState("");
   const [envoi, setEnvoi] = useState({ achat: false, suppression: false });
+
+  // Note changée sur l'autre téléphone : reprise seulement si le champ n'est pas ouvert (saisie en cours gardée).
+  const commentaireServeur = (item.commentaire || "").trim();
+  useEffect(() => {
+    if (!ligne.cachee || commentaireServeur === note.texte) return;
+    setNote({ texte: commentaireServeur, cachee: false, masquage: false });
+    setSaisieNote(commentaireServeur);
+  }, [commentaireServeur]);
 
   const estFormQuantite = Boolean(item.food_id) && item.tracking_type !== "cl";
   const quantiteInvalide = quantite.trim() === "" || Number(quantite) < 1;
@@ -58,7 +65,7 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
       return;
     }
     // Mise à jour immédiate de l'affichage ; un échec réseau ne fait qu'afficher le toast.
-    fetchAvecRetry("/courses/commentaire", { body: { idCourse: String(item.id), commentaire } }).catch(gererErreurReseau);
+    onNote(commentaire);
     setNote({ texte: commentaire, cachee: false, masquage: false });
   }
 

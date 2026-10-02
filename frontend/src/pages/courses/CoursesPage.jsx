@@ -47,6 +47,28 @@ function preparer(ligne) {
   return { ...ligne, aPhoto: ligne.has_photo === true, effets: {} };
 }
 
+// Liste du serveur fusionnée dans l'écran : cartes gardées (place, animations), données et Stock à jour,
+// nouveautés insérées selon le tri, disparues sorties en animation. locaux = articles de l'action faite ici.
+export function fusionnerListe(liste, lignes, cle, locaux = []) {
+  const serveur = new Map(lignes.map((l) => [l.id, l]));
+  const connus = new Set(liste.map((i) => i.id));
+  let suivants = liste.map((item) => {
+    if (item.effets.sortie) return item;
+    const ligne = serveur.get(item.id);
+    if (!ligne) return { ...item, effets: { ...item.effets, sortie: "disparait-achete" } };
+    return { ...item, ...ligne, aPhoto: ligne.has_photo === true };
+  });
+  const nouveaux = lignes.filter((l) => !connus.has(l.id));
+  nouveaux.forEach((ligne) => {
+    suivants = inserer(suivants, { ...preparer(ligne), effets: { entree: true, miseEnAvant: !locaux.includes(ligne.id) } }, cle);
+  });
+  return {
+    items: suivants,
+    nouveaux: nouveaux.filter((l) => !locaux.includes(l.id)),
+    retires: liste.filter((i) => !i.effets.sortie && !locaux.includes(i.id) && !serveur.has(i.id)).map((i) => i.id),
+  };
+}
+
 function Courses({ donnees }) {
   const planifier = useMinuteurs();
   const hero = useRef(null);
@@ -85,6 +107,28 @@ function Courses({ donnees }) {
 
   useBodyClass("mode-magasin", magasin);
 
+  // Réponses d'ajout/achat numérotées : une réponse plus ancienne que la dernière appliquée est ignorée.
+  const itemsActuels = useRef(items);
+  itemsActuels.current = items;
+  const sequence = useRef(0);
+  const derniereAppliquee = useRef(0);
+
+  function appliquerListe(lignes, numero, locaux = []) {
+    if (!Array.isArray(lignes) || numero < derniereAppliquee.current) return;
+    derniereAppliquee.current = numero;
+    const { nouveaux, retires } = fusionnerListe(itemsActuels.current, lignes, cle, locaux);
+    setItems((liste) => fusionnerListe(liste, lignes, cle, locaux).items);
+    if (nouveaux.length > 0) {
+      afficherToast(nouveaux.length === 1 ? `Ajouté entre-temps : ${nouveaux[0].nom}` : `${nouveaux.length} articles ajoutés entre-temps`);
+      planifier(() => nouveaux.forEach((n) => majEffets(n.id, { miseEnAvant: false })), 1500);
+    }
+    if (retires.length > 0) {
+      retires.forEach(supprimerPhotoLocale);
+      if (retires.map(String).includes(armeId)) setArmeId(null);
+      planifier(() => setItems((liste) => liste.filter((i) => !retires.includes(i.id))), 300);
+    }
+  }
+
   function majEffets(id, effets) {
     setItems((liste) => liste.map((i) => (i.id === id ? { ...i, effets: { ...i.effets, ...effets } } : i)));
   }
@@ -92,6 +136,14 @@ function Courses({ donnees }) {
   useEffect(() => {
     synchroniserPhotosLocales(donnees.courses.filter((c) => c.has_photo).map((c) => c.id));
   }, [donnees]);
+
+  // Note : affichage déjà mis à jour par la carte ; la réponse apporte la liste à jour.
+  function enregistrerNote(item, commentaire) {
+    const numero = ++sequence.current;
+    fetchAvecRetry("/courses/commentaire", { body: { idCourse: String(item.id), commentaire } })
+      .then((reponse) => appliquerListe(reponse.courses, numero, [item.id]))
+      .catch(gererErreurReseau);
+  }
 
   // ---------- Badge : nombre, animation, navette hero <-> barre d'outils ----------
 
@@ -206,6 +258,7 @@ function Courses({ donnees }) {
   const presetIdentique = cleListe.size === clePreset.size && [...cleListe].every((c) => clePreset.has(c));
 
   function appliquerPreset() {
+    const numero = ++sequence.current;
     fetchAvecRetry("/courses/preset-hebdo", { body: {} })
       .then((reponse) => {
         if (reponse.erreur) {
@@ -213,10 +266,12 @@ function Courses({ donnees }) {
           return;
         }
         if (reponse.items.length === 0) {
+          appliquerListe(reponse.courses, numero);
           alert("Tout est déjà dans la liste de courses.");
           return;
         }
-        setItems((liste) => reponse.items.reduce((acc, ligne) => inserer(acc, { ...preparer(ligne), effets: { entree: true } }, cle), liste));
+        if (reponse.courses) appliquerListe(reponse.courses, numero, reponse.items.map((i) => i.id));
+        else setItems((liste) => reponse.items.reduce((acc, ligne) => inserer(acc, { ...preparer(ligne), effets: { entree: true } }, cle), liste));
       })
       .catch(gererErreurReseau);
   }
@@ -262,13 +317,15 @@ function Courses({ donnees }) {
   function ajouterArticle(idAliment, texteLibre) {
     if (ajoutEnCours.current) return;
     ajoutEnCours.current = true;
+    const numero = ++sequence.current;
     fetchAvecRetry("/courses/ajouter", { body: { idAliment, rechercheAliment: texteLibre } })
       .then((reponse) => {
         if (reponse.erreur) {
           alert(reponse.erreur);
           return;
         }
-        setItems((liste) => inserer(liste, { ...preparer(reponse.item), effets: { entree: true } }, cle));
+        if (reponse.courses) appliquerListe(reponse.courses, numero, [reponse.item.id]);
+        else setItems((liste) => inserer(liste, { ...preparer(reponse.item), effets: { entree: true } }, cle));
         fermerPanneau();
       })
       .catch(gererErreurReseau)
@@ -321,8 +378,10 @@ function Courses({ donnees }) {
   async function envoyer(item, type, quantiteAchetee) {
     const corps = { idCourse: String(item.id) };
     if (type === "achat" && quantiteAchetee !== undefined) corps.quantiteAchetee = quantiteAchetee;
+    const numero = ++sequence.current;
+    let reponse;
     try {
-      const reponse = await fetchAvecRetry(type === "achat" ? "/courses/acheter" : "/courses/supprimer", { body: corps });
+      reponse = await fetchAvecRetry(type === "achat" ? "/courses/acheter" : "/courses/supprimer", { body: corps });
       if (reponse.erreur) {
         alert(reponse.erreur);
         return false;
@@ -334,6 +393,7 @@ function Courses({ donnees }) {
     // La photo de référence n'a plus lieu d'être : le serveur l'efface aussi.
     supprimerPhotoLocale(item.id);
     majEffets(item.id, { sortie: type === "achat" ? "disparait-achete" : "disparait-supprimer" });
+    if (reponse.courses) appliquerListe(reponse.courses, numero, [item.id]);
     planifier(() => {
       typeAnimationBadge.current = type;
       setItems((liste) => liste.filter((i) => i.id !== item.id));
@@ -462,6 +522,7 @@ function Courses({ donnees }) {
         }}
         onEnvoyer={(type, quantite) => envoyer(item, type, quantite)}
         onPhoto={() => surPhoto(item)}
+        onNote={(commentaire) => enregistrerNote(item, commentaire)}
         onFinEntree={() => majEffets(item.id, { entree: false })}
       />
     );
