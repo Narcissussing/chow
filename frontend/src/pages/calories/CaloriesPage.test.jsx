@@ -2,6 +2,19 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { abonnerToast } from "../../toast.js";
 import { rendreApp, simulerApi } from "../../testUtils.jsx";
 
+// Dernière fin de geste de chaque liste triable rendue (Cuisine, fiche recette).
+const mockFinsDeGlisse = new Map();
+jest.mock("@dnd-kit/core", () => {
+  const reel = jest.requireActual("@dnd-kit/core");
+  return {
+    ...reel,
+    DndContext: function DndContextTest({ onDragEnd, ...props }) {
+      mockFinsDeGlisse.set(require("react").useId(), onDragEnd);
+      return <reel.DndContext {...props} onDragEnd={onDragEnd} />;
+    },
+  };
+});
+
 const huile = { food_id: "huile", nom: "Huile", emoji: "🫒", categorie: "Lipides", grammes_par_cuil_a_cafe: "4.5", grammes_par_cuil_a_soupe: "13.5", poids_unite_g: "0.00", unite_piece: null, tracking_type: "cl" };
 const oeuf = { food_id: "oeuf", nom: "Oeuf", emoji: "🥚", categorie: "Oeufs", grammes_par_cuil_a_cafe: null, grammes_par_cuil_a_soupe: null, poids_unite_g: "60.00", unite_piece: "pièce", tracking_type: "unite" };
 const entree = (id, aliment, g, kcal) => ({ id, ...aliment, quantite_g: String(g), calories_calc: String(kcal), glucides_calc: "1.0", proteines_calc: "2.0", lipides_calc: "3.0" });
@@ -28,7 +41,7 @@ function ouvrir(surcharges = {}, { journal = JOURNAL, recettes = RECETTES } = {}
     "/calories/ajouter": [200, { succes: true, item: entree(9, { food_id: "riz", nom: "Riz", emoji: "🍚", categorie: "Féculents", grammes_par_cuil_a_cafe: null, grammes_par_cuil_a_soupe: null, poids_unite_g: "0.00", unite_piece: null, tracking_type: "pack" }, 100, 130) }],
     "/calories/modifier": (o) => [200, { succes: true, item: { calories_calc: String(JSON.parse(o.body).nouvelleQuantite * 2), glucides_calc: "0", proteines_calc: "0", lipides_calc: "0" } }],
     "/calories/supprimer": [200, { succes: true }],
-    "/calories/deplacer": [200, { succes: true }],
+    "/calories/reordonner": [200, { succes: true }],
     "/calories/vider": [200, { succes: true }],
     "/calories/ajouter-recette": [200, { succes: true, items: [entree(20, huile, 5, 45)] }],
     "/recettes/7": [200, { succes: true, recette: { id: 7, nom: "Omelette", categorie: "plat", etapes: "Battre\nCuire" }, ingredients: [{ food_id: "huile", nom: "Huile", emoji: "🫒", quantite_g: "10.00", grammes_par_cuil_a_cafe: "4.5", grammes_par_cuil_a_soupe: "13.5", poids_unite_g: "0.00", unite_piece: null, tracking_type: "cl" }, { food_id: "oeuf", nom: "Oeuf", emoji: "🥚", quantite_g: "120.00", grammes_par_cuil_a_cafe: null, grammes_par_cuil_a_soupe: null, poids_unite_g: "60.00", unite_piece: "pièce", tracking_type: "unite" }] }],
@@ -60,16 +73,15 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-test("totaux au format EJS ; unités tsp/tbs/pièce selon l'aliment ; flèches cachées aux extrémités", async () => {
+test("totaux au format EJS ; unités tsp/tbs/pièce selon l'aliment ; poignée de glisser sur chaque ligne", async () => {
   ouvrir();
   await attendrePage();
   expect([total("totalKcal"), total("totalGlucides"), total("totalProteines"), total("totalLipides")]).toEqual(["206", "2.0g", "4.0g", "6.0g"]);
   const unites = (nom) => [...ligne(nom).querySelectorAll("select.journal-unite-select option")].map((o) => o.textContent);
   expect(unites("Huile")).toEqual(["g", "tsp", "tbs"]);
   expect(unites("Oeuf")).toEqual(["g", "pièce"]);
-  expect(ligne("Huile").querySelector(".btn-reorder-haut")).toBeDisabled();
-  expect(ligne("Huile").querySelector(".btn-reorder-haut")).toHaveStyle({ visibility: "hidden" });
-  expect(ligne("Oeuf").querySelector(".btn-reorder-bas")).toBeDisabled();
+  expect(ligne("Huile").querySelector(".poignee-glisser")).toHaveAttribute("aria-label", "Glisser pour déplacer");
+  expect(ligne("Oeuf").querySelector(".poignee-glisser")).toBeInTheDocument();
   expect(document.getElementById("noResultsJournal")).toHaveClass("hidden");
 });
 
@@ -104,12 +116,14 @@ test("ajout : 100 g en fin de liste ; doublon → toast « Déjà en cuisine auj
   desabonner();
 });
 
-test("réordonner : échange local immédiat et POST avec la direction", async () => {
+test("glisser : ordre local immédiat et POST de l'ordre complet", async () => {
+  mockFinsDeGlisse.clear();
   ouvrir();
   await attendrePage();
-  await act(async () => fireEvent.click(ligne("Oeuf").querySelector(".btn-reorder-haut")));
+  // jsdom ne mesure aucune position : on déclenche directement la fin du geste (Oeuf lâché sur Huile).
+  await act(async () => mockFinsDeGlisse.forEach((finir) => finir({ active: { id: 2 }, over: { id: 1 } })));
   expect([...document.querySelectorAll(".journal-nom")].map((n) => n.textContent.trim())).toEqual(["🥚 Oeuf", "🫒 Huile"]);
-  expect(requetes).toEqual([{ chemin: "/calories/deplacer", corps: { idEntree: "2", direction: "haut" } }]);
+  expect(requetes).toEqual([{ chemin: "/calories/reordonner", corps: { ids: [2, 1] } }]);
 });
 
 test("retrait : totaux immédiats, ligne retirée à 300 ms ; « Tout effacer » demande confirmation", async () => {
@@ -149,7 +163,7 @@ test("« Enregistrer comme recette » : visible dès 3 aliments distincts hors c
   expect(bouton).not.toHaveClass("hidden");
   fireEvent.click(bouton);
   expect(document.getElementById("sheet")).toHaveClass("ouvert");
-  expect(document.body).toHaveClass("scroll-bloque");
+  expect(document.body).not.toHaveClass("scroll-bloque");
   expect([...document.querySelectorAll(".ingredient-nom-recette")].map((n) => n.textContent)).toEqual(["🫒 Huile", "🥚 Oeuf", "🍚 Riz"]);
   expect([...document.querySelectorAll(".ingredient-quantite-recette")].map((c) => c.value)).toEqual(["13.5", "60", "80"]);
 });
@@ -191,7 +205,7 @@ test("lecture : ingrédients, étapes numérotées ou message vide ; A puis B ra
   expect([...document.querySelectorAll("#recetteLectureEtapes li")].map((l) => l.textContent)).toEqual(["Battre", "Cuire"]);
   expect(document.getElementById("formRecette")).toHaveClass("hidden");
   fireEvent.click(document.getElementById("sheetBackdrop"));
-  expect(document.body).not.toHaveClass("scroll-bloque");
+  expect(document.getElementById("sheet")).not.toHaveClass("ouvert");
 });
 
 test("création : « Enregistrer » à partir de 2 ingrédients, unités converties en grammes, carte et option ajoutées", async () => {

@@ -1,4 +1,5 @@
 import express from "express";
+import { existsSync } from "node:fs";
 import pg from "pg";
 import "dotenv/config";
 import bcrypt from "bcrypt";
@@ -66,6 +67,18 @@ await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS magasin");
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
+
+// Interface React si INTERFACE=react (posé par le Dockerfile) ; sinon les pages EJS restent la référence (D2).
+const servirReact = process.env.INTERFACE === "react" && existsSync("frontend/dist/index.html");
+if (servirReact) {
+    app.use(express.static("frontend/dist", { index: false }));
+    // Seulement les routes React connues (D5) : /api et les fichiers inconnus gardent la réponse Express.
+    // Sans session : la page React redirige elle-même vers /login?retour=, les données restent protégées par /api.
+    app.get(["/login", "/", "/aliments", "/aliments/:idAliment", "/stock", "/courses", "/calories"], function (req, res) {
+        res.sendFile("index.html", { root: "frontend/dist" });
+    });
+}
+
 // 4mb : une photo compressée en base64 (voir /courses/:id/photo) dépasse la limite par défaut de 100kb.
 app.use(express.json({ limit: "4mb" }));
 
@@ -940,6 +953,26 @@ app.post(["/calories/deplacer", "/api/calories/deplacer"], async (req, res) => {
         await db.query("UPDATE journal_repas SET ordre = $1 WHERE id = $2", [voisine.ordre, idEntree]);
         await db.query("UPDATE journal_repas SET ordre = $1 WHERE id = $2", [ordreActuel, voisine.id]);
 
+        res.json({ succes: true });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
+
+// Glisser-déposer : l'ordre complet du jour en une requête, positions 1..n.
+app.post("/api/calories/reordonner", async (req, res) => {
+    try {
+        const ids = req.body.ids;
+        if (!Array.isArray(ids) || ids.length === 0) {
+            return res.status(400).json({ erreur: "Requête invalide." });
+        }
+        await db.query(
+            `UPDATE journal_repas j SET ordre = v.position
+             FROM unnest($1::text[]) WITH ORDINALITY AS v(id, position)
+             WHERE j.id::text = v.id AND j.date_entree = CURRENT_DATE`,
+            [ids.map(String)]
+        );
         res.json({ succes: true });
     } catch (err) {
         console.log("ERREUR:", err.message);

@@ -28,11 +28,24 @@ RUN npm ci
 COPY . .
 
 
+# React build, same Node as runtime (G7); --include=dev because Vite is a devDependency
+FROM base AS frontend
+WORKDIR /app/frontend
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci --include=dev
+COPY frontend/ ./
+RUN npm run build
+
+
 # Final stage for app image
 FROM base
 
 # Copy built application
 COPY --from=build /app /app
+COPY --from=frontend /app/frontend/dist /app/frontend/dist
+
+# Express serves the React build instead of the EJS pages
+ENV INTERFACE="react"
 
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000

@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import CustomSelect from "../../components/CustomSelect.jsx";
+import { useTriable } from "../../components/Triable.jsx";
 import { useChangeNatif } from "../../hooks/useChangeNatif.js";
 import { convertirAffichage, grammesParUnite, minimumPourUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
 
@@ -13,17 +14,8 @@ export function equivalencesEntree(entree) {
   };
 }
 
-// Flèches monter/descendre : "visibility" (pas "display") pour ne pas décentrer la colonne.
-export function BoutonsReordre({ premier, dernier, onMonter, onDescendre }) {
-  return (
-    <div className="reorder-controls">
-      <button type="button" className="btn-reorder btn-reorder-haut" title="Monter" aria-label="Monter" disabled={premier} style={{ visibility: premier ? "hidden" : "" }} onClick={onMonter}></button>
-      <button type="button" className="btn-reorder btn-reorder-bas" title="Descendre" aria-label="Descendre" disabled={dernier} style={{ visibility: dernier ? "hidden" : "" }} onClick={onDescendre}></button>
-    </div>
-  );
-}
-
-export default function CuisineItem({ entree, premier, dernier, onMonter, onDescendre, onEnregistrerQuantite, onSupprimer, ref }) {
+export default function CuisineItem({ entree, onEnregistrerQuantite, onSupprimer, ref }) {
+  const triable = useTriable(entree.id, ref);
   const champ = useRef(null);
   const equivalences = equivalencesEntree(entree);
   const [saisie, setSaisie] = useState(() => String(parseFloat(entree.quantite_g)));
@@ -56,8 +48,8 @@ export default function CuisineItem({ entree, premier, dernier, onMonter, onDesc
   if (entree.effets.disparait) classes.push("disparait");
 
   return (
-    <div ref={ref} className={classes.join(" ")}>
-      <BoutonsReordre premier={premier} dernier={dernier} onMonter={onMonter} onDescendre={onDescendre} />
+    <div ref={triable.refNoeud} className={classes.join(" ") + triable.classe} style={triable.style}>
+      {triable.poignee}
       <div className="journal-nom-groupe">
         <span className="journal-nom">
           {entree.emoji} {entree.nom}
