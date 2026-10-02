@@ -59,6 +59,15 @@ export function trierStock(items, critere) {
 // Filtre unique emplacement OU type (un seul bouton actif), plus la recherche sans accents.
 export function correspondFiltres(item, { emplacement, type, termes }) {
   const okEmplacement = emplacement === "tous" || item.emplacement === emplacement;
-  const okType = type === "tous" || (type === "cl" ? item.tracking_type === "cl" : item.tracking_type !== "cl");
+  const okType =
+    type === "tous" ||
+    (type === "bas" ? estQuantiteBasse(item.quantite, item.tracking_type) : type === "cl" ? item.tracking_type === "cl" : item.tracking_type !== "cl");
   return okEmplacement && okType && normaliserTexte(item.nom.toLowerCase()).includes(termes);
+}
+
+// « À racheter » : aliments déjà achetés, bas ou épuisés ; achetés ce mois-ci d'abord, puis les plus souvent achetés.
+export function suggestionsARacheter(lignes) {
+  return lignes
+    .filter((l) => l.quantite === null || l.quantite === undefined || estQuantiteBasse(l.quantite, l.tracking_type))
+    .sort((a, b) => b.achats_30j - a.achats_30j || b.achats_total - a.achats_total || a.nom.localeCompare(b.nom));
 }

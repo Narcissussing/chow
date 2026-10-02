@@ -41,9 +41,14 @@ await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS ordre INTEGER
 // Unité choisie à la saisie (g, cafe, soupe, piece) : les quantités restent stockées en grammes.
 await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS unite TEXT");
 await db.query("ALTER TABLE recette_ingredients ADD COLUMN IF NOT EXISTS unite TEXT");
+// Ingrédient de la Cuisine déjà mis dans le plat (coché d'un double-tap pendant la cuisson).
+await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS ajoute BOOLEAN NOT NULL DEFAULT false");
 
 // BYTEA plutôt qu'un fichier disque : le disque Fly est éphémère (auto_stop_machines).
 await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS photo BYTEA");
+// Historique d'achats daté (suggestions « À racheter » du Stock) ; date_ajout n'était jamais renseignée.
+await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS date_achat TIMESTAMPTZ");
+await db.query("ALTER TABLE courses ALTER COLUMN date_ajout SET DEFAULT CURRENT_DATE");
 // Comble l'ordre des entrées existantes (jamais réordonnées) par heure d'ajout ; idempotent.
 await db.query(`
     UPDATE journal_repas SET ordre = sub.rn
@@ -343,8 +348,26 @@ async function chercherAliment(idAliment) {
     return result.rows[0];
 }
 
+// Aliments déjà achetés, pas déjà en attente dans les Courses : achats des 30 derniers jours et au total, quantité en stock.
+// Le client garde ceux qui sont bas ou épuisés ; un aliment jamais acheté n'est jamais proposé.
+async function chercherSuggestions() {
+    const result = await db.query(
+        `SELECT f.id AS food_id, f.nom, f.emoji, f.tracking_type, s.quantite,
+                count(*) FILTER (WHERE c.date_achat >= NOW() - INTERVAL '30 days')::int AS achats_30j,
+                count(*)::int AS achats_total,
+                max(c.date_achat) AS dernier_achat
+         FROM courses c
+         JOIN foods f ON f.id = c.food_id
+         LEFT JOIN stock s ON s.food_id = c.food_id
+         WHERE c.achete = true
+           AND NOT EXISTS (SELECT 1 FROM courses p WHERE p.food_id = c.food_id AND p.achete = false)
+         GROUP BY f.id, f.nom, f.emoji, f.tracking_type, s.quantite`
+    );
+    return result.rows;
+}
+
 async function chargerPageStock() {
-    return { stock: await chercherStock(), aliments: await chercherAliments() };
+    return { stock: await chercherStock(), aliments: await chercherAliments(), suggestions: await chercherSuggestions() };
 }
 
 async function chargerPageCourses() {
@@ -425,6 +448,37 @@ app.get("/aliments/:idAliment", async (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).send("Internal Server Error");
+    }
+});
+
+// Aliment manquant d'une recette collée (RègleX) : valeurs pour 100 g ; refusé si l'id ou le nom existe déjà.
+const sansAccents = (texte) => texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+app.post("/api/aliments", async (req, res) => {
+    try {
+        const nom = typeof req.body.nom === "string" ? req.body.nom.trim() : "";
+        const nombre = (cle) => Number(req.body[cle]) || 0;
+        const calories = Number(req.body.calories);
+        if (!nom || !(calories >= 0) || req.body.calories === "" || req.body.calories === undefined) {
+            return res.status(400).json({ erreur: "Nom et calories requis." });
+        }
+        const id = sansAccents(nom).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const existants = await db.query("SELECT id, nom FROM foods");
+        const doublon = existants.rows.find((a) => a.id === id || sansAccents(a.nom) === sansAccents(nom));
+        if (doublon) {
+            return res.status(409).json({ erreur: "Cet aliment existe déjà.", idExistant: doublon.id });
+        }
+        const result = await db.query(
+            `INSERT INTO foods (id, nom, categorie, emoji, unite, poids_unite_g, calories, proteines, glucides, lipides,
+               fibres, sucres, graisses_saturees, sel, emplacement, tracking_type)
+             VALUES ($1, $2, $3, $4, 'g', 0, $5, $6, $7, $8, $9, $10, $11, $12, 'st', 'unite')
+             RETURNING *`,
+            [id, nom, req.body.categorie || "Divers", req.body.emoji || "🆕", calories, nombre("proteines"), nombre("glucides"), nombre("lipides"),
+                nombre("fibres"), nombre("sucres"), nombre("graisses_saturees"), nombre("sel")]
+        );
+        res.json({ succes: true, aliment: result.rows[0] });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
     }
 });
 
@@ -792,7 +846,7 @@ app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
         // Marque l'achat d'abord et une seule fois : une requête rejouée (réseau du magasin) ne touche plus au stock.
         // La photo n'a plus d'utilité une fois l'achat fait (elle servait à reconnaître le produit au magasin).
         const achatResult = await db.query(
-            "UPDATE courses SET achete = true, photo = NULL WHERE id = $1 AND achete = false RETURNING id",
+            "UPDATE courses SET achete = true, photo = NULL, date_achat = NOW() WHERE id = $1 AND achete = false RETURNING id",
             [idCourse]
         );
 
@@ -881,7 +935,7 @@ app.post(["/calories/ajouter", "/api/calories/ajouter"], async (req, res) => {
 
 // Unité d'affichage acceptée telle quelle ; tout autre valeur retombe sur les grammes.
 function uniteValide(unite) {
-    return ["g", "cafe", "soupe", "piece"].includes(unite) ? unite : null;
+    return ["g", "cafe", "soupe", "piece", "ml", "l"].includes(unite) ? unite : null;
 }
 
 app.post(["/calories/modifier", "/api/calories/modifier"], async (req, res) => {
@@ -973,6 +1027,22 @@ app.post(["/calories/deplacer", "/api/calories/deplacer"], async (req, res) => {
     }
 });
 
+// Double-tap sur une carte de la Cuisine : ingrédient mis dans le plat, ou plus.
+app.post("/api/calories/ajoute", async (req, res) => {
+    try {
+        const idEntree = req.body.idEntree;
+        if (!idEntree || typeof req.body.ajoute !== "boolean") {
+            return res.status(400).json({ erreur: "Requête invalide." });
+        }
+        const r = await db.query("UPDATE journal_repas SET ajoute = $1 WHERE id = $2 RETURNING id", [req.body.ajoute, idEntree]);
+        if (r.rowCount === 0) return res.status(404).json({ erreur: "Entrée introuvable." });
+        res.json({ succes: true });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
+
 // Glisser-déposer : l'ordre complet du jour en une requête, positions 1..n.
 app.post("/api/calories/reordonner", async (req, res) => {
     try {
@@ -1004,50 +1074,22 @@ app.post(["/calories/vider", "/api/calories/vider"], async (req, res) => {
 });
 
 // Remplace le journal du jour par tous les ingrédients d'une recette.
-app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (req, res) => {
-    let transactionStarted = false;
-
+// Remplace la Cuisine du jour par ces lignes ({ food_id, quantite_g, unite }), dans l'ordre donné, en une transaction.
+async function remplacerCuisine(lignes) {
+    await db.query("BEGIN");
     try {
-        const idRecette = req.body.idRecette;
-
-        if (!idRecette) {
-            return res.status(400).json({
-                erreur: "Aucune recette sélectionnée."
-            });
-        }
-
-        const ingredients = await db.query(
-            "SELECT food_id, quantite_g, unite FROM recette_ingredients WHERE recette_id = $1 ORDER BY id",
-            [idRecette]
-        );
-
-        if (ingredients.rows.length === 0) {
-            return res.status(400).json({
-                erreur: "Cette recette n'a aucun ingrédient."
-            });
-        }
-
-        await db.query("BEGIN");
-        transactionStarted = true;
-
-        await db.query(
-            "DELETE FROM journal_repas WHERE date_entree = CURRENT_DATE"
-        );
-
+        await db.query("DELETE FROM journal_repas WHERE date_entree = CURRENT_DATE");
         const nouvellesEntrees = [];
-
         // Ordre explicite requis : un "ordre" NULL casse silencieusement /calories/deplacer ("ordre < NULL" ne trouve jamais de voisine).
         let ordre = 1;
-        for (const ingredient of ingredients.rows) {
+        for (const ligne of lignes) {
             const insertResult = await db.query(
                 "INSERT INTO journal_repas (food_id, quantite_g, ordre, unite) VALUES ($1, $2, $3, $4) RETURNING id",
-                [ingredient.food_id, ingredient.quantite_g, ordre, ingredient.unite]
+                [ligne.food_id, ligne.quantite_g, ordre, uniteValide(ligne.unite)]
             );
-
             nouvellesEntrees.push(insertResult.rows[0].id);
             ordre++;
         }
-
         const itemsResult = await db.query(`
             SELECT
                 journal_repas.*,
@@ -1069,24 +1111,77 @@ app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (
             WHERE journal_repas.id = ANY($1)
             ORDER BY journal_repas.ordre ASC
         `, [nouvellesEntrees]);
-
         await db.query("COMMIT");
-        transactionStarted = false;
-
-        res.json({
-            succes: true,
-            items: itemsResult.rows
-        });
-
+        return itemsResult.rows;
     } catch (err) {
-        if (transactionStarted) {
-            await db.query("ROLLBACK");
+        await db.query("ROLLBACK");
+        throw err;
+    }
+}
+
+app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (req, res) => {
+    try {
+        const idRecette = req.body.idRecette;
+        // Recette adaptée (onglet RègleX) : toutes les quantités multipliées ; 1 par défaut.
+        const facteur = req.body.facteur === undefined ? 1 : Number(req.body.facteur);
+
+        if (!idRecette) {
+            return res.status(400).json({
+                erreur: "Aucune recette sélectionnée."
+            });
+        }
+        if (!(facteur > 0 && facteur <= 20)) {
+            return res.status(400).json({ erreur: "Facteur invalide." });
         }
 
+        const ingredients = await db.query(
+            "SELECT food_id, quantite_g, unite FROM recette_ingredients WHERE recette_id = $1 ORDER BY id",
+            [idRecette]
+        );
+
+        if (ingredients.rows.length === 0) {
+            return res.status(400).json({
+                erreur: "Cette recette n'a aucun ingrédient."
+            });
+        }
+
+        const items = await remplacerCuisine(ingredients.rows.map((ing) => ({
+            food_id: ing.food_id,
+            quantite_g: Math.round(Number(ing.quantite_g) * facteur * 100) / 100,
+            unite: ing.unite,
+        })));
+        res.json({ succes: true, items });
+    } catch (err) {
         console.log(err);
         res.status(500).json({
             erreur: err.message
         });
+    }
+});
+
+// Recette collée dans RègleX (non enregistrée) : remplace la Cuisine du jour, comme une recette.
+app.post("/api/calories/ajouter-ingredients", async (req, res) => {
+    try {
+        const ingredients = req.body.ingredients;
+        if (!Array.isArray(ingredients) || ingredients.length === 0) {
+            return res.status(400).json({ erreur: "Aucun ingrédient." });
+        }
+        const lignes = ingredients.map((ing) => ({
+            food_id: ing.food_id,
+            quantite_g: Math.round(Number(ing.quantite_g) * 100) / 100,
+            unite: ing.unite,
+        }));
+        if (lignes.some((l) => !l.food_id || !(l.quantite_g > 0))) {
+            return res.status(400).json({ erreur: "Chaque ingrédient doit avoir un aliment et une quantité." });
+        }
+        const existants = await db.query("SELECT id FROM foods WHERE id = ANY($1)", [lignes.map((l) => String(l.food_id))]);
+        if (existants.rows.length !== new Set(lignes.map((l) => String(l.food_id))).size) {
+            return res.status(400).json({ erreur: "Aliment inconnu." });
+        }
+        res.json({ succes: true, items: await remplacerCuisine(lignes) });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
     }
 });
 

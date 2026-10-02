@@ -202,3 +202,38 @@ test("ajout : clic sur le fond assombri referme la recherche d'ajout", async () 
   expect(document.getElementById("autocomplete")).toHaveAttribute("hidden");
   expect(document.getElementById("btnToggleAjout")).not.toHaveClass("actif");
 });
+
+const SUGGESTIONS = [
+  { food_id: "lait", nom: "Lait", emoji: "🥛", tracking_type: "cl", quantite: "presque vide", achats_30j: 0, achats_total: 9 },
+  { food_id: "beurre", nom: "Beurre", emoji: "🧈", tracking_type: "unite", quantite: null, achats_30j: 2, achats_total: 4 },
+  { food_id: "oeuf", nom: "Œuf", emoji: "🥚", tracking_type: "unite", quantite: "6", achats_30j: 5, achats_total: 20 },
+];
+
+test("À racheter : bas ou épuisés seulement, achetés ce mois d'abord, « + » envoie aux Courses", async () => {
+  ouvrirStock({ "/stock": [200, { stock: STOCK, aliments: ALIMENTS, suggestions: SUGGESTIONS }] });
+  await attendrePage();
+  const encart = screen.getByRole("region", { name: "À racheter" });
+  const noms = [...encart.querySelectorAll(".stock-suggestions__nom")].map((n) => n.textContent);
+  // Œuf (6 restants) n'est pas bas ; Beurre acheté ce mois passe avant Lait.
+  expect(noms).toEqual(["🧈 Beurre", "🥛 Lait"]);
+  expect(within(encart).getByText("épuisé")).toBeInTheDocument();
+  expect(within(encart).getByText("2× ce mois")).toBeInTheDocument();
+  fireEvent.click(within(encart).getByRole("button", { name: "Ajouter « Lait » aux courses" }));
+  await act(async () => {});
+  expect(requetes).toContainEqual({ chemin: "/courses/ajouter", corps: { idAliment: "lait" } });
+});
+
+test("filtre Bas et compteur : ambre et nombre filtré dès qu'un filtre est actif", async () => {
+  ouvrirStock();
+  await attendrePage();
+  const badge = document.querySelector(".badge-compteur--stock");
+  expect(badge).toHaveTextContent("3");
+  expect(badge).not.toHaveClass("badge-compteur--filtre");
+  fireEvent.click(screen.getByRole("button", { name: "🔻 Bas" }));
+  expect(nomsVisibles()).toEqual(["Lait", "Riz"]);
+  expect(badge).toHaveTextContent("2");
+  expect(badge).toHaveClass("badge-compteur--filtre");
+  fireEvent.click(screen.getByRole("button", { name: "Tous" }));
+  expect(badge).toHaveTextContent("3");
+  expect(badge).not.toHaveClass("badge-compteur--filtre");
+});

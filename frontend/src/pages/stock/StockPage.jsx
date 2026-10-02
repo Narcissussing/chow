@@ -8,7 +8,9 @@ import { useLocalStorage } from "../../hooks/useLocalStorage.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
-import { correspondFiltres, estQuantiteBasse, trierStock } from "../../utils/stock.js";
+import { correspondFiltres, suggestionsARacheter, trierStock } from "../../utils/stock.js";
+import StockSuggestions from "./StockSuggestions.jsx";
+import BadgeCompteur from "../../components/BadgeCompteur.jsx";
 import { normaliserTexte } from "../../utils/texte.js";
 import StockItem, { boutonCoursesVisible } from "./StockItem.jsx";
 
@@ -19,6 +21,7 @@ const FILTRES = [
   { emplacement: "st", texte: "📦 Réserve" },
   { type: "cl", texte: "🫙 Niveau" },
   { type: "autre", texte: "🔢 Pièces" },
+  { type: "bas", texte: "🔻 Bas" },
 ];
 
 const OPTIONS_TRI = [
@@ -44,7 +47,7 @@ function Stock({ donnees }) {
   const verrousAjout = useRef(new Set());
 
   const [items, setItems] = useState(() => trierStock(donnees.stock.map(preparer), "alpha"));
-  const nombreBas = items.filter((i) => estQuantiteBasse(i.quantite, i.tracking_type)).length;
+  const [aRacheter, setARacheter] = useState(() => suggestionsARacheter(donnees.suggestions || []));
   const [emplacement, setEmplacement] = useState("tous");
   const [type, setType] = useState("tous");
   const [recherche, setRecherche] = useState("");
@@ -59,6 +62,8 @@ function Stock({ donnees }) {
   const termes = normaliserTexte(recherche.toLowerCase().trim());
   const filtres = { emplacement, type, termes };
   const visibles = items.filter((i) => correspondFiltres(i, filtres)).length;
+  // Filtre ou recherche en cours : le compteur montre ce qui est affiché, en ambre.
+  const filtreActif = emplacement !== "tous" || type !== "tous" || termes !== "";
 
   function majItem(id, maj) {
     setItems((liste) => liste.map((i) => (i.id === id ? maj(i) : i)));
@@ -166,6 +171,23 @@ function Stock({ donnees }) {
       .catch(() => {});
   }
 
+  // Suggestion envoyée aux Courses : grisée tout de suite, retirée de l'encart, et la carte du Stock ne la repropose plus.
+  function ajouterSuggestion(suggestion) {
+    const marquer = (envoye) => setARacheter((liste) => liste.map((s) => (s.food_id === suggestion.food_id ? { ...s, envoye } : s)));
+    marquer(true);
+    api("/courses/ajouter", { method: "POST", body: { idAliment: suggestion.food_id } })
+      .then(({ donnees: reponse }) => {
+        if (reponse?.erreur) {
+          alert(reponse.erreur);
+          marquer(false);
+          return;
+        }
+        setItems((liste) => liste.map((i) => (i.food_id === suggestion.food_id ? { ...i, dejaEnCourses: true } : i)));
+        planifier(() => setARacheter((liste) => liste.filter((s) => s.food_id !== suggestion.food_id)), 300);
+      })
+      .catch(() => marquer(false));
+  }
+
   function supprimer(item) {
     api("/stock/supprimer", { method: "POST", body: { idStock: String(item.id) } })
       .then(({ donnees: reponse }) => {
@@ -243,8 +265,15 @@ function Stock({ donnees }) {
     <main>
       <div className="page-header titre-page">
         <h1>Stock</h1>
-        {nombreBas > 0 && <span className="titre-page__chiffre">{nombreBas} bas</span>}
+        <BadgeCompteur
+          icone="stock"
+          nombre={filtreActif ? visibles : items.length}
+          filtre={filtreActif}
+          label={filtreActif ? `${visibles} articles dans ce filtre` : `${items.length} articles en stock`}
+        />
       </div>
+
+      <StockSuggestions suggestions={aRacheter} onAjouter={ajouterSuggestion} />
 
       <div className="filters">
         <div className="filters__inner">
@@ -255,7 +284,7 @@ function Stock({ donnees }) {
                 <button
                   key={f.texte}
                   type="button"
-                  className={"filter-btn" + (actif ? " active" : "")}
+                  className={"filter-btn" + (f.type === "bas" ? " filter-btn--bas" : "") + (actif ? " active" : "")}
                   onClick={() => {
                     if (f.emplacement !== undefined) {
                       setEmplacement(f.emplacement);
