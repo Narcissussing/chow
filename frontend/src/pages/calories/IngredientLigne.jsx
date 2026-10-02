@@ -1,6 +1,6 @@
 import CustomSelect from "../../components/CustomSelect.jsx";
 import { convertirAffichage, grammesParUnite, minimumPourUnite, optionsUnite } from "../../utils/unites.js";
-import { BoutonsReordre } from "./CuisineItem.jsx";
+import { useTriable } from "../../components/Triable.jsx";
 
 // Comme le Journal/Cuisine : la vraie donnée reste les grammes, l'unité n'est qu'une façon de la saisir.
 export function changerSaisieLigne(ligne, saisie) {
@@ -13,11 +13,12 @@ export function changerUniteLigne(ligne, unite) {
   return { ...ligne, unite, saisie: convertirAffichage(ligne.grammes, ratio), minimum: minimumPourUnite(ratio) };
 }
 
-export default function IngredientLigne({ ligne, premier, dernier, onMonter, onDescendre, onChanger, onRetirer, refLigne, refQuantite }) {
+export default function IngredientLigne({ ligne, onChanger, onRetirer, refLigne, refQuantite }) {
+  const triable = useTriable(ligne.foodId, refLigne);
   // "entree" n'est jamais retirée ici, comme dans calories.js (§3.2-12).
   return (
-    <div ref={refLigne} className={"ligne-ingredient-recette entree" + (ligne.sortant ? " disparait" : "")}>
-      <BoutonsReordre premier={premier} dernier={dernier} onMonter={onMonter} onDescendre={onDescendre} />
+    <div ref={triable.refNoeud} className={"ligne-ingredient-recette entree" + (ligne.sortant ? " disparait" : "") + triable.classe} style={triable.style}>
+      {triable.poignee}
       <span className="ingredient-nom-recette">{ligne.nom}</span>
       <input
         ref={refQuantite}

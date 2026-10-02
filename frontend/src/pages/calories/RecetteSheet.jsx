@@ -1,8 +1,8 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { api } from "../../api.js";
+import { arrayMove } from "@dnd-kit/sortable";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
-import { useBodyClass } from "../../hooks/useBodyClass.js";
-import { useFlip } from "../../hooks/useFlip.js";
+import { ListeTriable } from "../../components/Triable.jsx";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { grammesParUnite, poidsPieceDe } from "../../utils/unites.js";
 import { normaliserTexte } from "../../utils/texte.js";
@@ -62,8 +62,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
   const [enregistrerDesactive, setEnregistrerDesactive] = useState(false);
   const [texteEnregistrer, setTexteEnregistrer] = useState("Enregistrer");
 
-  useBodyClass("scroll-bloque", ouvert);
-  const capturerOrdre = useFlip(elementsLignes, formulaire.lignes.map((l) => l.foodId).join("|"));
 
   function majEtatIngredients(nombre) {
     setVideCache(nombre > 0);
@@ -159,14 +157,8 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     setFormulaire((f) => ({ ...f, lignes: f.lignes.map((l) => (l.foodId === foodId ? ligne : l)) }));
   }
 
-  function deplacer(index, direction) {
-    const cible = index + direction;
-    const lignes = formulaire.lignes;
-    if (cible < 0 || cible >= lignes.length) return;
-    capturerOrdre([lignes[index].foodId, lignes[cible].foodId]);
-    const suivantes = [...lignes];
-    [suivantes[index], suivantes[cible]] = [suivantes[cible], suivantes[index]];
-    setFormulaire((f) => ({ ...f, lignes: suivantes }));
+  function deplacer(depuis, vers) {
+    setFormulaire((f) => ({ ...f, lignes: arrayMove(f.lignes, depuis, vers) }));
   }
 
   function retirer(foodId) {
@@ -378,26 +370,24 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
           </div>
 
           <div id="listeIngredientsRecette" ref={liste} className={recherche.pret ? "recherche-ouverte" : undefined}>
-            {lignes.map((ligne, index) => (
-              <IngredientLigne
-                key={ligne.foodId}
-                ligne={ligne}
-                premier={index === 0}
-                dernier={index === lignes.length - 1}
-                onMonter={() => deplacer(index, -1)}
-                onDescendre={() => deplacer(index, 1)}
-                onChanger={(maj) => majLigne(ligne.foodId, maj)}
-                onRetirer={() => retirer(ligne.foodId)}
-                refLigne={(el) => {
-                  if (el) elementsLignes.current[ligne.foodId] = el;
-                  else delete elementsLignes.current[ligne.foodId];
-                }}
-                refQuantite={(el) => {
-                  if (el) quantites.current[ligne.foodId] = el;
-                  else delete quantites.current[ligne.foodId];
-                }}
-              />
-            ))}
+            <ListeTriable ids={lignes.map((l) => l.foodId)} onDeplacer={deplacer}>
+              {lignes.map((ligne) => (
+                <IngredientLigne
+                  key={ligne.foodId}
+                  ligne={ligne}
+                  onChanger={(maj) => majLigne(ligne.foodId, maj)}
+                  onRetirer={() => retirer(ligne.foodId)}
+                  refLigne={(el) => {
+                    if (el) elementsLignes.current[ligne.foodId] = el;
+                    else delete elementsLignes.current[ligne.foodId];
+                  }}
+                  refQuantite={(el) => {
+                    if (el) quantites.current[ligne.foodId] = el;
+                    else delete quantites.current[ligne.foodId];
+                  }}
+                />
+              ))}
+            </ListeTriable>
             <div
               id="autocompleteIngredient"
               ref={zoneRecherche}

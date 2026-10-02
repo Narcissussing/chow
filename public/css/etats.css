@@ -81,3 +81,91 @@
     opacity: 0.6;
   }
 }
+
+/* Poignée de glisser-déposer (Cuisine, ingrédients de recette), à la place des flèches .reorder-controls. */
+.poignee-glisser {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 22px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: grab;
+  touch-action: none; /* sinon Safari iOS fait défiler la page au lieu de glisser */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.poignee-glisser::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='16' viewBox='0 0 10 16'><circle cx='2.5' cy='3' r='1.5'/><circle cx='7.5' cy='3' r='1.5'/><circle cx='2.5' cy='8' r='1.5'/><circle cx='7.5' cy='8' r='1.5'/><circle cx='2.5' cy='13' r='1.5'/><circle cx='7.5' cy='13' r='1.5'/></svg>") center / 10px 16px no-repeat;
+  mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='16' viewBox='0 0 10 16'><circle cx='2.5' cy='3' r='1.5'/><circle cx='7.5' cy='3' r='1.5'/><circle cx='2.5' cy='8' r='1.5'/><circle cx='7.5' cy='8' r='1.5'/><circle cx='2.5' cy='13' r='1.5'/><circle cx='7.5' cy='13' r='1.5'/></svg>") center / 10px 16px no-repeat;
+}
+
+.poignee-glisser:active,
+.en-glisse .poignee-glisser {
+  cursor: grabbing;
+  color: var(--accent);
+}
+
+/* Carte soulevée pendant le geste, au-dessus de ses voisines. */
+.en-glisse {
+  position: relative;
+  z-index: 10;
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* ---------- Accueil : icônes SVG et les 4 cartes sur un seul écran de téléphone (main:has : seule page avec .home-links) ---------- */
+
+.home-link-icone {
+  width: 48px;
+  height: 48px;
+  color: var(--accent);
+}
+
+@media (max-width: 768px) {
+  main:has(.home-links) .hero {
+    padding: 28px 20px 4px;
+  }
+
+  main:has(.home-links) .hero__text h1 {
+    margin-bottom: 6px;
+  }
+
+  main:has(.home-links) .grid-section {
+    padding: 16px 16px 24px;
+  }
+
+  main:has(.home-links) .home-links {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+
+  main:has(.home-links) .home-link-card {
+    padding: 18px 14px;
+    gap: 6px;
+  }
+
+  main:has(.home-links) .home-link-icone {
+    width: 40px;
+    height: 40px;
+  }
+
+  main:has(.home-links) .home-link-title {
+    font-size: 1.15rem;
+  }
+
+  main:has(.home-links) .home-link-desc {
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+}

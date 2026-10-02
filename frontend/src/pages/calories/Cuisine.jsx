@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../../api.js";
+import { arrayMove } from "@dnd-kit/sortable";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import CustomSelect from "../../components/CustomSelect.jsx";
+import { ListeTriable } from "../../components/Triable.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
-import { useFlip } from "../../hooks/useFlip.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { afficherToast } from "../../toast.js";
 import { normaliserTexte } from "../../utils/texte.js";
@@ -37,7 +38,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   const [listeVisible, setListeVisible] = useState(false);
   const [valeursSelects, setValeursSelects] = useState({ plat: "", fraicheur: "" });
   const [aAmenerEnVue, setAAmenerEnVue] = useState(null);
-  const capturerOrdre = useFlip(elements, entrees.map((e) => e.id).join("|"));
 
   useClicExterieur([zone], () => setListeVisible(false));
 
@@ -109,16 +109,11 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
     return true;
   }
 
-  function deplacer(index, direction) {
-    const cible = index + direction;
-    if (cible < 0 || cible >= entrees.length) return;
-    const entree = entrees[index];
-    capturerOrdre([entree.id, entrees[cible].id]);
-    const suivantes = [...entrees];
-    [suivantes[index], suivantes[cible]] = [suivantes[cible], suivantes[index]];
+  function deplacer(depuis, vers) {
+    const suivantes = arrayMove(entrees, depuis, vers);
     setEntrees(suivantes);
     // Optimiste : pas de retour arrière si le serveur refuse (§3.2-10).
-    api("/calories/deplacer", { method: "POST", body: { idEntree: String(entree.id), direction: direction < 0 ? "haut" : "bas" } })
+    api("/calories/reordonner", { method: "POST", body: { ids: suivantes.map((e) => e.id) } })
       .then(({ donnees }) => {
         if (donnees?.erreur) alert(donnees.erreur);
       })
@@ -263,22 +258,20 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
       ></button>
 
       <div id="listeJournal">
-        {entrees.map((entree, index) => (
-          <CuisineItem
-            key={entree.id}
-            ref={(el) => {
-              if (el) elements.current[entree.id] = el;
-              else delete elements.current[entree.id];
-            }}
-            entree={entree}
-            premier={index === 0}
-            dernier={index === entrees.length - 1}
-            onMonter={() => deplacer(index, -1)}
-            onDescendre={() => deplacer(index, 1)}
-            onEnregistrerQuantite={(grammes) => enregistrerQuantite(entree, grammes)}
-            onSupprimer={() => supprimer(entree)}
-          />
-        ))}
+        <ListeTriable ids={entrees.map((e) => e.id)} onDeplacer={deplacer}>
+          {entrees.map((entree) => (
+            <CuisineItem
+              key={entree.id}
+              ref={(el) => {
+                if (el) elements.current[entree.id] = el;
+                else delete elements.current[entree.id];
+              }}
+              entree={entree}
+              onEnregistrerQuantite={(grammes) => enregistrerQuantite(entree, grammes)}
+              onSupprimer={() => supprimer(entree)}
+            />
+          ))}
+        </ListeTriable>
       </div>
 
       <p className={"no-results" + (actives.length > 0 ? " hidden" : "")} id="noResultsJournal">Rien d'ajouté aujourd'hui.</p>
