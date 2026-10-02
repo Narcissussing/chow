@@ -109,6 +109,7 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
   if (arme) classes.push("arme");
   if (effets.entree) classes.push("entree");
   if (effets.miseEnAvant) classes.push("mise-en-avant");
+  if (effets.vientDArriver) classes.push("vient-d-arriver");
   if (effets.sortie) classes.push(effets.sortie);
 
   return (

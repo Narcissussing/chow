@@ -234,3 +234,44 @@
     font-size: 1.6rem;
   }
 }
+
+/* Article arrivé de l'autre téléphone : teinte chaude + deux ondes, sur ::after pour ne jamais entrer
+   en conflit avec l'animation d'apparition (.entree) de la carte. Durée posée en JS selon le nombre d'articles. */
+.course-item.vient-d-arriver::after {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  pointer-events: none;
+  animation: haloArrivee var(--duree-halo, 2400ms) ease-out both;
+}
+
+@keyframes haloArrivee {
+  0% {
+    background: rgba(232, 168, 56, 0.28);
+    box-shadow: 0 0 0 0 rgba(200, 71, 43, 0.55), inset 0 0 0 2px rgba(200, 71, 43, 0.9);
+  }
+  30% {
+    background: rgba(232, 168, 56, 0.22);
+    box-shadow: 0 0 0 12px rgba(200, 71, 43, 0), inset 0 0 0 2px rgba(200, 71, 43, 0.8);
+  }
+  31% {
+    box-shadow: 0 0 0 0 rgba(200, 71, 43, 0.45), inset 0 0 0 2px rgba(200, 71, 43, 0.8);
+  }
+  65% {
+    background: rgba(232, 168, 56, 0.14);
+    box-shadow: 0 0 0 12px rgba(200, 71, 43, 0), inset 0 0 0 2px rgba(200, 71, 43, 0.5);
+  }
+  100% {
+    background: rgba(232, 168, 56, 0);
+    box-shadow: 0 0 0 0 rgba(200, 71, 43, 0), inset 0 0 0 2px rgba(200, 71, 43, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .course-item.vient-d-arriver::after {
+    animation: none;
+    background: rgba(232, 168, 56, 0.2);
+    box-shadow: inset 0 0 0 2px var(--accent);
+  }
+}

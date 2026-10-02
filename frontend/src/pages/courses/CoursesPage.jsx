@@ -137,20 +137,26 @@ function Courses({ donnees }) {
     synchroniserPhotosLocales(donnees.courses.filter((c) => c.has_photo).map((c) => c.id));
   }, [donnees]);
 
-  // Articles venus de l'autre téléphone, dans l'ordre d'ajout : défilement jusqu'à chacun, halo,
-  // et le compteur monte d'un à chaque article montré (son pop habituel).
+  // Articles venus de l'autre téléphone, dans l'ordre d'ajout : défilement jusqu'à chacun, halo à l'arrivée,
+  // compteur +1 à chaque article. Peu d'articles : on prend son temps ; 5 et plus : 1 s chacun.
   const [aReveler, setAReveler] = useState(0);
   function revelerNouveaux(lignes) {
+    const ecart = [0, 0, 2000, 1600, 1300][lignes.length] ?? 1000;
+    const dureeHalo = lignes.length === 1 ? 2400 : Math.min(2400, Math.round(ecart * 1.2));
     setAReveler((n) => n + lignes.length);
     lignes.forEach((ligne, index) => {
       planifier(() => {
         // Rayon masqué en mode magasin : réactivé, sinon la carte resterait invisible.
         setActives((a) => (a.has(categorieDe(ligne)) ? a : new Set([...a, categorieDe(ligne)])));
         cartes.current[ligne.id]?.scrollIntoView?.({ behavior: mouvementReduit() ? "auto" : "smooth", block: "center" });
-        majEffets(ligne.id, { miseEnAvant: true });
         setAReveler((n) => Math.max(0, n - 1));
-        planifier(() => majEffets(ligne.id, { miseEnAvant: false }), 1500);
-      }, 350 + index * 1000);
+        // Halo lancé quand la carte arrive à l'écran (fin du défilement), sur un calque à part (::after).
+        planifier(() => {
+          cartes.current[ligne.id]?.style.setProperty("--duree-halo", dureeHalo + "ms");
+          majEffets(ligne.id, { vientDArriver: true });
+          planifier(() => majEffets(ligne.id, { vientDArriver: false }), dureeHalo);
+        }, 450);
+      }, 500 + index * ecart);
     });
   }
   const nombreAffiche = items.length - aReveler;

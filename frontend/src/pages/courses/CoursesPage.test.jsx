@@ -299,7 +299,7 @@ test("suppression et note : la réponse rafraîchit la liste ; une note changée
   expect(carte("Lait").querySelector(".note-affichee")).toHaveTextContent("Demi-écrémé");
 });
 
-test("articles de l'autre téléphone : montrés un par un dans l'ordre d'ajout, halo, compteur +1 à chaque fois", async () => {
+test("articles de l'autre téléphone : un par un dans l'ordre d'ajout, rythme selon leur nombre, halo à l'arrivée, compteur +1", async () => {
   jest.useFakeTimers();
   const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
   const beurre = { id: 20, food_id: "beurre", nom: "Beurre", emoji: "🧈", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
@@ -314,15 +314,21 @@ test("articles de l'autre téléphone : montrés un par un dans l'ordre d'ajout,
   fireEvent.change(champ, { target: { value: "Thaï" } });
   await act(async () => fireEvent.blur(champ));
   expect(compteur()).toBe("3");
-  act(() => jest.advanceTimersByTime(350));
+  act(() => jest.advanceTimersByTime(499));
+  expect(vus).toEqual([]);
+  act(() => jest.advanceTimersByTime(1));
   expect(vus).toEqual(["🧈 Beurre"]);
-  expect(carte("Beurre")).toHaveClass("mise-en-avant");
   expect(compteur()).toBe("4");
-  act(() => jest.advanceTimersByTime(1000));
+  expect(carte("Beurre")).not.toHaveClass("vient-d-arriver");
+  act(() => jest.advanceTimersByTime(450));
+  expect(carte("Beurre")).toHaveClass("vient-d-arriver");
+  // 2 articles : 2 s d'écart.
+  act(() => jest.advanceTimersByTime(1549));
+  expect(vus).toEqual(["🧈 Beurre"]);
+  act(() => jest.advanceTimersByTime(1));
   expect(vus).toEqual(["🧈 Beurre", "🍞 Pain"]);
-  expect(carte("Pain")).toHaveClass("mise-en-avant");
   expect(compteur()).toBe("5");
-  act(() => jest.advanceTimersByTime(1500));
-  expect(carte("Pain")).not.toHaveClass("mise-en-avant");
+  act(() => jest.advanceTimersByTime(450 + 2400));
+  expect(carte("Pain")).not.toHaveClass("vient-d-arriver");
   delete Element.prototype.scrollIntoView;
 });
