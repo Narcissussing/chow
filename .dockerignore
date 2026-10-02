@@ -1,0 +1,21 @@
+# Secrets : en production, tout vient des secrets Fly
+.env
+.env.*
+
+# Dépendances réinstallées par npm ci dans l'image
+node_modules
+frontend/node_modules
+frontend/dist
+
+# Inutile à l'exécution
+.git
+.gitignore
+.claude
+.vscode
+.DS_Store
+docs
+AGENTS.md
+README.md
+fly.toml
+Dockerfile
+.dockerignore
