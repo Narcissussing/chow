@@ -4,6 +4,7 @@ import Header from "./Header.jsx";
 import Toast from "./Toast.jsx";
 import { effacerToast } from "../toast.js";
 import { fermerTousLesSelects } from "./CustomSelect.jsx";
+import { useReprisePage } from "../hooks/useReprisePage.js";
 
 const CLE_POSITIONS = "chow-defilement";
 const DefilementContext = createContext(() => {});
@@ -26,6 +27,7 @@ export default function Shell({ children }) {
   const location = useLocation();
   const typeNavigation = useNavigationType();
   const positions = useRef(lirePositions());
+  useReprisePage();
 
   // --header-h : vraie hauteur du header, lue par les barres sticky (comme le script de header.ejs).
   useLayoutEffect(() => {
