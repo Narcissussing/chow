@@ -587,7 +587,8 @@ app.post(["/courses/ajouter", "/api/courses/ajouter"], async (req, res) => {
             [nouvelId]
         );
 
-        res.json({ succes: true, item: itemResult.rows[0] });
+        // Liste complète à jour (Stock compris) : l'écran récupère aussi ce que l'autre téléphone a changé.
+        res.json({ succes: true, item: itemResult.rows[0], courses: await chercherCourses() });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
@@ -626,7 +627,7 @@ app.post(["/courses/preset-hebdo", "/api/courses/preset-hebdo"], async (req, res
         }
 
         if (nouveauxIds.length === 0) {
-            return res.json({ succes: true, items: [] });
+            return res.json({ succes: true, items: [], courses: await chercherCourses() });
         }
 
         const itemsResult = await db.query(
@@ -639,7 +640,7 @@ app.post(["/courses/preset-hebdo", "/api/courses/preset-hebdo"], async (req, res
             [nouveauxIds]
         );
 
-        res.json({ succes: true, items: itemsResult.rows });
+        res.json({ succes: true, items: itemsResult.rows, courses: await chercherCourses() });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
@@ -684,7 +685,7 @@ app.post(["/courses/commentaire", "/api/courses/commentaire"], async (req, res) 
         }
 
         await db.query("UPDATE courses SET commentaire = $1 WHERE id = $2", [commentaire, idCourse]);
-        res.json({ succes: true });
+        res.json({ succes: true, courses: await chercherCourses() });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
@@ -747,7 +748,7 @@ app.post(["/courses/supprimer", "/api/courses/supprimer"], async (req, res) => {
         }
 
         await db.query("DELETE FROM courses WHERE id = $1", [idCourse]);
-        res.json({ succes: true });
+        res.json({ succes: true, courses: await chercherCourses() });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
@@ -819,7 +820,7 @@ app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
 
         await db.query("COMMIT");
         transactionStarted = false;
-        res.json({ succes: true });
+        res.json({ succes: true, courses: await chercherCourses() });
     } catch (err) {
         if (transactionStarted) await db.query("ROLLBACK");
         console.log("ERREUR:", err.message);
