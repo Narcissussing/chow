@@ -50,6 +50,26 @@ await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS photo BYTEA");
 await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS date_achat TIMESTAMPTZ");
 // Boutons « + » d'achat (Courses → Stock) propres à l'aliment (ex. œufs 10/20/30) ; vide = +1/+2/+5.
 await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS pas_achat INTEGER[]");
+// Quantités d'achat habituelles, posées une seule fois (jamais par-dessus une valeur déjà choisie).
+await db.query(
+    `UPDATE foods SET pas_achat = v.pas
+     FROM (VALUES ('oeuf-moyen', '{10,20,30}'::int[]), ('pot-creme-vanille', '{1,2,8}'::int[]),
+                  ('boeuf-hache-20', '{5,10,20}'::int[]), ('knacki-poulet', '{10,20,30}'::int[]),
+                  ('yaourt', '{1,5,16}'::int[]), ('baguette-viennoise', '{6,12,18}'::int[])) AS v(id, pas)
+     WHERE foods.id = v.id AND foods.pas_achat IS NULL`
+);
+// Yaourt Nature compté en pots (acheté par 16) au lieu d'un niveau : le niveau en stock devient un nombre de pots.
+const yaourtEnNiveau = await db.query("SELECT 1 FROM foods WHERE id = 'yaourt' AND tracking_type = 'cl'");
+if (yaourtEnNiveau.rows.length) {
+    await db.query("BEGIN");
+    await db.query(
+        `UPDATE stock SET unite = 'unités', quantite = CASE quantite
+            WHEN 'plein' THEN '16' WHEN 'à moitié' THEN '8' WHEN 'presque vide' THEN '3' ELSE '0' END
+         WHERE food_id = 'yaourt'`
+    );
+    await db.query("UPDATE foods SET tracking_type = 'unite' WHERE id = 'yaourt'");
+    await db.query("COMMIT");
+}
 await db.query("ALTER TABLE courses ALTER COLUMN date_ajout SET DEFAULT CURRENT_DATE");
 // Comble l'ordre des entrées existantes (jamais réordonnées) par heure d'ajout ; idempotent.
 await db.query(`
