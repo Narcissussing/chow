@@ -38,6 +38,9 @@ await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS grammes_par_cuil_a_so
 
 // Ordre d'affichage du journal, réarrangeable à la main (voir /calories/deplacer).
 await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS ordre INTEGER");
+// Unité choisie à la saisie (g, cafe, soupe, piece) : les quantités restent stockées en grammes.
+await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS unite TEXT");
+await db.query("ALTER TABLE recette_ingredients ADD COLUMN IF NOT EXISTS unite TEXT");
 
 // BYTEA plutôt qu'un fichier disque : le disque Fly est éphémère (auto_stop_machines).
 await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS photo BYTEA");
@@ -875,6 +878,11 @@ app.post(["/calories/ajouter", "/api/calories/ajouter"], async (req, res) => {
     }
 });
 
+// Unité d'affichage acceptée telle quelle ; tout autre valeur retombe sur les grammes.
+function uniteValide(unite) {
+    return ["g", "cafe", "soupe", "piece"].includes(unite) ? unite : null;
+}
+
 app.post(["/calories/modifier", "/api/calories/modifier"], async (req, res) => {
     try {
         const idEntree = req.body.idEntree;
@@ -884,7 +892,11 @@ app.post(["/calories/modifier", "/api/calories/modifier"], async (req, res) => {
             return res.status(400).json({ erreur: "Champs requis." });
         }
 
-        await db.query("UPDATE journal_repas SET quantite_g = $1 WHERE id = $2", [nouvelleQuantite, idEntree]);
+        // Unité absente (ancien client EJS) : celle déjà enregistrée est gardée.
+        await db.query(
+            "UPDATE journal_repas SET quantite_g = $1, unite = COALESCE($3, unite) WHERE id = $2",
+            [nouvelleQuantite, idEntree, uniteValide(req.body.unite)]
+        );
 
         const itemResult = await db.query(
             `SELECT journal_repas.*, foods.nom, foods.emoji,
@@ -1004,7 +1016,7 @@ app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (
         }
 
         const ingredients = await db.query(
-            "SELECT food_id, quantite_g FROM recette_ingredients WHERE recette_id = $1",
+            "SELECT food_id, quantite_g, unite FROM recette_ingredients WHERE recette_id = $1 ORDER BY id",
             [idRecette]
         );
 
@@ -1027,8 +1039,8 @@ app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (
         let ordre = 1;
         for (const ingredient of ingredients.rows) {
             const insertResult = await db.query(
-                "INSERT INTO journal_repas (food_id, quantite_g, ordre) VALUES ($1, $2, $3) RETURNING id",
-                [ingredient.food_id, ingredient.quantite_g, ordre]
+                "INSERT INTO journal_repas (food_id, quantite_g, ordre, unite) VALUES ($1, $2, $3, $4) RETURNING id",
+                [ingredient.food_id, ingredient.quantite_g, ordre, ingredient.unite]
             );
 
             nouvellesEntrees.push(insertResult.rows[0].id);
@@ -1096,8 +1108,8 @@ app.post(["/recettes/creer", "/api/recettes/creer"], async (req, res) => {
 
         for (const ingredient of ingredients) {
             await db.query(
-                "INSERT INTO recette_ingredients (recette_id, food_id, quantite_g) VALUES ($1, $2, $3)",
-                [idRecette, ingredient.food_id, ingredient.quantite_g]
+                "INSERT INTO recette_ingredients (recette_id, food_id, quantite_g, unite) VALUES ($1, $2, $3, $4)",
+                [idRecette, ingredient.food_id, ingredient.quantite_g, uniteValide(ingredient.unite)]
             );
         }
 
@@ -1122,13 +1134,13 @@ app.get(["/recettes/:id", "/api/recettes/:id"], async (req, res) => {
         }
 
         const ingredientsResult = await db.query(
-            `SELECT foods.id AS food_id, foods.nom, foods.emoji, recette_ingredients.quantite_g,
+            `SELECT foods.id AS food_id, foods.nom, foods.emoji, recette_ingredients.quantite_g, recette_ingredients.unite,
                     foods.grammes_par_cuil_a_cafe, foods.grammes_par_cuil_a_soupe,
                     foods.poids_unite_g, foods.unite AS unite_piece, foods.tracking_type
              FROM recette_ingredients
              JOIN foods ON foods.id = recette_ingredients.food_id
              WHERE recette_ingredients.recette_id = $1
-             ORDER BY foods.nom ASC`,
+             ORDER BY recette_ingredients.id`,
             [idRecette]
         );
 
@@ -1170,8 +1182,8 @@ app.post(["/recettes/:id/modifier", "/api/recettes/:id/modifier"], async (req, r
 
         for (const ingredient of ingredients) {
             await db.query(
-                "INSERT INTO recette_ingredients (recette_id, food_id, quantite_g) VALUES ($1, $2, $3)",
-                [idRecette, ingredient.food_id, ingredient.quantite_g]
+                "INSERT INTO recette_ingredients (recette_id, food_id, quantite_g, unite) VALUES ($1, $2, $3, $4)",
+                [idRecette, ingredient.food_id, ingredient.quantite_g, uniteValide(ingredient.unite)]
             );
         }
 

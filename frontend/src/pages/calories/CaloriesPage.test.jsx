@@ -85,7 +85,7 @@ test("totaux au format EJS ; unités tsp/tbs/pièce selon l'aliment ; poignée d
   expect(document.getElementById("noResultsJournal")).toHaveClass("hidden");
 });
 
-test("unités : tbs affiche 1 pour 13,5 g, minimum converti ; la sortie du champ envoie des grammes", async () => {
+test("unités : tbs affiche 1 pour 13,5 g, minimum converti ; unité enregistrée, la sortie du champ envoie des grammes", async () => {
   ouvrir();
   await attendrePage();
   const champ = ligne("Huile").querySelector(".journal-grammes-input");
@@ -94,7 +94,10 @@ test("unités : tbs affiche 1 pour 13,5 g, minimum converti ; la sortie du champ
   expect(champ).toHaveAttribute("min", "0.0185");
   fireEvent.input(champ, { target: { value: "2" } });
   await act(async () => fireEvent.change(champ));
-  expect(requetes).toEqual([{ chemin: "/calories/modifier", corps: { idEntree: "1", nouvelleQuantite: 27 } }]);
+  expect(requetes).toEqual([
+    { chemin: "/calories/modifier", corps: { idEntree: "1", nouvelleQuantite: 13.5, unite: "soupe" } },
+    { chemin: "/calories/modifier", corps: { idEntree: "1", nouvelleQuantite: 27, unite: "soupe" } },
+  ]);
   expect(ligne("Huile").querySelector(".journal-kcal")).toHaveTextContent("54 kcal");
   expect(total("totalKcal")).toBe("140");
 });
@@ -238,7 +241,7 @@ test("création : « Enregistrer » à partir de 2 ingrédients, unités convert
   await act(async () => fireEvent.submit(document.getElementById("formRecette")));
   expect(requetes.at(-1)).toEqual({
     chemin: "/recettes/creer",
-    corps: { nom: "Œufs à l'huile", categorie: "plat", etapes: "", ingredients: [{ food_id: "huile", quantite_g: 13.5 }, { food_id: "oeuf", quantite_g: 120 }] },
+    corps: { nom: "Œufs à l'huile", categorie: "plat", etapes: "", ingredients: [{ food_id: "huile", quantite_g: 13.5, unite: "soupe" }, { food_id: "oeuf", quantite_g: 120, unite: "piece" }] },
   });
   expect(document.getElementById("sheet")).not.toHaveClass("ouvert");
   expect(carteRecette("Œufs à l'huile")).not.toBeUndefined();
@@ -267,4 +270,18 @@ test("édition puis suppression : carte et option retirées, confirmation demand
   expect([...document.getElementById("selectRecettePlat").options].map((o) => o.textContent)).toEqual([""]);
   act(() => jest.advanceTimersByTime(300));
   expect(carteRecette("Omelette")).toBeUndefined();
+});
+
+test("unité enregistrée : reprise dans la Cuisine et dans la lecture d'une recette", async () => {
+  const huileEnTbs = { ...entree(1, huile, 27, 240), unite: "soupe" };
+  ouvrir(
+    { "/recettes/7": [200, { succes: true, recette: { id: 7, nom: "Omelette", categorie: "plat", etapes: "" }, ingredients: [{ food_id: "huile", nom: "Huile", emoji: "🫒", quantite_g: "27.00", unite: "soupe", grammes_par_cuil_a_cafe: "4.5", grammes_par_cuil_a_soupe: "13.5", poids_unite_g: "0.00", unite_piece: null, tracking_type: "cl" }, { food_id: "oeuf", nom: "Oeuf", emoji: "🥚", quantite_g: "120.00", unite: "piece", grammes_par_cuil_a_cafe: null, grammes_par_cuil_a_soupe: null, poids_unite_g: "60.00", unite_piece: "pièce", tracking_type: "unite" }] }] },
+    { journal: [huileEnTbs] }
+  );
+  await attendrePage();
+  expect(ligne("Huile").querySelector(".journal-grammes-input")).toHaveValue(2);
+  expect(ligne("Huile").querySelector("select.journal-unite-select")).toHaveValue("soupe");
+  fireEvent.click(screen.getByRole("button", { name: "Recettes" }));
+  await act(async () => fireEvent.click(carteRecette("Omelette")));
+  expect([...document.querySelectorAll(".recette-lecture-ing-qte")].map((q) => q.textContent)).toEqual(["2 tbs", "2 pièce"]);
 });

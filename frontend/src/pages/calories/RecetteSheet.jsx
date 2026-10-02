@@ -4,20 +4,20 @@ import { arrayMove } from "@dnd-kit/sortable";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import { ListeTriable } from "../../components/Triable.jsx";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
-import { grammesParUnite, poidsPieceDe } from "../../utils/unites.js";
+import { grammesParUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
 import { normaliserTexte } from "../../utils/texte.js";
-import IngredientLigne from "./IngredientLigne.jsx";
+import IngredientLigne, { changerUniteLigne } from "./IngredientLigne.jsx";
 
 const CATEGORIES = [
   { valeur: "plat", label: "Plat" },
   { valeur: "fraicheur", label: "Fraîcheur" },
 ];
 
-// Ligne d'ingrédient : "0.00" de poids_unite_g normalisé ici une fois pour toutes.
-function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, unitePiece, emoji) {
+// Ligne d'ingrédient : "0.00" de poids_unite_g normalisé ici une fois pour toutes ; unité enregistrée reprise si l'aliment la connaît.
+function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, unitePiece, emoji, unite = "g") {
   const poids = Number(poidsPiece) || 0;
   const saisie = quantiteG === "" || quantiteG === undefined || quantiteG === null ? "" : String(quantiteG);
-  return {
+  const ligne = {
     foodId: String(foodId),
     nom,
     emoji: emoji || "",
@@ -31,6 +31,14 @@ function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, uniteP
     grammes: Number(saisie) || 0,
     sortant: false,
   };
+  return unite && unite !== "g" && grammesParUnite(ligne, unite) > 0 ? changerUniteLigne(ligne, unite) : ligne;
+}
+
+// Lecture : quantité dans l'unité enregistrée ("2 tbs"), grammes par défaut.
+function texteQuantite(ing) {
+  const ligne = nouvelleLigne(ing.food_id, "", parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.tracking_type === "unite" ? ing.poids_unite_g : null, ing.unite_piece, "", ing.unite);
+  const option = optionsUnite(ligne).find((o) => o.value === ligne.unite);
+  return `${ligne.saisie} ${option ? option.label : "g"}`;
 }
 
 const FORMULAIRE_VIDE = { id: "", nom: "", etapes: "", categorie: "plat", lignes: [], supprimerVisible: false };
@@ -110,7 +118,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     ouvrirCreation({ categorie, ingredients = [] }) {
       setRecetteChargee(null);
       setMode("formulaire");
-      const lignes = sansDoublons(ingredients.map((ing) => nouvelleLigne(ing.food_id, ing.nom, ing.quantite_g, ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.poids_unite_g, ing.unite_piece, ing.emoji)));
+      const lignes = sansDoublons(ingredients.map((ing) => nouvelleLigne(ing.food_id, ing.nom, ing.quantite_g, ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.poids_unite_g, ing.unite_piece, ing.emoji, ing.unite)));
       preparerFormulaire({ categorie: categorie || "plat", lignes });
       afficher();
       setTimeout(() => champNom.current?.focus(), 0);
@@ -145,7 +153,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     const { recette, ingredients } = recetteChargee;
     setMode("formulaire");
     const lignes = sansDoublons(
-      ingredients.map((ing) => nouvelleLigne(ing.food_id, `${ing.emoji} ${ing.nom}`, parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.tracking_type === "unite" ? ing.poids_unite_g : null, ing.unite_piece, ing.emoji))
+      ingredients.map((ing) => nouvelleLigne(ing.food_id, `${ing.emoji} ${ing.nom}`, parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.tracking_type === "unite" ? ing.poids_unite_g : null, ing.unite_piece, ing.emoji, ing.unite))
     );
     preparerFormulaire({ id: String(recette.id), nom: recette.nom, etapes: recette.etapes || "", categorie: recette.categorie, lignes, supprimerVisible: true });
     afficher();
@@ -232,8 +240,8 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     const emojis = [];
     formulaire.lignes.forEach((ligne) => {
       if (!ligne.foodId || !ligne.saisie) return;
-      // Toujours en grammes vers le serveur, quelle que soit l'unité affichée.
-      ingredients.push({ food_id: ligne.foodId, quantite_g: Number(ligne.saisie) * grammesParUnite(ligne, ligne.unite) });
+      // Quantité toujours en grammes ; l'unité affichée est enregistrée à côté pour être reprise.
+      ingredients.push({ food_id: ligne.foodId, quantite_g: Number(ligne.saisie) * grammesParUnite(ligne, ligne.unite), unite: ligne.unite });
       if (ligne.emoji) emojis.push(ligne.emoji);
     });
 
@@ -318,7 +326,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
               <li key={ing.food_id}>
                 <span className="recette-lecture-ing-emoji">{ing.emoji || ""}</span>
                 <span className="recette-lecture-ing-nom">{ing.nom}</span>
-                <span className="recette-lecture-ing-qte">{parseFloat(ing.quantite_g)} g</span>
+                <span className="recette-lecture-ing-qte">{texteQuantite(ing)}</span>
               </li>
             ))}
           </ul>

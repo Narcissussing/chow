@@ -14,13 +14,18 @@ export function equivalencesEntree(entree) {
   };
 }
 
-export default function CuisineItem({ entree, onEnregistrerQuantite, onSupprimer, ref }) {
+// Unité enregistrée reprise si l'aliment la connaît encore, sinon grammes.
+function uniteDepart(entree, equivalences) {
+  return entree.unite && entree.unite !== "g" && grammesParUnite(equivalences, entree.unite) > 0 ? entree.unite : "g";
+}
+
+export default function CuisineItem({ entree, onEnregistrerQuantite, onChangerUnite, onSupprimer, ref }) {
   const triable = useTriable(entree.id, ref);
   const champ = useRef(null);
   const equivalences = equivalencesEntree(entree);
-  const [saisie, setSaisie] = useState(() => String(parseFloat(entree.quantite_g)));
-  const [unite, setUnite] = useState("g");
-  const [minimum, setMinimum] = useState("0.25");
+  const [unite, setUnite] = useState(() => uniteDepart(entree, equivalences));
+  const [saisie, setSaisie] = useState(() => convertirAffichage(parseFloat(entree.quantite_g), grammesParUnite(equivalences, unite)));
+  const [minimum, setMinimum] = useState(() => minimumPourUnite(grammesParUnite(equivalences, unite)));
   // La vraie donnée reste les grammes ; le champ peut afficher "0.5" c. à café pour 2.5 g.
   const grammes = useRef(Number(parseFloat(entree.quantite_g)));
 
@@ -29,6 +34,7 @@ export default function CuisineItem({ entree, onEnregistrerQuantite, onSupprimer
     setUnite(nouvelle);
     setSaisie(convertirAffichage(grammes.current, ratio));
     setMinimum(minimumPourUnite(ratio));
+    onChangerUnite(nouvelle);
   }
 
   // "change" natif : à la sortie du champ modifié, pas à chaque frappe ; toujours envoyé en grammes.
@@ -37,7 +43,7 @@ export default function CuisineItem({ entree, onEnregistrerQuantite, onSupprimer
     const valeur = Number(champ.current.value);
     if (!valeur || valeur <= 0 || !ratio) return;
     const nouvelle = valeur * ratio;
-    onEnregistrerQuantite(nouvelle).then((reussi) => {
+    onEnregistrerQuantite(nouvelle, unite).then((reussi) => {
       if (reussi) grammes.current = nouvelle;
     });
   });

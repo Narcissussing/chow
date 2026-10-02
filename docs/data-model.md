@@ -83,6 +83,7 @@ remplace l’ensemble de ses lignes dans une opération, sans calcul de diff.
 | `quantite_g` | Quantité consommée en grammes |
 | `date_entree` | Journée de la Cuisine |
 | `ordre` | Position manuelle dans la journée |
+| `unite` | Unité affichée (`g`, `cafe`, `soupe`, `piece`) ; `NULL` = grammes |
 
 Les calories et macros calculées ne sont pas stockées :
 `valeur_food × quantite_g / 100`.
@@ -92,7 +93,9 @@ Les calories et macros calculées ne sont pas stockées :
 `recettes` contient `id`, `nom`, `categorie` et `etapes`. `etapes` stocke une
 étape de préparation par ligne ; l’interface les numérote à l’affichage.
 `recette_ingredients` relie une recette à `food_id` avec
-`quantite_g`. Une modification remplace les lignes d’ingrédients existantes.
+`quantite_g` et `unite` (unité affichée, reprise dans la Cuisine). Une
+modification remplace les lignes ; leur ordre d’insertion (`id`) est l’ordre
+de la recette.
 
 ### `session`
 

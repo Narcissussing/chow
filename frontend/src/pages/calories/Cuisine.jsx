@@ -88,10 +88,10 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
 
   // ---------- Quantité, ordre, retrait ----------
 
-  async function enregistrerQuantite(entree, grammes) {
+  async function enregistrerQuantite(entree, grammes, unite) {
     let reponse;
     try {
-      reponse = (await api("/calories/modifier", { method: "POST", body: { idEntree: String(entree.id), nouvelleQuantite: grammes } })).donnees;
+      reponse = (await api("/calories/modifier", { method: "POST", body: { idEntree: String(entree.id), nouvelleQuantite: grammes, unite } })).donnees;
     } catch {
       return false;
     }
@@ -102,11 +102,17 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
     setEntrees((liste) =>
       liste.map((e) =>
         e.id === entree.id
-          ? { ...e, quantite_g: grammes, calories_calc: reponse.item.calories_calc, glucides_calc: reponse.item.glucides_calc, proteines_calc: reponse.item.proteines_calc, lipides_calc: reponse.item.lipides_calc }
+          ? { ...e, quantite_g: grammes, unite, calories_calc: reponse.item.calories_calc, glucides_calc: reponse.item.glucides_calc, proteines_calc: reponse.item.proteines_calc, lipides_calc: reponse.item.lipides_calc }
           : e
       )
     );
     return true;
+  }
+
+  // Changer d'unité ne change pas les grammes : seule l'unité est enregistrée, pour être reprise.
+  function changerUnite(entree, unite) {
+    setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, unite } : e)));
+    api("/calories/modifier", { method: "POST", body: { idEntree: String(entree.id), nouvelleQuantite: parseFloat(entree.quantite_g), unite } }).catch(() => {});
   }
 
   function deplacer(depuis, vers) {
@@ -246,6 +252,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
                 nom: `${e.emoji} ${e.nom}`,
                 // Toujours en grammes, quelle que soit l'unité affichée dans la ligne.
                 quantite_g: String(parseFloat(e.quantite_g)),
+                unite: e.unite || "g",
                 grammes_par_cuil_a_cafe: eq.gCafe,
                 grammes_par_cuil_a_soupe: eq.gSoupe,
                 poids_unite_g: eq.poidsPiece,
@@ -267,7 +274,8 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
                 else delete elements.current[entree.id];
               }}
               entree={entree}
-              onEnregistrerQuantite={(grammes) => enregistrerQuantite(entree, grammes)}
+              onEnregistrerQuantite={(grammes, unite) => enregistrerQuantite(entree, grammes, unite)}
+              onChangerUnite={(unite) => changerUnite(entree, unite)}
               onSupprimer={() => supprimer(entree)}
             />
           ))}
