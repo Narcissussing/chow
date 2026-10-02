@@ -66,8 +66,10 @@ function Calories({ donnees }) {
     <>
       <main>
         <div className="journal-section">
-          <h1>Compter sans <span>culpabiliser.</span></h1>
-          <p className="page-header__description">Chaque bouchée a le droit d'être notée — sauf la troisième part de gâteau, on garde un œil dessus.</p>
+          <div className="titre-page">
+            <h1>Calories</h1>
+            <span className="titre-page__chiffre">{somme("calories_calc").toFixed(0)} kcal</span>
+          </div>
 
           <div className="journal-totaux-sentinel" aria-hidden="true" ref={sentinelle}></div>
           <div className={"journal-totaux" + (compacte ? " compacte" : "")} ref={totaux}>

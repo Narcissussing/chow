@@ -169,3 +169,68 @@
     line-height: 1.35;
   }
 }
+
+/* Footer en bas de l'écran quand la page est courte, après le contenu sinon. */
+#root {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+#root > .footer {
+  margin-top: auto;
+}
+
+/* Bandeau compact (Stock, Courses, Calories) : titre + un seul chiffre utile, sans phrase. */
+.titre-page {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-header.titre-page {
+  padding-top: 28px;
+  padding-bottom: 8px;
+}
+
+.journal-section {
+  padding-top: 28px;
+}
+
+.journal-section .titre-page {
+  margin-bottom: 20px;
+}
+
+.titre-page h1,
+.journal-section .titre-page h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.titre-page__chiffre {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+@media (max-width: 768px) {
+  .page-header.titre-page {
+    padding-top: 16px;
+    padding-bottom: 4px;
+  }
+
+  .journal-section {
+    padding-top: 16px;
+  }
+
+  .titre-page h1,
+  .journal-section .titre-page h1 {
+    font-size: 1.6rem;
+  }
+}

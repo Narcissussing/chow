@@ -8,7 +8,7 @@ import { useLocalStorage } from "../../hooks/useLocalStorage.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
-import { correspondFiltres, trierStock } from "../../utils/stock.js";
+import { correspondFiltres, estQuantiteBasse, trierStock } from "../../utils/stock.js";
 import { normaliserTexte } from "../../utils/texte.js";
 import StockItem, { boutonCoursesVisible } from "./StockItem.jsx";
 
@@ -44,6 +44,7 @@ function Stock({ donnees }) {
   const verrousAjout = useRef(new Set());
 
   const [items, setItems] = useState(() => trierStock(donnees.stock.map(preparer), "alpha"));
+  const nombreBas = items.filter((i) => estQuantiteBasse(i.quantite, i.tracking_type)).length;
   const [emplacement, setEmplacement] = useState("tous");
   const [type, setType] = useState("tous");
   const [recherche, setRecherche] = useState("");
@@ -240,9 +241,9 @@ function Stock({ donnees }) {
 
   return (
     <main>
-      <div className="page-header">
-        <h1>Ton frigo <span>ne ment pas.</span></h1>
-        <p className="page-header__description">La vérité sur ce qu'il te reste vraiment — spoiler : moins que tu crois.</p>
+      <div className="page-header titre-page">
+        <h1>Stock</h1>
+        {nombreBas > 0 && <span className="titre-page__chiffre">{nombreBas} bas</span>}
       </div>
 
       <div className="filters">

@@ -469,11 +469,8 @@ function Courses({ donnees }) {
 
   return (
     <main>
-      <section className="hero" id="heroCourses" ref={hero}>
-        <div className="hero__text">
-          <h1>La liste qui <span>n'oublie jamais.</span></h1>
-          <p>Toi si, elle non. Ajoute, coche, fonce au magasin.</p>
-        </div>
+      <section className="page-header titre-page" id="heroCourses" ref={hero}>
+        <h1>Courses</h1>
         {!badgeEnBarre && badgeCourses}
       </section>
 

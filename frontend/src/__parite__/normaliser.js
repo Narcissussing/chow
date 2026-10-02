@@ -39,6 +39,8 @@ export function lignesCanoniques(noeud, profondeur = 0, lignes = []) {
   if (noeud.classList.contains("reorder-controls") || noeud.classList.contains("poignee-glisser")) return lignes;
   // Écart voulu : emojis de l'accueil remplacés par des icônes SVG.
   if (noeud.classList.contains("home-link-emoji") || noeud.classList.contains("home-link-icone")) return lignes;
+  // Écart voulu : bandeaux Stock/Courses/Calories remplacés par un titre compact (Aliments reste comparé).
+  if (noeud.matches(".page-header, #heroCourses, .titre-page, .page-header__description, .journal-section > h1")) return lignes;
   lignes.push(`${retrait}<${noeud.tagName.toLowerCase()}${attributs(noeud).map((a) => " " + a).join("")}>`);
   // Textes adjacents fusionnés : EJS et React découpent différemment "{n} aliments…".
   let tampon = "";
