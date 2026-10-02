@@ -119,7 +119,6 @@ function Courses({ donnees }) {
     const { nouveaux, retires } = fusionnerListe(itemsActuels.current, lignes, cle, locaux);
     setItems((liste) => fusionnerListe(liste, lignes, cle, locaux).items);
     if (nouveaux.length > 0) {
-      afficherToast(nouveaux.length === 1 ? `Ajouté entre-temps : ${nouveaux[0].nom}` : `${nouveaux.length} articles ajoutés entre-temps`);
       revelerNouveaux([...nouveaux].sort((a, b) => a.id - b.id));
     }
     if (retires.length > 0) {
@@ -227,6 +226,12 @@ function Courses({ donnees }) {
       <span id="badgeNbCourses" ref={nombreBadge}>
         {nombreAffiche}
       </span>
+      {/* Articles de l'autre téléphone encore à compter : la bulle se vide à mesure que le compteur monte. */}
+      {aReveler > 0 && (
+        <span key={aReveler} className="badge-ajout" aria-live="polite">
+          +{aReveler}
+        </span>
+      )}
     </div>
   );
 

@@ -257,7 +257,8 @@ test("achat : la liste du serveur apporte l'article ajouté ailleurs, le Stock �
   expect(carte("Pain")).toHaveClass("entree");
   expect(carte("Puck")).toHaveClass("disparait-achete");
   expect(carte("Lait").querySelector(".course-stock-dot")).toHaveAttribute("title", "En stock : plein");
-  expect(toasts).toContain("Ajouté entre-temps : Pain");
+  expect(toasts.some((t) => t.includes("entre-temps"))).toBe(false);
+  expect(document.querySelector(".badge-ajout")).toHaveTextContent("+1");
   act(() => jest.advanceTimersByTime(300));
   expect(ordreListe()).toEqual(["🥛 Lait", "🍞 Pain", "panneauAjoutCourse"]);
   desabonner();
@@ -313,12 +314,15 @@ test("articles de l'autre téléphone : un par un dans l'ordre d'ajout, rythme s
   const champ = carte("Riz").querySelector(".input-commentaire");
   fireEvent.change(champ, { target: { value: "Thaï" } });
   await act(async () => fireEvent.blur(champ));
+  const bulle = () => document.querySelector(".badge-ajout")?.textContent ?? null;
   expect(compteur()).toBe("3");
+  expect(bulle()).toBe("+2");
   act(() => jest.advanceTimersByTime(499));
   expect(vus).toEqual([]);
   act(() => jest.advanceTimersByTime(1));
   expect(vus).toEqual(["🧈 Beurre"]);
   expect(compteur()).toBe("4");
+  expect(bulle()).toBe("+1");
   expect(carte("Beurre")).not.toHaveClass("vient-d-arriver");
   act(() => jest.advanceTimersByTime(450));
   expect(carte("Beurre")).toHaveClass("vient-d-arriver");
@@ -328,6 +332,7 @@ test("articles de l'autre téléphone : un par un dans l'ordre d'ajout, rythme s
   act(() => jest.advanceTimersByTime(1));
   expect(vus).toEqual(["🧈 Beurre", "🍞 Pain"]);
   expect(compteur()).toBe("5");
+  expect(bulle()).toBeNull();
   act(() => jest.advanceTimersByTime(450 + 2400));
   expect(carte("Pain")).not.toHaveClass("vient-d-arriver");
   delete Element.prototype.scrollIntoView;
