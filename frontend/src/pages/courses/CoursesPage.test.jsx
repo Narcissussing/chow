@@ -254,7 +254,7 @@ test("achat : la liste du serveur apporte l'article ajouté ailleurs, le Stock �
   await act(async () => jest.runOnlyPendingTimers());
   await attendrePage();
   await act(async () => fireEvent.click([...carte("Riz").querySelectorAll(".suggestion")].find((b) => b.textContent === "+2")));
-  expect(carte("Pain")).toHaveClass("entree", "mise-en-avant");
+  expect(carte("Pain")).toHaveClass("entree");
   expect(carte("Puck")).toHaveClass("disparait-achete");
   expect(carte("Lait").querySelector(".course-stock-dot")).toHaveAttribute("title", "En stock : plein");
   expect(toasts).toContain("Ajouté entre-temps : Pain");
@@ -297,4 +297,32 @@ test("suppression et note : la réponse rafraîchit la liste ; une note changée
   await act(async () => fireEvent.blur(champ));
   expect(requetes).toEqual([{ chemin: "/courses/commentaire", corps: { idCourse: "2", commentaire: "Thaï" } }]);
   expect(carte("Lait").querySelector(".note-affichee")).toHaveTextContent("Demi-écrémé");
+});
+
+test("articles de l'autre téléphone : montrés un par un dans l'ordre d'ajout, halo, compteur +1 à chaque fois", async () => {
+  jest.useFakeTimers();
+  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
+  const beurre = { id: 20, food_id: "beurre", nom: "Beurre", emoji: "🧈", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
+  ouvrirCourses({ "/courses/commentaire": [200, { succes: true, courses: [...COURSES, pain, beurre] }] });
+  await act(async () => jest.runOnlyPendingTimers());
+  await attendrePage();
+  const vus = [];
+  Element.prototype.scrollIntoView = function () { vus.push(this.querySelector(".course-nom").textContent.trim()); };
+  const compteur = () => document.getElementById("badgeNbCourses").textContent;
+  fireEvent.click(carte("Riz").querySelector(".course-nom-emoji"));
+  const champ = carte("Riz").querySelector(".input-commentaire");
+  fireEvent.change(champ, { target: { value: "Thaï" } });
+  await act(async () => fireEvent.blur(champ));
+  expect(compteur()).toBe("3");
+  act(() => jest.advanceTimersByTime(350));
+  expect(vus).toEqual(["🧈 Beurre"]);
+  expect(carte("Beurre")).toHaveClass("mise-en-avant");
+  expect(compteur()).toBe("4");
+  act(() => jest.advanceTimersByTime(1000));
+  expect(vus).toEqual(["🧈 Beurre", "🍞 Pain"]);
+  expect(carte("Pain")).toHaveClass("mise-en-avant");
+  expect(compteur()).toBe("5");
+  act(() => jest.advanceTimersByTime(1500));
+  expect(carte("Pain")).not.toHaveClass("mise-en-avant");
+  delete Element.prototype.scrollIntoView;
 });

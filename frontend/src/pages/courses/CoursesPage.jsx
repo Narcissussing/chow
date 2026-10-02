@@ -60,7 +60,7 @@ export function fusionnerListe(liste, lignes, cle, locaux = []) {
   });
   const nouveaux = lignes.filter((l) => !connus.has(l.id));
   nouveaux.forEach((ligne) => {
-    suivants = inserer(suivants, { ...preparer(ligne), effets: { entree: true, miseEnAvant: !locaux.includes(ligne.id) } }, cle);
+    suivants = inserer(suivants, { ...preparer(ligne), effets: { entree: true } }, cle);
   });
   return {
     items: suivants,
@@ -120,7 +120,7 @@ function Courses({ donnees }) {
     setItems((liste) => fusionnerListe(liste, lignes, cle, locaux).items);
     if (nouveaux.length > 0) {
       afficherToast(nouveaux.length === 1 ? `Ajouté entre-temps : ${nouveaux[0].nom}` : `${nouveaux.length} articles ajoutés entre-temps`);
-      planifier(() => nouveaux.forEach((n) => majEffets(n.id, { miseEnAvant: false })), 1500);
+      revelerNouveaux([...nouveaux].sort((a, b) => a.id - b.id));
     }
     if (retires.length > 0) {
       retires.forEach(supprimerPhotoLocale);
@@ -137,6 +137,24 @@ function Courses({ donnees }) {
     synchroniserPhotosLocales(donnees.courses.filter((c) => c.has_photo).map((c) => c.id));
   }, [donnees]);
 
+  // Articles venus de l'autre téléphone, dans l'ordre d'ajout : défilement jusqu'à chacun, halo,
+  // et le compteur monte d'un à chaque article montré (son pop habituel).
+  const [aReveler, setAReveler] = useState(0);
+  function revelerNouveaux(lignes) {
+    setAReveler((n) => n + lignes.length);
+    lignes.forEach((ligne, index) => {
+      planifier(() => {
+        // Rayon masqué en mode magasin : réactivé, sinon la carte resterait invisible.
+        setActives((a) => (a.has(categorieDe(ligne)) ? a : new Set([...a, categorieDe(ligne)])));
+        cartes.current[ligne.id]?.scrollIntoView?.({ behavior: mouvementReduit() ? "auto" : "smooth", block: "center" });
+        majEffets(ligne.id, { miseEnAvant: true });
+        setAReveler((n) => Math.max(0, n - 1));
+        planifier(() => majEffets(ligne.id, { miseEnAvant: false }), 1500);
+      }, 350 + index * 1000);
+    });
+  }
+  const nombreAffiche = items.length - aReveler;
+
   // Note : affichage déjà mis à jour par la carte ; la réponse apporte la liste à jour.
   function enregistrerNote(item, commentaire) {
     const numero = ++sequence.current;
@@ -148,14 +166,14 @@ function Courses({ donnees }) {
   // ---------- Badge : nombre, animation, navette hero <-> barre d'outils ----------
 
   useEffect(() => {
-    const nombre = items.length;
+    const nombre = nombreAffiche;
     if (nombrePrecedent.current !== null && nombrePrecedent.current !== nombre) {
       nombreBadge.current?.classList.remove("badge-pop", "badge-shake");
       relancerClasse(nombreBadge.current, typeAnimationBadge.current === "suppression" ? "badge-shake" : "badge-pop");
     }
     nombrePrecedent.current = nombre;
     typeAnimationBadge.current = "achat";
-  }, [items.length]);
+  }, [nombreAffiche]);
 
   useEffect(() => {
     if (!("IntersectionObserver" in window) || !hero.current || !barreOutils.current) return;
@@ -201,7 +219,7 @@ function Courses({ donnees }) {
       style={badgeEnBarre ? { width: tailleBadge + "px", height: tailleBadge + "px", paddingBottom: ((tailleBadge * 8) / 65).toFixed(1) + "px" } : undefined}
     >
       <span id="badgeNbCourses" ref={nombreBadge}>
-        {items.length}
+        {nombreAffiche}
       </span>
     </div>
   );
