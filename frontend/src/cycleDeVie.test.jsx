@@ -26,16 +26,19 @@ test("quitter Courses en mode magasin retire la classe du body", async () => {
   expect(document.body).not.toHaveClass("mode-magasin");
 });
 
-test("panneau recette ouvert : la page derrière reste défilable, et il disparaît en quittant Calories", async () => {
+test("panneau recette ouvert : la page derrière est figée, et tout est libéré en quittant Calories", async () => {
   simulerApi(DONNEES);
   rendreApp("/calories");
   await attendrePage();
   fireEvent.click(screen.getByRole("button", { name: "Recettes" }));
   fireEvent.click(document.querySelector(".btn-nouvelle-recette"));
   expect(document.getElementById("sheet")).toHaveClass("ouvert");
-  expect(document.body).not.toHaveClass("scroll-bloque");
+  expect(document.body.style.overflow).toBe("hidden");
+  expect(document.documentElement.style.overflow).toBe("hidden");
   await aller("Aliments");
   await attendrePage();
+  expect(document.body.style.overflow).toBe("");
+  expect(document.documentElement.style.overflow).toBe("");
   expect(document.getElementById("sheet")).toBeNull();
 });
 

@@ -1,10 +1,13 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { api } from "../../api.js";
 import { arrayMove } from "@dnd-kit/sortable";
+import BoutonOutil from "../../components/BoutonOutil.jsx";
+import { BALANCE, lancerVers, MARMITE } from "../../utils/animation.js";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import { ListeTriable } from "../../components/Triable.jsx";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
-import { grammesParUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
+import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
+import { estLiquide, grammesParUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
 import { normaliserTexte } from "../../utils/texte.js";
 import IngredientLigne, { changerUniteLigne } from "./IngredientLigne.jsx";
 
@@ -14,9 +17,9 @@ const CATEGORIES = [
 ];
 
 // Ligne d'ingrédient : "0.00" de poids_unite_g normalisé ici une fois pour toutes ; unité enregistrée reprise si l'aliment la connaît.
-function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, unitePiece, emoji, unite = "g") {
+export function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, unitePiece, emoji, unite = "g") {
   const poids = Number(poidsPiece) || 0;
-  const saisie = quantiteG === "" || quantiteG === undefined || quantiteG === null ? "" : String(quantiteG);
+  const saisie = quantiteG === "" || quantiteG === undefined || quantiteG === null ? "" : String(Math.round(Number(quantiteG) * 100) / 100);
   const ligne = {
     foodId: String(foodId),
     nom,
@@ -25,6 +28,7 @@ function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, uniteP
     gSoupe: gSoupe || "",
     poidsPiece: poids || "",
     unitePiece: unitePiece || "",
+    liquide: estLiquide(unitePiece),
     saisie,
     unite: "g",
     minimum: "0.25",
@@ -36,14 +40,14 @@ function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, uniteP
 
 // Lecture : quantité dans l'unité enregistrée ("2 tbs"), grammes par défaut.
 function texteQuantite(ing) {
-  const ligne = nouvelleLigne(ing.food_id, "", parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.tracking_type === "unite" ? ing.poids_unite_g : null, ing.unite_piece, "", ing.unite);
+  const ligne = nouvelleLigne(ing.food_id, "", parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, poidsPieceDe(ing.tracking_type, ing.poids_unite_g, ing.unite_piece) || null, ing.unite_piece, "", ing.unite);
   const option = optionsUnite(ligne).find((o) => o.value === ligne.unite);
   return `${ligne.saisie} ${option ? option.label : "g"}`;
 }
 
 const FORMULAIRE_VIDE = { id: "", nom: "", etapes: "", categorie: "plat", lignes: [], supprimerVisible: false };
 
-export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee }) {
+export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee, onAjouteeCuisine, onEnvoyerRegleX }) {
   const planifier = useMinuteurs();
   const sheet = useRef(null);
   const liste = useRef(null);
@@ -57,6 +61,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
   const focusApres = useRef(null);
 
   const [ouvert, setOuvert] = useState(false);
+  useVerrouDefilement(ouvert, sheet);
   // Au chargement de la page, le formulaire est visible et la lecture cachée (état du template).
   const [mode, setMode] = useState("formulaire");
   const [lecture, setLecture] = useState({ nom: "", meta: "", ingredients: [], etapes: null });
@@ -148,12 +153,35 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     },
   }));
 
+  // Recette ouverte → Cuisine du jour (même effet que le sélecteur de la Cuisine), puis panneau fermé.
+  const [envoiCuisine, setEnvoiCuisine] = useState(false);
+  function envoyerALaCuisine(event) {
+    if (!recetteChargee || envoiCuisine) return;
+    setEnvoiCuisine(true);
+    // Rectangle gardé : le bouton disparaît avec la feuille avant que les ingrédients ne s'envolent.
+    const depart = event?.currentTarget?.getBoundingClientRect();
+    api("/calories/ajouter-recette", { method: "POST", body: { idRecette: String(recetteChargee.recette.id) } })
+      .then(({ donnees }) => {
+        if (donnees?.erreur) {
+          alert(donnees.erreur);
+          return;
+        }
+        fermer();
+        lancerVers(recetteChargee.ingredients.map((i) => i.emoji), depart, MARMITE, "recoit");
+        onAjouteeCuisine?.(donnees.items);
+      })
+      .catch((err) => {
+        if (err.type !== "session") alert("Une erreur est survenue.");
+      })
+      .finally(() => setEnvoiCuisine(false));
+  }
+
   function ouvrirEdition() {
     if (!recetteChargee) return;
     const { recette, ingredients } = recetteChargee;
     setMode("formulaire");
     const lignes = sansDoublons(
-      ingredients.map((ing) => nouvelleLigne(ing.food_id, `${ing.emoji} ${ing.nom}`, parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, ing.tracking_type === "unite" ? ing.poids_unite_g : null, ing.unite_piece, ing.emoji, ing.unite))
+      ingredients.map((ing) => nouvelleLigne(ing.food_id, `${ing.emoji} ${ing.nom}`, parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, poidsPieceDe(ing.tracking_type, ing.poids_unite_g, ing.unite_piece) || null, ing.unite_piece, ing.emoji, ing.unite))
     );
     preparerFormulaire({ id: String(recette.id), nom: recette.nom, etapes: recette.etapes || "", categorie: recette.categorie, lignes, supprimerVisible: true });
     afficher();
@@ -179,7 +207,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
   }
 
   function ajouterDepuisRecherche(aliment) {
-    const poids = poidsPieceDe(aliment.tracking_type, aliment.poids_unite_g);
+    const poids = poidsPieceDe(aliment.tracking_type, aliment.poids_unite_g, aliment.unite);
     const ligne = nouvelleLigne(aliment.id, `${aliment.emoji} ${aliment.nom}`, "", aliment.grammes_par_cuil_a_cafe ?? "", aliment.grammes_par_cuil_a_soupe ?? "", poids || "", aliment.unite || "", aliment.emoji);
     const existante = formulaire.lignes.find((l) => l.foodId === ligne.foodId);
     const lignes = existante ? formulaire.lignes : [...formulaire.lignes, ligne];
@@ -224,6 +252,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
 
   async function enregistrer(event) {
     event.preventDefault();
+    const depart = event.nativeEvent?.submitter?.getBoundingClientRect();
     // Un clic répété pendant l'envoi créerait sinon plusieurs recettes.
     if (enregistrerDesactive) return;
     const texteInitial = texteEnregistrer;
@@ -285,6 +314,8 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     );
     setTexteEnregistrer(texteInitial);
     fermer();
+    // Les ingrédients filent ranger la recette dans l'onglet Recettes.
+    lancerVers(emojis, depart, [".calories-tab-btn:nth-child(2)"], "recoit");
   }
 
   function supprimer() {
@@ -316,6 +347,17 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
               <p id="recetteLectureMeta" className="recette-lecture-meta">{lecture.meta}</p>
             </div>
             <div className="detail-header-actions">
+              <BoutonOutil
+                icone="regle"
+                disabled={!recetteChargee}
+                onClick={(e) => {
+                  const depart = e.currentTarget.getBoundingClientRect();
+                  fermer();
+                  lancerVers(recetteChargee.ingredients.map((i) => i.emoji), depart, BALANCE, "recoit");
+                  onEnvoyerRegleX?.(String(recetteChargee.recette.id));
+                }}
+              />
+              <BoutonOutil icone="cuisiner" disabled={!recetteChargee || envoiCuisine} onClick={envoyerALaCuisine} />
               <button type="button" id="btnModifierRecette" className="btn-modifier-recette" title="Modifier" aria-label="Modifier la recette" onClick={ouvrirEdition}></button>
               <button type="button" className="sheet-close-btn" data-sheet-close title="Fermer" onClick={fermer}>✕</button>
             </div>

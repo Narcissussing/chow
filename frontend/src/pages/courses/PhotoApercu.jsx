@@ -1,5 +1,8 @@
+import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
+
 // Aperçu plein écran : fermé au tap en dehors ou sur ✕ ; la photo « s'aspire » vers l'œil (--vers-x/--vers-y).
 export default function PhotoApercu({ ouvert, src, fermeture, vers, refApercu, onFermer, onSupprimer }) {
+  useVerrouDefilement(ouvert, null);
   return (
     <div
       className={"photo-backdrop" + (ouvert ? " ouvert" : "")}
