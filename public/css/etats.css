@@ -2047,7 +2047,7 @@
   }
 }
 
-/* Bouton « À racheter » du titre, entre « Stock » et le compteur : icône de réassort, nombre dans une bulle. */
+/* Bouton « À racheter » du titre, entre « Stock » et le compteur : icône de réassort seule. */
 .btn-racheter {
   position: relative;
   flex-shrink: 0;
@@ -2091,29 +2091,6 @@
   from {
     transform: rotate(-180deg);
   }
-}
-
-.btn-racheter__nombre {
-  position: absolute;
-  top: -5px;
-  right: -6px;
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
-  box-sizing: border-box;
-  border-radius: 10px;
-  display: grid;
-  place-items: center;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.75rem;
-  font-weight: 700;
-  box-shadow: 0 0 0 2px var(--bg);
-}
-
-.btn-racheter.actif .btn-racheter__nombre {
-  background: var(--surface);
-  color: var(--accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

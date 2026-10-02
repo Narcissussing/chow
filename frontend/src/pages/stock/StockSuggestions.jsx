@@ -9,14 +9,12 @@ function texteNiveau(s) {
   return Number(s.quantite) === 0 ? "épuisé" : `${s.quantite} restant${Number(s.quantite) > 1 ? "s" : ""}`;
 }
 
-// Bouton « À racheter » du titre : icône de réassort, nombre restant dans une bulle.
+// Bouton « À racheter » du titre : icône de réassort seule.
 export function BoutonRacheter({ suggestions, ouvert, onBasculer }) {
-  const restantes = suggestions.filter((s) => !s.envoye).length;
   if (suggestions.length === 0) return null;
   return (
     <button type="button" className={"btn-racheter" + (ouvert ? " actif" : "")} title="À racheter" aria-label="À racheter" aria-expanded={ouvert} aria-controls="stockSuggestions" onClick={onBasculer}>
       <span className="btn-racheter__icone" aria-hidden="true"></span>
-      {restantes > 0 && <span className="btn-racheter__nombre">{restantes}</span>}
     </button>
   );
 }
