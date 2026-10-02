@@ -337,3 +337,19 @@ test("articles de l'autre téléphone : un par un dans l'ordre d'ajout, rythme s
   expect(carte("Pain")).not.toHaveClass("vient-d-arriver");
   delete Element.prototype.scrollIntoView;
 });
+
+test("bouton magasin : icône seule, état annoncé, entrée puis sortie animées", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  const bouton = document.getElementById("toggleMagasin");
+  expect(bouton.textContent.trim()).toBe("");
+  expect(bouton).toHaveAttribute("aria-pressed", "false");
+  expect(bouton).toHaveAttribute("aria-label", "Passer en mode magasin");
+  fireEvent.click(bouton);
+  expect(bouton).toHaveClass("actif", "entre");
+  expect(bouton).toHaveAttribute("aria-label", "Quitter le mode magasin");
+  expect(document.body).toHaveClass("mode-magasin");
+  fireEvent.click(bouton);
+  expect(bouton).toHaveClass("sort");
+  expect(bouton).not.toHaveClass("actif");
+});

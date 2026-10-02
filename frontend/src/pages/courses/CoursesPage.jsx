@@ -8,6 +8,7 @@ import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
 import { relancerClasse } from "../../utils/animation.js";
+import BoutonMagasin from "./BoutonMagasin.jsx";
 import CourseItem, { jouerPopPanier } from "./CourseItem.jsx";
 import PanneauAjout from "./PanneauAjout.jsx";
 import PhotoApercu from "./PhotoApercu.jsx";
@@ -579,12 +580,7 @@ function Courses({ donnees }) {
                 }}
               />
             </div>
-            <button type="button" id="toggleMagasin" className={"toggle-ios" + (magasin ? " actif" : "")} onClick={basculerMagasin}>
-              <span className="toggle-ios__track">
-                <span className="toggle-ios__thumb"></span>
-              </span>
-              <span className="toggle-ios__label">Au magasin</span>
-            </button>
+            <BoutonMagasin actif={magasin} onBasculer={basculerMagasin} />
             <span id="badgeCoursesAncre"></span>
             {badgeEnBarre && badgeCourses}
             <button

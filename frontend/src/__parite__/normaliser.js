@@ -41,6 +41,8 @@ export function lignesCanoniques(noeud, profondeur = 0, lignes = []) {
   if (noeud.classList.contains("home-link-emoji") || noeud.classList.contains("home-link-icone")) return lignes;
   // Écart voulu : bandeaux Stock/Courses/Calories remplacés par un titre compact (Aliments reste comparé).
   if (noeud.matches(".page-header, #heroCourses, .titre-page, .page-header__description, .journal-section > h1")) return lignes;
+  // Écart voulu : interrupteur « Au magasin » remplacé par le bouton icône (le magasin devient caddie).
+  if (noeud.id === "toggleMagasin") return lignes;
   lignes.push(`${retrait}<${noeud.tagName.toLowerCase()}${attributs(noeud).map((a) => " " + a).join("")}>`);
   // Textes adjacents fusionnés : EJS et React découpent différemment "{n} aliments…".
   let tampon = "";
