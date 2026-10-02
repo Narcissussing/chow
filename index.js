@@ -48,6 +48,8 @@ await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS ajoute BOOLEA
 await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS photo BYTEA");
 // Historique d'achats daté (suggestions « À racheter » du Stock) ; date_ajout n'était jamais renseignée.
 await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS date_achat TIMESTAMPTZ");
+// Boutons « + » d'achat (Courses → Stock) propres à l'aliment (ex. œufs 10/20/30) ; vide = +1/+2/+5.
+await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS pas_achat INTEGER[]");
 await db.query("ALTER TABLE courses ALTER COLUMN date_ajout SET DEFAULT CURRENT_DATE");
 // Comble l'ordre des entrées existantes (jamais réordonnées) par heure d'ajout ; idempotent.
 await db.query(`
@@ -274,7 +276,7 @@ async function chercherCourses() {
                 courses.date_ajout,
                 (courses.photo IS NOT NULL) AS has_photo,
                 COALESCE(foods.nom, courses.nom_libre) AS nom, COALESCE(foods.emoji, '🆕') AS emoji,
-                foods.unite AS food_unite, foods.tracking_type, foods.categorie, stock.quantite AS quantite_stock
+                foods.unite AS food_unite, foods.tracking_type, foods.categorie, foods.pas_achat, stock.quantite AS quantite_stock
          FROM courses
          LEFT JOIN foods ON courses.food_id = foods.id
          LEFT JOIN stock ON stock.food_id = courses.food_id
@@ -633,7 +635,7 @@ app.post(["/courses/ajouter", "/api/courses/ajouter"], async (req, res) => {
 
         const itemResult = await db.query(
             `SELECT courses.*, COALESCE(foods.nom, courses.nom_libre) AS nom, COALESCE(foods.emoji, '🆕') AS emoji,
-                    foods.unite AS food_unite, foods.tracking_type, foods.categorie, stock.quantite AS quantite_stock
+                    foods.unite AS food_unite, foods.tracking_type, foods.categorie, foods.pas_achat, stock.quantite AS quantite_stock
              FROM courses
              LEFT JOIN foods ON courses.food_id = foods.id
              LEFT JOIN stock ON stock.food_id = courses.food_id
@@ -686,7 +688,7 @@ app.post(["/courses/preset-hebdo", "/api/courses/preset-hebdo"], async (req, res
 
         const itemsResult = await db.query(
             `SELECT courses.*, COALESCE(foods.nom, courses.nom_libre) AS nom, COALESCE(foods.emoji, '🆕') AS emoji,
-                    foods.unite AS food_unite, foods.tracking_type, foods.categorie, stock.quantite AS quantite_stock
+                    foods.unite AS food_unite, foods.tracking_type, foods.categorie, foods.pas_achat, stock.quantite AS quantite_stock
              FROM courses
              LEFT JOIN foods ON courses.food_id = foods.id
              LEFT JOIN stock ON stock.food_id = courses.food_id

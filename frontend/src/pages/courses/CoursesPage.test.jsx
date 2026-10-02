@@ -357,3 +357,14 @@ test("bouton magasin : icône seule, état annoncé, entrée puis sortie animée
   expect(bouton).toHaveClass("sort");
   expect(bouton).not.toHaveClass("actif");
 });
+
+test("achat : quantités habituelles de l'aliment (œufs +10/+20/+30), +1/+2/+5 sinon", async () => {
+  const oeufs = { id: 4, food_id: "oeuf", nom: "Oeuf", emoji: "🥚", categorie: "Oeufs", tracking_type: "unite", quantite_stock: "2", commentaire: null, has_photo: false, pas_achat: [10, 20, 30] };
+  ouvrirCourses({}, { courses: [...COURSES, oeufs] });
+  await attendrePage();
+  const textes = (nom) => [...carte(nom).querySelectorAll(".suggestion")].map((b) => b.textContent);
+  expect(textes("Oeuf")).toEqual(["+10", "+20", "+30"]);
+  expect(textes("Riz")).toEqual(["+1", "+2", "+5"]);
+  await act(async () => fireEvent.click([...carte("Oeuf").querySelectorAll(".suggestion")].find((b) => b.textContent === "+20")));
+  expect(requetes).toContainEqual({ chemin: "/courses/acheter", corps: { idCourse: "4", quantiteAchetee: "20" } });
+});

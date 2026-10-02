@@ -176,7 +176,8 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
           <input type="hidden" name="idCourse" value={item.id} />
           <div className="course-item__quantite-groupe">
             <div className="suggestions-quantite">
-              {[1, 2, 5].map((v) => (
+              {/* Quantités habituelles d'achat de l'aliment (œufs 20/30, baguettes par 6…), sinon +1/+2/+5. */}
+              {(item.pas_achat?.length ? item.pas_achat : [1, 2, 5]).map((v) => (
                 <button
                   key={v}
                   type="button"
