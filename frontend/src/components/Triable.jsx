@@ -1,7 +1,6 @@
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 // Liste réordonnable au glisser (Cuisine, ingrédients de recette) ; onDeplacer(depuis, vers) en index.
 export function ListeTriable({ ids, onDeplacer, children }) {
@@ -35,9 +34,11 @@ export function useTriable(id, ref) {
 
   const poignee = <button type="button" ref={setActivatorNodeRef} className="poignee-glisser" title="Glisser pour déplacer" aria-label="Glisser pour déplacer" {...attributes} {...listeners}></button>;
 
+  // Propriété "translate", pas "transform" : l'animation popIn (fill "both") des lignes .entree garderait
+  // son transform final et figerait la ligne sous le doigt.
   return {
     refNoeud,
-    style: { transform: CSS.Translate.toString(transform), transition },
+    style: { translate: transform ? `${Math.round(transform.x)}px ${Math.round(transform.y)}px` : undefined, transition: transition?.replace(/\btransform\b/g, "translate") },
     classe: isDragging ? " en-glisse" : "",
     poignee,
   };
