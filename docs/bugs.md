@@ -33,6 +33,81 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-? — Le panneau recette ne défile plus
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/hooks/useVerrouDefilement.js`, `frontend/src/pages/calories/RecetteSheet.jsx`
+- **Date de signalement** : 2026-10-02
+- **Date de correction** : 2026-10-02
+
+**Étapes de reproduction** :
+
+1. iPhone, Calories → Recettes, ouvrir une recette longue.
+2. Faire glisser le panneau vers le haut.
+
+**Résultat attendu** : la recette défile, la page derrière reste figée.
+
+**Résultat obtenu** : la recette ne défile pas.
+
+**Correction** : panneau à la hauteur visible réelle (`100dvh`, marge pour la barre Safari) au lieu de `100vh`, qui cachait le bas sous la barre ; le verrou de page laisse défiler les listes des sélecteurs. Cause sur iPhone non confirmée : à vérifier en BFV.
+
+### CHOW-? — Listes déroulantes de plus de 5 lignes
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `public/css/style.css` (limite posée par id), `public/css/etats.css`
+- **Date de signalement** : 2026-10-02
+- **Date de correction** : 2026-10-02
+
+**Étapes de reproduction** :
+
+1. Calories → Adapter, ouvrir la liste des recettes.
+
+**Résultat attendu** : 5 lignes visibles, le reste en défilant, comme partout.
+
+**Résultat obtenu** : toute la liste s'affiche ; la limite ne vise que les
+deux sélecteurs de recettes de la Cuisine.
+
+**Correction** : limite de 5 lignes (215 px, défilement) appliquée à toutes les `.custom-select__list` dans `etats.css`.
+
+### CHOW-? — Quantités adaptées sans arrondi
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/calories/RecetteSheet.jsx` (`nouvelleLigne`), `AdapterRecette.jsx`
+- **Date de signalement** : 2026-10-02
+- **Date de correction** : 2026-10-02
+
+**Étapes de reproduction** :
+
+1. Calories → Adapter, choisir une recette en grammes.
+2. Saisir une quantité qui donne un rapport non rond (ex. 100 g au lieu de 300 g).
+
+**Résultat attendu** : valeurs arrondies : entier sans décimale, sinon une seule (`toFixed(1)`).
+
+**Résultat obtenu** : valeurs brutes (ex. 166.66666666666666 g).
+
+**Correction** : grammes arrondis au centième dans `nouvelleLigne` ; RègleX affiche un entier sans décimale, sinon une décimale (`toFixed(1)`).
+
+### CHOW-? — Champs de saisie de tailles différentes
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `public/css/style.css`, `public/css/etats.css`
+- **Date de signalement** : 2026-10-02
+- **Date de correction** : 2026-10-02
+
+**Étapes de reproduction** :
+
+1. Comparer les champs de quantité (Cuisine, recette, Adapter, Courses).
+
+**Résultat attendu** : tous les champs ont la même taille.
+
+**Résultat obtenu** : largeurs et hauteurs différentes selon la page.
+
+**Correction** : hauteur 38 px et texte 0,9 rem pour tous les champs ; champs de quantité à 80 px de large (`etats.css`).
+
 ### CHOW-? — Achat compté deux fois dans le Stock
 
 - **Niveau** : Majeure
@@ -118,8 +193,10 @@ identifié six incohérences à confirmer :
 - **Salsa** : 6,8 kcal, portion de 15 g et macros incompatibles entre elles ;
   étiquette ou recette exacte à confirmer.
 
-**Correction** : non commencée. Confirmer les étiquettes, surtout Knacki
-Poulet, Poundo Yam et Salsa. Les autres écarts détectés par la formule macros →
+**Correction** : œufs corrigés le 2026-10-02 (dev et production) : un seul
+« Oeuf » (`oeuf-moyen`, 55 g la pièce) aux valeurs ramenées à 100 g
+(145,5 kcal) ; « Oeuf Large », inutilisé, supprimé. Reste : confirmer les
+étiquettes, surtout Knacki Poulet, Poundo Yam et Salsa. Les autres écarts détectés par la formule macros →
 énergie peuvent venir des fibres, de l’alcool ou des arrondis et ne suffisent
 pas seuls à justifier une modification.
 

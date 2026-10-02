@@ -83,7 +83,8 @@ remplace l’ensemble de ses lignes dans une opération, sans calcul de diff.
 | `quantite_g` | Quantité consommée en grammes |
 | `date_entree` | Journée de la Cuisine |
 | `ordre` | Position manuelle dans la journée |
-| `unite` | Unité affichée (`g`, `cafe`, `soupe`, `piece`) ; `NULL` = grammes |
+| `unite` | Unité affichée (`g`, `cafe`, `soupe`, `piece`, `ml`, `l`) ; `NULL` = grammes |
+| `ajoute` | Déjà mis dans le plat (double-tap dans la Cuisine) |
 
 Les calories et macros calculées ne sont pas stockées :
 `valeur_food × quantite_g / 100`.
