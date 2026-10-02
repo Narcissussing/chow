@@ -187,7 +187,7 @@ itemsAutocomplete.forEach(function (item) {
 
     const itemExistant = trouverJournalItemParFoodId(idAliment);
     if (itemExistant) {
-      afficherToast("Déjà dans le journal d'aujourd'hui.");
+      afficherToast("Déjà en cuisine aujourd'hui.");
       mettreEnAvantJournalItem(itemExistant);
       return;
     }
@@ -719,7 +719,7 @@ selectRecetteFraicheur.addEventListener("change", function () {
 
 // Vide complètement le journal du jour, après confirmation de l'utilisateur
 btnToutEffacer.addEventListener("click", function () {
-  if (!confirm("Effacer tout le journal d'aujourd'hui ?")) return;
+  if (!confirm("Vider la cuisine d'aujourd'hui ?")) return;
 
   fetch("/calories/vider", {
     method: "POST",

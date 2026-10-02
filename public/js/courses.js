@@ -290,6 +290,14 @@ function retirerEntetesCategories() {
     });
 }
 
+// Retire l'en-tête d'un rayon vidé par un achat/suppression (l'en-tête suivant ou le panneau vient juste après).
+function retirerEntetesVides() {
+    listeCourses.querySelectorAll(".course-categorie-entete").forEach(function (entete) {
+        const suivant = entete.nextElementSibling;
+        if (!suivant || !suivant.classList.contains("course-item")) entete.remove();
+    });
+}
+
 // Renvoie la clé de tri actuellement active, en lisant directement la valeur du select
 function cleTriActive() {
     return sortSelectCourses.value;
@@ -1000,6 +1008,7 @@ function retirerItem(form, classeAnim) {
     item.classList.add(classeAnim);
     setTimeout(function () {
         item.remove();
+        retirerEntetesVides();
         mettreAJourBoutonPresetHebdo();
         mettreAJourMessageVideCourses();
         mettreAJourBadgeCourses(classeAnim === "disparait-supprimer" ? "suppression" : "achat");
