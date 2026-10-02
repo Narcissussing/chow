@@ -285,3 +285,231 @@ test("unité enregistrée : reprise dans la Cuisine et dans la lecture d'une rec
   await act(async () => fireEvent.click(carteRecette("Omelette")));
   expect([...document.querySelectorAll(".recette-lecture-ing-qte")].map((q) => q.textContent)).toEqual(["2 tbs", "2 pièce"]);
 });
+
+test("RègleX : recette collée lue et reliée aux aliments, aliment manquant créé, adaptée puis envoyée à la Cuisine", async () => {
+  const beurre = { id: "beurre", nom: "Beurre", emoji: "🧈", tracking_type: "unite", grammes_par_cuil_a_cafe: null, grammes_par_cuil_a_soupe: null, poids_unite_g: "0.00", unite: "g", calories: "717" };
+  ouvrir({
+    "/aliments": [200, { succes: true, aliment: beurre }],
+    "/calories/ajouter-ingredients": [200, { succes: true, items: [entree(30, huile, 54, 486)] }],
+  });
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  expect(within(panneau).queryByLabelText("Ingrédients de la recette")).toBeNull();
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "2 c. à soupe\nd'huile\n\n3\noeufs\n\n100 g\nde beurre" } });
+  const qtes = () => [...panneau.querySelectorAll(".adapter__qte")].map((q) => q.textContent);
+  // huile et oeuf reconnus (cuillères et pièces gardées), beurre inconnu.
+  expect(qtes()).toEqual(["2 tbs", "3 pièce", "—"]);
+  expect(panneau.querySelector(".adapter__reste")).toHaveTextContent("1 à compléter");
+  expect(within(panneau).getByRole("button", { name: "Ajouter à la Cuisine" })).toBeDisabled();
+  // Création du beurre (valeurs pour 100 g).
+  fireEvent.click(within(panneau).getByRole("button", { name: "Ajouter « beurre » aux aliments" }));
+  fireEvent.change(panneau.querySelector(".adapter__valeurs input"), { target: { value: "717" } });
+  await act(async () => fireEvent.submit(panneau.querySelector(".adapter__creation")));
+  expect(requetes.at(-1)).toEqual({ chemin: "/aliments", corps: { nom: "Beurre", categorie: "Divers", calories: "717", proteines: "", glucides: "", lipides: "" } });
+  expect(qtes()).toEqual(["2 tbs", "3 pièce", "100 g"]);
+  expect(panneau.querySelector(".adapter__reste")).toBeNull();
+  // ×2 : sens visible, quantités de la recette grisées.
+  fireEvent.click(within(panneau).getByRole("button", { name: "2" }));
+  expect(qtes()).toEqual(["4 tbs", "6 pièce", "200 g"]);
+  expect(within(panneau).getByRole("img", { name: "Recette agrandie" })).toBeInTheDocument();
+  expect(panneau.querySelector(".adapter__base")).toHaveClass("grisee");
+  // « J'ai seulement 40 g de beurre » : 40 / 100 = 0,4 pour tout.
+  fireEvent.click(panneau.querySelectorAll(".adapter__qte")[2]);
+  const champ = within(panneau).getByLabelText("Quantité de beurre que j'ai");
+  fireEvent.change(champ, { target: { value: "40" } });
+  fireEvent.blur(champ);
+  expect(qtes()).toEqual(["0.8 tbs", "1.2 pièce", "40 g"]);
+  expect(within(panneau).getByRole("img", { name: "Recette réduite" })).toBeInTheDocument();
+  await act(async () => fireEvent.click(within(panneau).getByRole("button", { name: "Ajouter à la Cuisine" })));
+  expect(requetes.at(-1)).toEqual({
+    chemin: "/calories/ajouter-ingredients",
+    corps: { ingredients: [{ food_id: "huile", quantite_g: 10.8, unite: "soupe" }, { food_id: "oeuf", quantite_g: 72, unite: "piece" }, { food_id: "beurre", quantite_g: 40, unite: "g" }] },
+  });
+  expect(document.querySelector(".calories-tab-panel.actif #listeJournal")).not.toBeNull();
+});
+
+test("RègleX, bouton recettes (plats) : la recette enregistrée garde ses unités et s'adapte", async () => {
+  ouvrir();
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  choisirDans(panneau.querySelector("select.select-recette-icone"), "Omelette");
+  await act(async () => {});
+  const qtes = () => [...panneau.querySelectorAll(".adapter__qte")].map((q) => q.textContent);
+  expect(qtes()).toEqual(["10 g", "120 g"]);
+  fireEvent.click(within(panneau).getByRole("button", { name: "1½" }));
+  expect(qtes()).toEqual(["15 g", "180 g"]);
+  expect(within(panneau).queryByRole("button", { name: "Enregistrer en recette" })).toBeNull();
+});
+
+test("recette ouverte : l'icône de cuisson l'envoie à la Cuisine, ferme le panneau et ouvre l'onglet Cuisine", async () => {
+  ouvrir({ "/calories/ajouter-recette": [200, { succes: true, items: [entree(40, huile, 10, 90)] }] });
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "Recettes" }));
+  await act(async () => fireEvent.click(carteRecette("Omelette")));
+  const bouton = within(document.getElementById("recetteLecture")).getByRole("button", { name: "Ajouter à la Cuisine" });
+  await act(async () => fireEvent.click(bouton));
+  expect(requetes.at(-1)).toEqual({ chemin: "/calories/ajouter-recette", corps: { idRecette: "7" } });
+  expect(document.getElementById("sheet")).not.toHaveClass("ouvert");
+  expect(document.querySelector(".calories-tab-panel.actif #listeJournal")).not.toBeNull();
+});
+
+test("RègleX : un choix fait une fois est repris au collage suivant", async () => {
+  localStorage.clear();
+  ouvrir();
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  const coller = (texte) => fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: texte } });
+  coller("200 g de grains");
+  expect(panneau.querySelector(".adapter__qte")).toHaveTextContent("—");
+  choisirDans(panneau.querySelector("select.adapter__choix"), "🍚 Riz");
+  expect(panneau.querySelector(".adapter__qte")).toHaveTextContent("200 g");
+  coller("");
+  coller("150 g de grains");
+  expect(panneau.querySelector(".adapter__qte")).toHaveTextContent("150 g");
+  localStorage.clear();
+});
+
+test("envoyer dans RègleX : depuis une recette ouverte et depuis la Cuisine du jour", async () => {
+  ouvrir();
+  await attendrePage();
+  const panneau = () => document.getElementById("panneauAdapter");
+  const qtes = () => [...panneau().querySelectorAll(".adapter__qte")].map((q) => q.textContent);
+  // Cuisine du jour (Huile 13.5 g en tbs enregistrée ou non, Oeuf 60 g) → RègleX.
+  fireEvent.click(within(document.querySelector(".journal-actions-row")).getByRole("button", { name: "Adapter dans RègleX" }));
+  expect(panneau()).toHaveClass("actif");
+  expect(qtes()).toEqual(["13.5 g", "60 g"]);
+  // Recette ouverte → RègleX : panneau fermé, recette chargée.
+  fireEvent.click(screen.getByRole("button", { name: "Recettes" }));
+  await act(async () => fireEvent.click(carteRecette("Omelette")));
+  fireEvent.click(within(document.getElementById("recetteLecture")).getByRole("button", { name: "Adapter dans RègleX" }));
+  await act(async () => {});
+  expect(document.getElementById("sheet")).not.toHaveClass("ouvert");
+  expect(panneau()).toHaveClass("actif");
+  expect(qtes()).toEqual(["10 g", "120 g"]);
+  expect(panneau().querySelector("select.select-recette-icone")).toHaveClass("actif");
+});
+
+test("RègleX : « Tout effacer » fait tomber les lignes puis vide le texte, les lignes et le facteur", async () => {
+  jest.useFakeTimers();
+  ouvrir();
+  await act(async () => jest.runOnlyPendingTimers());
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  // Toujours présent pour que la rangée ne bouge pas : seulement désactivé quand il n'y a rien.
+  expect(panneau.querySelector("#adapterEffacer")).toBeDisabled();
+  const ordre = [...panneau.querySelector(".adapter__sources").children].map((e) => e.getAttribute("aria-label") || e.className);
+  expect(ordre[0]).toBe("Coller une recette");
+  expect(ordre.at(-1)).toBe("btn-x-rond");
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "100 g de riz" } });
+  fireEvent.click(within(panneau).getByRole("button", { name: "2" }));
+  fireEvent.click(panneau.querySelector("#adapterEffacer"));
+  expect(panneau.querySelector(".adapter__liste")).toHaveClass("adapter__liste--vidage");
+  act(() => jest.advanceTimersByTime(420));
+  expect(panneau.querySelectorAll(".adapter__ligne")).toHaveLength(0);
+  expect(within(panneau).queryByLabelText("Ingrédients de la recette")).toBeNull();
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  expect(within(panneau).getByLabelText("Ingrédients de la recette")).toHaveValue("");
+});
+
+test("RègleX : ✕ retire une ligne inutile (« sel » sans quantité) et débloque l'envoi à la Cuisine", async () => {
+  ouvrir();
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "100 g de riz\nsel" } });
+  expect(within(panneau).getByRole("button", { name: "Ajouter à la Cuisine" })).toBeDisabled();
+  fireEvent.click(within(panneau).getByRole("button", { name: "Retirer « sel »" }));
+  expect(panneau.querySelectorAll(".adapter__ligne")).toHaveLength(1);
+  expect(within(panneau).getByRole("button", { name: "Ajouter à la Cuisine" })).not.toBeDisabled();
+});
+
+test("RègleX : la précision de la recette s'affiche sous l'aliment (« de tournesol » → Huile + « tournesol »)", async () => {
+  ouvrir();
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "6 cuillères à soupe d’Huile de tournesol" } });
+  expect(panneau.querySelector(".adapter__note")).toHaveTextContent("tournesol");
+  expect(panneau.querySelector(".adapter__qte")).toHaveTextContent("6 tbs");
+});
+
+test("RègleX vide : l'animation des ingrédients s'affiche, puis disparaît dès qu'on colle", async () => {
+  ouvrir();
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  expect(panneau.querySelectorAll(".adapter__vide .adapter__vide-ing")).toHaveLength(3);
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  expect(panneau.querySelector(".adapter__vide")).toBeNull();
+});
+
+test("Cuisine : double-tap sur une carte = ingrédient ajouté au plat (coché, enregistré) ; un double-tap de plus l'enlève", async () => {
+  ouvrir({ "/calories/ajoute": [200, { succes: true }] });
+  await attendrePage();
+  const carte = ligne("Huile");
+  // Un seul tap ne fait rien ; un tap sur le champ de quantité non plus.
+  fireEvent.click(carte.querySelector(".journal-nom"));
+  expect(carte).not.toHaveClass("ajoute");
+  fireEvent.click(carte.querySelector(".journal-grammes-input"));
+  fireEvent.click(carte.querySelector(".journal-grammes-input"));
+  expect(carte).not.toHaveClass("ajoute");
+  await act(async () => fireEvent.click(carte.querySelector(".journal-nom")));
+  expect(ligne("Huile")).toHaveClass("ajoute");
+  expect(ligne("Huile").querySelector(".journal-coche")).not.toBeNull();
+  expect(requetes.at(-1)).toEqual({ chemin: "/calories/ajoute", corps: { idEntree: "1", ajoute: true } });
+  await new Promise((r) => setTimeout(r, 400));
+  fireEvent.click(ligne("Huile").querySelector(".journal-nom"));
+  await act(async () => fireEvent.click(ligne("Huile").querySelector(".journal-nom")));
+  expect(ligne("Huile")).not.toHaveClass("ajoute");
+  expect(requetes.at(-1)).toEqual({ chemin: "/calories/ajoute", corps: { idEntree: "1", ajoute: false } });
+});
+
+test("RègleX : « Huile d’olive-10 ml (2 c. à thé) » → 2 tbs/tsp pour un solide mesuré à la cuillère, ml gardés pour un liquide", async () => {
+  ouvrir();
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  const panneau = document.getElementById("panneauAdapter");
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  // L'huile du jeu de test n'est pas un liquide (unité g) et connaît la cuillère à café : la cuillère l'emporte.
+  fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "Huile d’olive-10 ml (2 c. à thé)\nRiz-150 ml (½ tasse)" } });
+  expect([...panneau.querySelectorAll(".adapter__qte")].map((q) => q.textContent)).toEqual(["2 tsp", "150 g"]);
+});
+
+test("Cuisine vide : une des quatre animations de cuisson, tirée au hasard ; disparaît dès qu'un aliment est ajouté", async () => {
+  ouvrir({}, { journal: [] });
+  await attendrePage();
+  const animation = document.querySelector(".cuisine-vide");
+  expect(["marmite", "couvercle", "poele", "recette"]).toContain(animation.dataset.animation);
+  expect(document.getElementById("noResultsJournal")).not.toHaveClass("hidden");
+});
+
+test("Calories : badge marmite avec le nombre d'aliments de la Cuisine du jour", async () => {
+  ouvrir();
+  await attendrePage();
+  expect(document.querySelector(".badge-compteur--cuisine")).toHaveTextContent("2");
+  expect(document.querySelector(".cuisine-vide")).toBeNull();
+});
+
+test("badge du titre : marmite (aliments de la Cuisine) sauf sur RègleX, où une balance compte les ingrédients", async () => {
+  ouvrir();
+  await attendrePage();
+  const marmite = document.querySelector(".titre-page .badge-compteur--cuisine");
+  expect(marmite).toHaveTextContent(String(document.querySelectorAll(".journal-item").length));
+  fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
+  expect(document.querySelector(".titre-page .badge-compteur--cuisine")).toBeNull();
+  const panneau = document.getElementById("panneauAdapter");
+  fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
+  fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "100 g de riz\n2 oeufs" } });
+  expect(document.querySelector(".titre-page .badge-compteur--regle")).toHaveTextContent("2");
+  fireEvent.click(screen.getByRole("button", { name: "Recettes" }));
+  expect(document.querySelector(".titre-page .badge-compteur--cuisine")).not.toBeNull();
+});

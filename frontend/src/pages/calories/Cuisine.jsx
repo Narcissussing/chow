@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../../api.js";
 import { arrayMove } from "@dnd-kit/sortable";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
+import BoutonOutil from "../../components/BoutonOutil.jsx";
 import CustomSelect from "../../components/CustomSelect.jsx";
 import { ListeTriable } from "../../components/Triable.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { afficherToast } from "../../toast.js";
+import { BALANCE, lancerDansLaMarmite, lancerVers, relancerClasse } from "../../utils/animation.js";
 import { normaliserTexte } from "../../utils/texte.js";
 import CuisineItem, { equivalencesEntree } from "./CuisineItem.jsx";
+import CuisineVide from "./CuisineVide.jsx";
 
 const SELECTS = [
   { categorie: "plat", id: "selectRecettePlat", ariaLabel: "Remplacer la cuisine du jour par une recette", vide: "Aucune recette de plat", titre: "Aucune recette de plat pour le moment" },
@@ -28,7 +31,7 @@ function boutonRecetteVisible(entrees, recettes) {
   });
 }
 
-export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes, selects, onEnregistrerRecette }) {
+export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes, selects, onEnregistrerRecette, onEnvoyerRegleX }) {
   const planifier = useMinuteurs();
   const champ = useRef(null);
   const zone = useRef(null);
@@ -60,7 +63,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
 
   // ---------- Ajout direct (100 g), doublon mis en avant ----------
 
-  function choisir(aliment) {
+  function choisir(aliment, ligne) {
     setTexte("");
     setListeVisible(false);
     const existante = entrees.find((e) => String(e.food_id) === String(aliment.id));
@@ -71,6 +74,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
     }
     if (verrous.current.has(aliment.id)) return;
     verrous.current.add(aliment.id);
+    lancerDansLaMarmite(aliment.emoji, ligne);
     api("/calories/ajouter", { method: "POST", body: { idAliment: aliment.id, quantiteG: 100 } })
       .then(({ donnees }) => {
         if (donnees?.erreur) {
@@ -126,6 +130,24 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
       .catch(() => {});
   }
 
+  // Coché tout de suite ; revient en arrière si le serveur refuse ou si le réseau tombe.
+  function basculerAjoute(entree) {
+    const ajoute = !entree.ajoute;
+    const appliquer = (valeur) => setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, ajoute: valeur } : e)));
+    appliquer(ajoute);
+    // Petit saut et étincelles quand l'ingrédient part dans le plat.
+    if (ajoute) {
+      majEffets(entree.id, { saut: false });
+      planifier(() => majEffets(entree.id, { saut: true }), 0);
+      planifier(() => majEffets(entree.id, { saut: false }), 700);
+    }
+    api("/calories/ajoute", { method: "POST", body: { idEntree: String(entree.id), ajoute } })
+      .then(({ donnees }) => {
+        if (donnees?.erreur) appliquer(!ajoute);
+      })
+      .catch(() => appliquer(!ajoute));
+  }
+
   function supprimer(entree) {
     api("/calories/supprimer", { method: "POST", body: { idEntree: String(entree.id) } })
       .then(({ donnees }) => {
@@ -140,16 +162,19 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
       .catch(() => {});
   }
 
-  function toutEffacer() {
+  function toutEffacer(event) {
     if (!confirm("Vider la cuisine d'aujourd'hui ?")) return;
+    relancerClasse(event?.currentTarget, "btn-x-rond--tourne");
     api("/calories/vider", { method: "POST" })
       .then(({ donnees }) => {
         if (donnees?.erreur) {
           alert(donnees.erreur);
           return;
         }
-        setEntrees((liste) => liste.map((e) => ({ ...e, effets: { ...e.effets, disparait: true } })));
-        planifier(() => setEntrees([]), 300);
+        // Tout tombe de la planche, l'un après l'autre.
+        const n = entrees.length;
+        setEntrees((liste) => liste.map((e, i) => ({ ...e, effets: { ...e.effets, disparait: true, chute: true, rang: Math.min(i, 8) } })));
+        planifier(() => setEntrees([]), 420 + Math.min(n - 1, 8) * 50);
       })
       .catch(() => {});
   }
@@ -165,7 +190,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
           alert(donnees.erreur);
           return;
         }
-        setEntrees(donnees.items.map((item) => preparer(item, { entree: true })));
+        setEntrees(donnees.items.map((item, i) => preparer(item, { entree: true, rang: Math.min(i, 10) })));
         setValeursSelects((v) => ({ ...v, [categorie]: "" }));
       })
       .catch((err) => {
@@ -207,7 +232,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
           </div>
           <ul id="listeAlimentsCalories" hidden={!listeVisible}>
             {suggestions.map((s) => (
-              <li key={s.id} hidden={!s.visible} onClick={() => choisir(s)}>
+              <li key={s.id} hidden={!s.visible} onClick={(e) => choisir(s, e.currentTarget)}>
                 {s.emoji} {s.nom}
               </li>
             ))}
@@ -234,6 +259,13 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
           );
         })}
 
+        {actives.length > 0 && <BoutonOutil
+            icone="regle"
+            onClick={(e) => {
+              lancerVers(actives.map((a) => a.emoji), e.currentTarget, BALANCE, "recoit");
+              onEnvoyerRegleX(actives);
+            }}
+          />}
         <button type="button" id="btnToutEffacer" className="btn-x-rond" title="Tout effacer" onClick={toutEffacer}>
           Tout effacer
         </button>
@@ -277,11 +309,13 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
               onEnregistrerQuantite={(grammes, unite) => enregistrerQuantite(entree, grammes, unite)}
               onChangerUnite={(unite) => changerUnite(entree, unite)}
               onSupprimer={() => supprimer(entree)}
+              onBasculerAjoute={() => basculerAjoute(entree)}
             />
           ))}
         </ListeTriable>
       </div>
 
+      {actives.length === 0 && <CuisineVide />}
       <p className={"no-results" + (actives.length > 0 ? " hidden" : "")} id="noResultsJournal">Rien d'ajouté aujourd'hui.</p>
     </div>
   );

@@ -82,7 +82,7 @@ function GroupeRecettes({ categorie, recettes, onOuvrir, onNouvelle }) {
           .map((c) => parCle[c])
           .filter(Boolean)
           .map((recette) => (
-            <div key={recette.cle} className={"recette-card" + (recette.sortant ? " disparait" : "")} onClick={() => onOuvrir(recette.id, recette.nb_ingredients, recette.kcal_total)}>
+            <div key={recette.cle} className={"recette-card" + (recette.sortant ? " disparait" : recette.nouvelle ? " recette-card--nouvelle" : "")} onClick={() => onOuvrir(recette.id, recette.nb_ingredients, recette.kcal_total)}>
               <IconeRecette recette={recette} />
               <div className="recette-corps">
                 <p className="recette-nom">{recette.nom}</p>

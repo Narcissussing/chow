@@ -43,6 +43,16 @@ export function lignesCanoniques(noeud, profondeur = 0, lignes = []) {
   if (noeud.matches(".page-header, #heroCourses, .titre-page, .page-header__description, .journal-section > h1")) return lignes;
   // Écart voulu : interrupteur « Au magasin » remplacé par le bouton icône (le magasin devient caddie).
   if (noeud.id === "toggleMagasin") return lignes;
+  // Écart voulu : troisième onglet Calories (Adapter une recette).
+  if (noeud.id === "ongletAdapter" || noeud.id === "panneauAdapter") return lignes;
+  // Écart voulu : icône de cuisson « Ajouter à la Cuisine » dans l'en-tête d'une recette ouverte.
+  if (noeud.classList.contains("btn-outil")) return lignes;
+  // Écart voulu : animation de la Cuisine vide et badges de total (Stock, Calories).
+  if (noeud.matches?.(".cuisine-vide, .badge-compteur")) return lignes;
+  // Écart voulu : encart « À racheter » et filtre « Bas » du Stock.
+  if (noeud.matches?.(".stock-suggestions, .filter-btn--bas")) return lignes;
+  // Écart voulu : unités ajoutées dans les sélecteurs de quantité (gousse pour l'ail, ml / L pour les liquides).
+  if (noeud.tagName === "OPTION" && noeud.value !== "g" && noeud.parentElement?.matches(".journal-unite-select, .ingredient-unite-recette")) return lignes;
   lignes.push(`${retrait}<${noeud.tagName.toLowerCase()}${attributs(noeud).map((a) => " " + a).join("")}>`);
   // Textes adjacents fusionnés : EJS et React découpent différemment "{n} aliments…".
   let tampon = "";

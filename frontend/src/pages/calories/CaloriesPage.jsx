@@ -4,6 +4,8 @@ import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import Cuisine from "./Cuisine.jsx";
 import Recettes from "./Recettes.jsx";
+import BadgeCompteur from "../../components/BadgeCompteur.jsx";
+import AdapterRecette from "./AdapterRecette.jsx";
 import RecetteSheet from "./RecetteSheet.jsx";
 
 let compteurCles = 0;
@@ -15,10 +17,14 @@ function Calories({ donnees }) {
   const sentinelle = useRef(null);
   const totaux = useRef(null);
   const sheet = useRef(null);
+  const regleX = useRef(null);
   const [onglet, setOnglet] = useState("journal");
+  const [nbRegleX, setNbRegleX] = useState(0);
   const [compacte, setCompacte] = useState(false);
   const [entrees, setEntrees] = useState(() => donnees.journal.map((e) => ({ ...e, effets: {} })));
   const [recettes, setRecettes] = useState(() => donnees.recettes.map(avecCle));
+  // État (et non donnees) : un aliment créé depuis RègleX doit apparaître partout tout de suite.
+  const [aliments, setAliments] = useState(donnees.aliments);
   // Un sélecteur vide au chargement reste actif dès sa première recette, même si on la supprime ensuite.
   const [selects, setSelects] = useState(() => {
     const etat = (categorie) => {
@@ -28,7 +34,7 @@ function Calories({ donnees }) {
     return { plat: etat("plat"), fraicheur: etat("fraicheur") };
   });
 
-  const alimentsTries = [...donnees.aliments].sort((a, b) => a.nom.localeCompare(b.nom));
+  const alimentsTries = [...aliments].sort((a, b) => a.nom.localeCompare(b.nom));
 
   // Sur mobile, le résumé complet se réduit aux calories une fois collé sous le header.
   useEffect(() => {
@@ -53,7 +59,7 @@ function Calories({ donnees }) {
   const somme = (cle) => entrees.filter((e) => !e.effets.disparait).reduce((total, e) => total + Number(e[cle]), 0);
 
   function recetteEnregistree(recette, ancienId) {
-    setRecettes((liste) => [...liste.filter((r) => r.id !== ancienId), avecCle(recette)]);
+    setRecettes((liste) => [...liste.filter((r) => r.id !== ancienId), { ...avecCle(recette), nouvelle: true }]);
     setSelects((s) => (s[recette.categorie].desactive ? { ...s, [recette.categorie]: { desactive: false, texteVide: false } } : s));
   }
 
@@ -68,7 +74,12 @@ function Calories({ donnees }) {
         <div className="journal-section">
           <div className="titre-page">
             <h1>Calories</h1>
-            <span className="titre-page__chiffre">{somme("calories_calc").toFixed(0)} kcal</span>
+            {/* Balance et ingrédients de RègleX sur son onglet, marmite et aliments de la Cuisine ailleurs ; clé = icône pour rejouer l'entrée au changement. */}
+            {onglet === "adapter" ? (
+              <BadgeCompteur key="regle" icone="regle" nombre={nbRegleX} label="Ingrédients dans RègleX" />
+            ) : (
+              <BadgeCompteur key="cuisine" icone="cuisine" nombre={entrees.filter((e) => !e.effets.disparait).length} label="Aliments dans la Cuisine du jour" />
+            )}
           </div>
 
           <div className="journal-totaux-sentinel" aria-hidden="true" ref={sentinelle}></div>
@@ -98,16 +109,23 @@ function Calories({ donnees }) {
             <button type="button" className={"calories-tab-btn" + (onglet === "recettes" ? " actif" : "")} onClick={() => setOnglet("recettes")}>
               Recettes
             </button>
+            <button type="button" id="ongletAdapter" className={"calories-tab-btn" + (onglet === "adapter" ? " actif" : "")} onClick={() => setOnglet("adapter")}>
+              RègleX
+            </button>
           </div>
 
           <Cuisine
             actif={onglet === "journal"}
             entrees={entrees}
             setEntrees={setEntrees}
-            aliments={donnees.aliments}
+            aliments={aliments}
             recettes={recettes}
             selects={selects}
             onEnregistrerRecette={(ingredients) => sheet.current.ouvrirCreation({ ingredients })}
+            onEnvoyerRegleX={(entreesDuJour) => {
+              setOnglet("adapter");
+              regleX.current.chargerCuisine(entreesDuJour);
+            }}
           />
 
           <Recettes
@@ -116,10 +134,37 @@ function Calories({ donnees }) {
             onOuvrir={(id, nb, kcal) => sheet.current.ouvrirLecture(id, nb, kcal)}
             onNouvelle={(categorie) => sheet.current.ouvrirCreation({ categorie })}
           />
+
+          <AdapterRecette
+            ref={regleX}
+            actif={onglet === "adapter"}
+            recettes={recettes}
+            aliments={aliments}
+            onEnregistrerRecette={(ingredients) => sheet.current.ouvrirCreation({ ingredients })}
+            onAlimentCree={(aliment) => setAliments((liste) => [...liste, aliment])}
+            onNombre={setNbRegleX}
+            onAjoutee={(items) => {
+              setEntrees(items.map((item, i) => ({ ...item, effets: { entree: true, rang: Math.min(i, 10) + 5 } })));
+              setOnglet("journal");
+            }}
+          />
         </div>
       </main>
 
-      <RecetteSheet ref={sheet} aliments={alimentsTries} onEnregistree={recetteEnregistree} onSupprimee={recetteSupprimee} />
+      <RecetteSheet
+        ref={sheet}
+        aliments={alimentsTries}
+        onEnregistree={recetteEnregistree}
+        onSupprimee={recetteSupprimee}
+        onEnvoyerRegleX={(id) => {
+          setOnglet("adapter");
+          regleX.current.chargerRecette(id);
+        }}
+        onAjouteeCuisine={(items) => {
+          setEntrees(items.map((item, i) => ({ ...item, effets: { entree: true, rang: Math.min(i, 10) + 5 } })));
+          setOnglet("journal");
+        }}
+      />
     </>
   );
 }
