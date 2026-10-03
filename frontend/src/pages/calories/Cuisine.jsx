@@ -316,7 +316,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
       </div>
 
       {actives.length === 0 && <CuisineVide />}
-      <p className={"no-results" + (actives.length > 0 ? " hidden" : "")} id="noResultsJournal">Rien d'ajouté aujourd'hui.</p>
     </div>
   );
 }

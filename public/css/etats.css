@@ -1475,11 +1475,6 @@
   }
 }
 
-/* Texte de la Cuisine vide rapproché de l'animation au-dessus. */
-.cuisine-vide + #noResultsJournal {
-  padding-top: 4px;
-}
-
 /* ---------- Stock : encart « À racheter » (bas ou épuisés, déjà achetés) ---------- */
 .stock-suggestions {
   background: var(--surface, #fffdf8);

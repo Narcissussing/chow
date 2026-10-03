@@ -49,6 +49,8 @@ export function lignesCanoniques(noeud, profondeur = 0, lignes = []) {
   if (noeud.classList.contains("btn-outil")) return lignes;
   // Écart voulu : animation de la Cuisine vide et badges de total (Stock, Calories).
   if (noeud.matches?.(".cuisine-vide, .badge-compteur")) return lignes;
+  // Écart voulu : « Rien d'ajouté aujourd'hui » retiré, l'animation de la Cuisine vide suffit.
+  if (noeud.id === "noResultsJournal") return lignes;
   // Écart voulu : encart « À racheter » et filtre « Bas » du Stock.
   if (noeud.matches?.(".stock-suggestions, .filter-btn--bas")) return lignes;
   // Écart voulu : unités ajoutées dans les sélecteurs de quantité (gousse pour l'ail, ml / L pour les liquides).

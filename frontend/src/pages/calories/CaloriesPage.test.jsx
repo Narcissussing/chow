@@ -82,7 +82,7 @@ test("totaux au format EJS ; unités tsp/tbs/pièce selon l'aliment ; poignée d
   expect(unites("Oeuf")).toEqual(["g", "pièce"]);
   expect(ligne("Huile").querySelector(".poignee-glisser")).toHaveAttribute("aria-label", "Glisser pour déplacer");
   expect(ligne("Oeuf").querySelector(".poignee-glisser")).toBeInTheDocument();
-  expect(document.getElementById("noResultsJournal")).toHaveClass("hidden");
+  expect(document.querySelector(".cuisine-vide")).toBeNull();
 });
 
 test("unités : tbs affiche 1 pour 13,5 g, minimum converti ; unité enregistrée, la sortie du champ envoie des grammes", async () => {
@@ -489,7 +489,8 @@ test("Cuisine vide : une des quatre animations de cuisson, tirée au hasard ; di
   await attendrePage();
   const animation = document.querySelector(".cuisine-vide");
   expect(["marmite", "couvercle", "poele", "recette"]).toContain(animation.dataset.animation);
-  expect(document.getElementById("noResultsJournal")).not.toHaveClass("hidden");
+  // Plus de texte « Rien d'ajouté aujourd'hui » : l'animation suffit.
+  expect(document.getElementById("noResultsJournal")).toBeNull();
 });
 
 test("Calories : badge marmite avec le nombre d'aliments de la Cuisine du jour", async () => {
