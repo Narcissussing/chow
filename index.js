@@ -1,5 +1,4 @@
 import express from "express";
-import { existsSync } from "node:fs";
 import pg from "pg";
 import "dotenv/config";
 import bcrypt from "bcrypt";
@@ -12,7 +11,6 @@ const app = express();
 
 const port = process.env.PORT || 3000;
 
-// DATABASE_URL en prod, sinon les DB_* séparées en local.
 const db = new pg.Client(
     process.env.DATABASE_URL
         ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
@@ -27,30 +25,20 @@ const db = new pg.Client(
 
 await db.connect();
 
-// Pas d'outil de migration : ces ALTER TABLE (IF NOT EXISTS) tournent à chaque démarrage, sûrs à rejouer.
 await db.query("ALTER TABLE recettes ADD COLUMN IF NOT EXISTS categorie TEXT NOT NULL DEFAULT 'plat'");
-// Une ligne de texte = une étape ; suffisant pour les recettes courtes du foyer, sans table supplémentaire.
 await db.query("ALTER TABLE recettes ADD COLUMN IF NOT EXISTS etapes TEXT NOT NULL DEFAULT ''");
 
-// Poids par cuillère : pas de conversion universelle, mesuré et stocké par aliment (voir /aliments/:id/equivalences).
 await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS grammes_par_cuil_a_cafe NUMERIC");
 await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS grammes_par_cuil_a_soupe NUMERIC");
 
-// Ordre d'affichage du journal, réarrangeable à la main (voir /calories/deplacer).
 await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS ordre INTEGER");
-// Unité choisie à la saisie (g, cafe, soupe, piece) : les quantités restent stockées en grammes.
 await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS unite TEXT");
 await db.query("ALTER TABLE recette_ingredients ADD COLUMN IF NOT EXISTS unite TEXT");
-// Ingrédient de la Cuisine déjà mis dans le plat (coché d'un double-tap pendant la cuisson).
 await db.query("ALTER TABLE journal_repas ADD COLUMN IF NOT EXISTS ajoute BOOLEAN NOT NULL DEFAULT false");
 
-// BYTEA plutôt qu'un fichier disque : le disque Fly est éphémère (auto_stop_machines).
 await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS photo BYTEA");
-// Historique d'achats daté (suggestions « À racheter » du Stock) ; date_ajout n'était jamais renseignée.
 await db.query("ALTER TABLE courses ADD COLUMN IF NOT EXISTS date_achat TIMESTAMPTZ");
-// Boutons « + » d'achat (Courses → Stock) propres à l'aliment (ex. œufs 10/20/30) ; vide = +1/+2/+5.
 await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS pas_achat INTEGER[]");
-// Quantités d'achat habituelles, posées une seule fois (jamais par-dessus une valeur déjà choisie).
 await db.query(
     `UPDATE foods SET pas_achat = v.pas
      FROM (VALUES ('oeuf-moyen', '{10,20,30}'::int[]), ('pot-creme-vanille', '{1,2,8}'::int[]),
@@ -58,7 +46,6 @@ await db.query(
                   ('yaourt', '{1,5,16}'::int[]), ('baguette-viennoise', '{6,12,18}'::int[])) AS v(id, pas)
      WHERE foods.id = v.id AND foods.pas_achat IS NULL`
 );
-// Yaourt Nature compté en pots (acheté par 16) au lieu d'un niveau : le niveau en stock devient un nombre de pots.
 const yaourtEnNiveau = await db.query("SELECT 1 FROM foods WHERE id = 'yaourt' AND tracking_type = 'cl'");
 if (yaourtEnNiveau.rows.length) {
     await db.query("BEGIN");
@@ -71,7 +58,6 @@ if (yaourtEnNiveau.rows.length) {
     await db.query("COMMIT");
 }
 await db.query("ALTER TABLE courses ALTER COLUMN date_ajout SET DEFAULT CURRENT_DATE");
-// Comble l'ordre des entrées existantes (jamais réordonnées) par heure d'ajout ; idempotent.
 await db.query(`
     UPDATE journal_repas SET ordre = sub.rn
     FROM (
@@ -81,7 +67,6 @@ await db.query(`
     WHERE journal_repas.id = sub.id
 `);
 
-// Table du preset "Semaine" (voir /courses/preset-hebdo/enregistrer).
 await db.query(`
     CREATE TABLE IF NOT EXISTS courses_preset (
         id SERIAL PRIMARY KEY,
@@ -90,7 +75,6 @@ await db.query(`
     )
 `);
 
-// Colonnes mortes, jamais lues ni écrites (reliquat d'avant la répartition cl/quantité/libre).
 await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS quantite");
 await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS unite");
 await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS magasin");
@@ -98,34 +82,13 @@ await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS magasin");
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-// Interface React si INTERFACE=react (posé par le Dockerfile) ; sinon les pages EJS restent la référence (D2).
-const servirReact = process.env.INTERFACE === "react" && existsSync("frontend/dist/index.html");
-if (servirReact) {
-    app.use(express.static("frontend/dist", { index: false }));
-    // Seulement les routes React connues (D5) : /api et les fichiers inconnus gardent la réponse Express.
-    // Sans session : la page React redirige elle-même vers /login?retour=, les données restent protégées par /api.
-    app.get(["/login", "/", "/aliments", "/aliments/:idAliment", "/stock", "/courses", "/calories"], function (req, res) {
-        res.sendFile("index.html", { root: "frontend/dist" });
-    });
-}
-
-// 4mb : une photo compressée en base64 (voir /courses/:id/photo) dépasse la limite par défaut de 100kb.
-app.use(express.json({ limit: "4mb" }));
-
-app.set("view engine", "ejs");
-
-// currentPath dispo dans toutes les vues, pour surligner le lien de menu actif.
-app.use(function (req, res, next) {
-    res.locals.currentPath = req.path;
-    next();
+app.use(express.static("frontend/dist", { index: false }));
+app.get(["/login", "/", "/aliments", "/aliments/:idAliment", "/stock", "/courses", "/calories"], function (req, res) {
+    res.sendFile("index.html", { root: "frontend/dist" });
 });
 
-// ============================================
-// AUTHENTIFICATION (accès limité aux 2 personnes du foyer, voir table "users")
-// ============================================
-// Pas de route "/register" : comptes créés une fois via scripts/creer-utilisateur.js.
+app.use(express.json({ limit: "4mb" }));
 
-// Sessions en base (pas en mémoire) : les machines Fly s'arrêtent automatiquement et effaceraient tout.
 const PgSession = connectPgSimple(session);
 
 // Fly termine le HTTPS devant l'app : sans ça, le cookie "secure" ne serait jamais envoyé.
@@ -147,12 +110,12 @@ app.use(session({
     secret: process.env.SECRET_KEY,
     resave: false,
     saveUninitialized: false,
-    rolling: true, // chaque visite relance les 360 jours : jamais déconnecté tant que l'app sert
+    rolling: true,
     cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 30 * 12, // 1 an
-        sameSite: "lax", // bloque les actions déclenchées depuis un autre site
+        maxAge: 1000 * 60 * 60 * 24 * 30 * 12,
+        sameSite: "lax",
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production", // HTTPS seulement en prod, le local reste en HTTP
+        secure: process.env.NODE_ENV === "production",
     },
 }));
 app.use(passport.initialize());
@@ -178,7 +141,6 @@ passport.use(new LocalStrategy(
     }
 ));
 
-// Seul l'id est gardé en session ; deserializeUser recharge le reste depuis la base à chaque requête.
 passport.serializeUser(function (utilisateur, cb) {
     cb(null, utilisateur.id);
 });
@@ -192,13 +154,11 @@ passport.deserializeUser(async function (id, cb) {
     }
 });
 
-// Bloque toute page tant qu'on n'est pas connecté, sauf /login elle-même (voir les routes
-// juste en dessous, déclarées AVANT ce middleware pour rester accessibles sans être connecté).
+// Les routes de connexion sont déclarées AVANT ce middleware pour rester accessibles sans être connecté.
 function requireAuth(req, res, next) {
     if (req.isAuthenticated()) {
         return next();
     }
-    // L'app React lit du JSON : une redirection vers la page HTML de connexion serait illisible pour elle.
     if (req.path.startsWith("/api/")) {
         return res.status(401).json({ erreur: "Non connecté." });
     }
@@ -217,21 +177,6 @@ app.use("/api", function (req, res, next) {
 function utilisateurPublic(utilisateur) {
     return { id: utilisateur.id, email: utilisateur.email };
 }
-
-app.get("/login", function (req, res) {
-    res.render("login.ejs", { title: "Connexion", erreur: req.query.erreur === "1" });
-});
-
-app.post("/login", passport.authenticate("local", {
-    successRedirect: "/",
-    failureRedirect: "/login?erreur=1",
-}));
-
-app.post("/logout", function (req, res) {
-    req.logout(function () {
-        res.redirect("/login");
-    });
-});
 
 app.post("/api/login", function (req, res, next) {
     passport.authenticate("local", function (err, utilisateur) {
@@ -263,7 +208,6 @@ app.get("/api/session", function (req, res) {
 // Tout ce qui est déclaré APRÈS cette ligne exige d'être connecté.
 app.use(requireAuth);
 
-// Nom d'unité à afficher selon le type de suivi de l'aliment.
 const uniteParType = { unite: 'unités', pack: 'packs', cl: 'cl' };
 
 async function chercherAliments() {
@@ -272,7 +216,6 @@ async function chercherAliments() {
 }
 
 async function chercherStock() {
-    // deja_en_courses : évite de reproposer "Ajouter aux courses" si déjà en attente d'achat.
     const result = await db.query(
         `SELECT stock.*, foods.nom, foods.emoji, foods.image, foods.tracking_type, foods.emplacement,
                 EXISTS(
@@ -290,7 +233,6 @@ async function chercherStock() {
 }
 
 async function chercherCourses() {
-    // "courses.*" évité : inclurait la colonne "photo" (BYTEA) entière ; has_photo suffit ici.
     const result = await db.query(
         `SELECT courses.id, courses.food_id, courses.nom_libre, courses.commentaire, courses.achete,
                 courses.date_ajout,
@@ -332,7 +274,6 @@ async function chercherRecettes() {
     return result.rows;
 }
 
-// Même calcul que chercherRecettes mais pour une seule recette : renvoie le vrai total tout de suite après création/modification.
 async function calculerTotauxRecette(idRecette) {
     const result = await db.query(
         `SELECT
@@ -346,7 +287,6 @@ async function calculerTotauxRecette(idRecette) {
     return result.rows[0];
 }
 
-// Journal du jour, avec calories/glucides/protéines/lipides recalculés selon la quantité mangée.
 async function chercherJournalDuJour() {
     const result = await db.query(
         `SELECT journal_repas.*, foods.nom, foods.emoji, foods.categorie,
@@ -364,14 +304,11 @@ async function chercherJournalDuJour() {
     return result.rows;
 }
 
-// Données de chaque page, partagées entre le rendu EJS et l'API lue par React.
 async function chercherAliment(idAliment) {
     const result = await db.query("SELECT * FROM foods WHERE id = $1", [idAliment]);
     return result.rows[0];
 }
 
-// Aliments déjà achetés, pas déjà en attente dans les Courses : achats des 30 derniers jours et au total, quantité en stock.
-// Le client garde ceux qui sont bas ou épuisés ; un aliment jamais acheté n'est jamais proposé.
 async function chercherSuggestions() {
     const result = await db.query(
         `SELECT f.id AS food_id, f.nom, f.emoji, f.tracking_type, s.quantite,
@@ -396,7 +333,6 @@ async function chargerPageCourses() {
     const courses = await chercherCourses();
     const aliments = await chercherAliments();
     const stock = await chercherStock();
-    // Transmis au client pour comparer en direct à la liste actuelle et activer/désactiver "Enregistrer" (voir courses.js).
     const presetHebdo = await db.query("SELECT food_id, nom_libre FROM courses_preset");
     return { courses, aliments, stock, presetHebdo: presetHebdo.rows };
 }
@@ -405,7 +341,6 @@ async function chargerPageCalories() {
     return { journal: await chercherJournalDuJour(), aliments: await chercherAliments(), recettes: await chercherRecettes() };
 }
 
-// Réponse JSON commune des lectures /api : même erreur 500 que les mutations.
 function lectureApi(charger) {
     return async function (req, res) {
         try {
@@ -428,52 +363,6 @@ app.get("/api/stock", lectureApi(chargerPageStock));
 app.get("/api/courses", lectureApi(chargerPageCourses));
 app.get("/api/calories", lectureApi(chargerPageCalories));
 
-// ============================================
-// PAGE D'ACCUEIL
-// ============================================
-
-app.get("/", async (req, res) => {
-    try {
-        res.render("index.ejs", { title: "Accueil" });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-// ============================================
-// ALIMENTS
-// ============================================
-
-app.get("/aliments", async (req, res) => {
-    try {
-        const aliments = await chercherAliments()
-        res.render("aliments.ejs", {
-            title: "Aliments",
-            aliments: aliments
-
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-app.get("/aliments/:idAliment", async (req, res) => {
-    try {
-        const aliment = await chercherAliment(req.params.idAliment);
-        if (!aliment) { return res.status(404).render("aliment-detail.ejs", { title: "Aliment introuvable", aliment: null }); }
-        res.render("aliment-detail.ejs", {
-            title: aliment.nom,
-            aliment: aliment
-        });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-// Aliment manquant d'une recette collée (RègleX) : valeurs pour 100 g ; refusé si l'id ou le nom existe déjà.
 const sansAccents = (texte) => texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 app.post("/api/aliments", async (req, res) => {
     try {
@@ -504,10 +393,9 @@ app.post("/api/aliments", async (req, res) => {
     }
 });
 
-app.post(["/aliments/:idAliment/equivalences", "/api/aliments/:idAliment/equivalences"], async (req, res) => {
+app.post("/api/aliments/:idAliment/equivalences", async (req, res) => {
     try {
         const idAliment = req.params.idAliment;
-        // Vide (non pesé) stocké en NULL, pas 0, pour distinguer "non renseigné" de "pèse 0g".
         const grammesCafe = req.body.grammesCafe === "" ? null : req.body.grammesCafe;
         const grammesSoupe = req.body.grammesSoupe === "" ? null : req.body.grammesSoupe;
 
@@ -530,20 +418,7 @@ app.post(["/aliments/:idAliment/equivalences", "/api/aliments/:idAliment/equival
     }
 });
 
-// ============================================
-// STOCK
-// ============================================
-
-app.get("/stock", async (req, res) => {
-    try {
-        res.render("stock.ejs", { title: "Stock", ...(await chargerPageStock()) });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-app.post(["/stock/ajouter", "/api/stock/ajouter"], async (req, res) => {
+app.post("/api/stock/ajouter", async (req, res) => {
     const idAliment = req.body.idAliment;
     const quantiteAliment = req.body.quantiteAliment;
     try {
@@ -592,7 +467,7 @@ app.post(["/stock/ajouter", "/api/stock/ajouter"], async (req, res) => {
     }
 });
 
-app.post(["/stock/modifier", "/api/stock/modifier"], async (req, res) => {
+app.post("/api/stock/modifier", async (req, res) => {
     try {
         const nouvelleQuantite = req.body.nouvelleQuantite;
         const idStock = req.body.idStock;
@@ -601,7 +476,6 @@ app.post(["/stock/modifier", "/api/stock/modifier"], async (req, res) => {
             return res.status(400).json({ erreur: "Champs requis." });
         }
 
-        // date_maj ne change qu'à la création ou un ajout depuis les courses, jamais sur une simple correction.
         await db.query("UPDATE stock SET quantite = $1 WHERE id = $2", [nouvelleQuantite, idStock]);
         res.json({ succes: true, quantite: nouvelleQuantite });
     } catch (err) {
@@ -610,7 +484,7 @@ app.post(["/stock/modifier", "/api/stock/modifier"], async (req, res) => {
     }
 });
 
-app.post(["/stock/supprimer", "/api/stock/supprimer"], async (req, res) => {
+app.post("/api/stock/supprimer", async (req, res) => {
     try {
         const idStock = req.body.idStock;
         if (!idStock) {
@@ -625,21 +499,7 @@ app.post(["/stock/supprimer", "/api/stock/supprimer"], async (req, res) => {
     }
 });
 
-// ============================================
-// COURSES
-// ============================================
-
-app.get("/courses", async (req, res) => {
-    try {
-        res.render("courses.ejs", { title: "Courses", ...(await chargerPageCourses()) });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-// idAliment pour un aliment connu, sinon nom_libre pour un texte tapé qui n'existe pas encore dans "foods".
-app.post(["/courses/ajouter", "/api/courses/ajouter"], async (req, res) => {
+app.post("/api/courses/ajouter", async (req, res) => {
     const idAliment = req.body.idAliment || null;
     const texteTape = req.body.rechercheAliment;
     try {
@@ -663,7 +523,6 @@ app.post(["/courses/ajouter", "/api/courses/ajouter"], async (req, res) => {
             [nouvelId]
         );
 
-        // Liste complète à jour (Stock compris) : l'écran récupère aussi ce que l'autre téléphone a changé.
         res.json({ succes: true, item: itemResult.rows[0], courses: await chercherCourses() });
     } catch (err) {
         console.log("ERREUR:", err.message);
@@ -671,8 +530,7 @@ app.post(["/courses/ajouter", "/api/courses/ajouter"], async (req, res) => {
     }
 });
 
-// N'ajoute que les articles du preset absents de la liste en attente, pour éviter les doublons si on clique plusieurs fois.
-app.post(["/courses/preset-hebdo", "/api/courses/preset-hebdo"], async (req, res) => {
+app.post("/api/courses/preset-hebdo", async (req, res) => {
     try {
         const presetResult = await db.query("SELECT food_id, nom_libre FROM courses_preset");
 
@@ -723,8 +581,7 @@ app.post(["/courses/preset-hebdo", "/api/courses/preset-hebdo"], async (req, res
     }
 });
 
-// DELETE + réinsertion plutôt qu'un diff ligne à ligne (comme /recettes/:id/modifier) : plus simple, liste toujours courte.
-app.post(["/courses/preset-hebdo/enregistrer", "/api/courses/preset-hebdo/enregistrer"], async (req, res) => {
+app.post("/api/courses/preset-hebdo/enregistrer", async (req, res) => {
     let transactionStarted = false;
     try {
         await db.query("BEGIN");
@@ -751,7 +608,7 @@ app.post(["/courses/preset-hebdo/enregistrer", "/api/courses/preset-hebdo/enregi
     }
 });
 
-app.post(["/courses/commentaire", "/api/courses/commentaire"], async (req, res) => {
+app.post("/api/courses/commentaire", async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         const commentaire = req.body.commentaire;
@@ -768,8 +625,7 @@ app.post(["/courses/commentaire", "/api/courses/commentaire"], async (req, res) 
     }
 });
 
-// Photo envoyée en base64, déjà compressée côté client (voir courses.js) ; le serveur ne fait que décoder et stocker.
-app.post(["/courses/photo", "/api/courses/photo"], async (req, res) => {
+app.post("/api/courses/photo", async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         const photoBase64 = req.body.photo;
@@ -787,7 +643,7 @@ app.post(["/courses/photo", "/api/courses/photo"], async (req, res) => {
     }
 });
 
-app.post(["/courses/photo/supprimer", "/api/courses/photo/supprimer"], async (req, res) => {
+app.post("/api/courses/photo/supprimer", async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         if (!idCourse) {
@@ -801,8 +657,7 @@ app.post(["/courses/photo/supprimer", "/api/courses/photo/supprimer"], async (re
     }
 });
 
-// Sert l'image elle-même, appelée seulement à l'ouverture de la photo (voir has_photo dans chercherCourses).
-app.get(["/courses/:id/photo", "/api/courses/:id/photo"], async (req, res) => {
+app.get("/api/courses/:id/photo", async (req, res) => {
     try {
         const result = await db.query("SELECT photo FROM courses WHERE id = $1", [req.params.id]);
         if (result.rows.length === 0 || !result.rows[0].photo) {
@@ -816,7 +671,7 @@ app.get(["/courses/:id/photo", "/api/courses/:id/photo"], async (req, res) => {
     }
 });
 
-app.post(["/courses/supprimer", "/api/courses/supprimer"], async (req, res) => {
+app.post("/api/courses/supprimer", async (req, res) => {
     try {
         const idCourse = req.body.idCourse;
         if (!idCourse) {
@@ -831,7 +686,7 @@ app.post(["/courses/supprimer", "/api/courses/supprimer"], async (req, res) => {
     }
 });
 
-app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
+app.post("/api/courses/acheter", async (req, res) => {
     let transactionStarted = false;
     try {
         let quantiteEntiere = null;
@@ -848,13 +703,11 @@ app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
         }
         const foodId = courseResult.rows[0].food_id;
 
-        // Un nom_libre n'a pas de food_id : rien à mettre à jour dans le stock.
         let trackingType = null;
         if (foodId) {
             const resultFood = await db.query("SELECT tracking_type FROM foods WHERE id = $1", [foodId]);
             trackingType = resultFood.rows[0].tracking_type;
             if (trackingType !== 'cl') {
-                // Arrondi côté serveur : ce formulaire passe par fetch, donc la validation native (min/type=number) du champ n'a jamais lieu.
                 quantiteEntiere = Math.round(Number(quantiteAchetee));
                 if (!quantiteAchetee || !Number.isFinite(quantiteEntiere) || quantiteEntiere < 1) {
                     return res.status(400).json({ erreur: "Quantité invalide." });
@@ -865,8 +718,6 @@ app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
         await db.query("BEGIN");
         transactionStarted = true;
 
-        // Marque l'achat d'abord et une seule fois : une requête rejouée (réseau du magasin) ne touche plus au stock.
-        // La photo n'a plus d'utilité une fois l'achat fait (elle servait à reconnaître le produit au magasin).
         const achatResult = await db.query(
             "UPDATE courses SET achete = true, photo = NULL, date_achat = NOW() WHERE id = $1 AND achete = false RETURNING id",
             [idCourse]
@@ -874,13 +725,11 @@ app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
 
         if (achatResult.rows.length > 0 && foodId) {
             if (trackingType === 'cl') {
-                // "cl" (bouteille) : acheter = remettre à "plein". ON CONFLICT évite un doublon si déjà en stock.
                 await db.query(
                     "INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, 'plein', NOW()) ON CONFLICT (food_id) DO UPDATE SET quantite = 'plein', date_maj = NOW()",
                     [foodId]
                 );
             } else {
-                // Regex avant le cast ::integer : protège contre une ancienne valeur "cl" (ex: "plein") laissée par un changement de type de suivi.
                 await db.query(
                     `INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, $2, NOW())
                      ON CONFLICT (food_id) DO UPDATE SET
@@ -904,20 +753,7 @@ app.post(["/courses/acheter", "/api/courses/acheter"], async (req, res) => {
     }
 });
 
-// ============================================
-// CALORIES
-// ============================================
-
-app.get("/calories", async (req, res) => {
-    try {
-        res.render("calories.ejs", { title: "Calories", ...(await chargerPageCalories()) });
-    } catch (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-    }
-});
-
-app.post(["/calories/ajouter", "/api/calories/ajouter"], async (req, res) => {
+app.post("/api/calories/ajouter", async (req, res) => {
     try {
         const idAliment = req.body.idAliment;
         const quantiteG = req.body.quantiteG || 100;
@@ -926,7 +762,6 @@ app.post(["/calories/ajouter", "/api/calories/ajouter"], async (req, res) => {
             return res.status(400).json({ erreur: "Champs requis." });
         }
 
-        // Toujours ajouté à la fin (ordre max du jour + 1).
         const insertResult = await db.query(
             `INSERT INTO journal_repas (food_id, quantite_g, ordre)
              VALUES ($1, $2, COALESCE((SELECT MAX(ordre) FROM journal_repas WHERE date_entree = CURRENT_DATE), 0) + 1)
@@ -955,12 +790,11 @@ app.post(["/calories/ajouter", "/api/calories/ajouter"], async (req, res) => {
     }
 });
 
-// Unité d'affichage acceptée telle quelle ; tout autre valeur retombe sur les grammes.
 function uniteValide(unite) {
     return ["g", "cafe", "soupe", "piece", "ml", "l"].includes(unite) ? unite : null;
 }
 
-app.post(["/calories/modifier", "/api/calories/modifier"], async (req, res) => {
+app.post("/api/calories/modifier", async (req, res) => {
     try {
         const idEntree = req.body.idEntree;
         const nouvelleQuantite = req.body.nouvelleQuantite;
@@ -969,7 +803,6 @@ app.post(["/calories/modifier", "/api/calories/modifier"], async (req, res) => {
             return res.status(400).json({ erreur: "Champs requis." });
         }
 
-        // Unité absente (ancien client EJS) : celle déjà enregistrée est gardée.
         await db.query(
             "UPDATE journal_repas SET quantite_g = $1, unite = COALESCE($3, unite) WHERE id = $2",
             [nouvelleQuantite, idEntree, uniteValide(req.body.unite)]
@@ -994,9 +827,7 @@ app.post(["/calories/modifier", "/api/calories/modifier"], async (req, res) => {
     }
 });
 
-// -- POST /calories/supprimer : identique à avant, garder tel quel --
-// Supprimer une entrée du journal alimentaire
-app.post(["/calories/supprimer", "/api/calories/supprimer"], async (req, res) => {
+app.post("/api/calories/supprimer", async (req, res) => {
     try {
         const idEntree = req.body.idEntree;
         if (!idEntree) {
@@ -1011,45 +842,6 @@ app.post(["/calories/supprimer", "/api/calories/supprimer"], async (req, res) =>
     }
 });
 
-// Échange l'ordre avec la voisine ("haut"/"bas") plutôt que de renvoyer toute la liste réordonnée.
-app.post(["/calories/deplacer", "/api/calories/deplacer"], async (req, res) => {
-    try {
-        const idEntree = req.body.idEntree;
-        const direction = req.body.direction;
-
-        if (!idEntree || (direction !== "haut" && direction !== "bas")) {
-            return res.status(400).json({ erreur: "Requête invalide." });
-        }
-
-        const actuelResult = await db.query("SELECT ordre FROM journal_repas WHERE id = $1", [idEntree]);
-        if (actuelResult.rows.length === 0) {
-            return res.status(400).json({ erreur: "Entrée introuvable." });
-        }
-        const ordreActuel = actuelResult.rows[0].ordre;
-
-        const voisineResult = await db.query(
-            `SELECT id, ordre FROM journal_repas
-             WHERE date_entree = CURRENT_DATE AND ordre ${direction === "haut" ? "<" : ">"} $1
-             ORDER BY ordre ${direction === "haut" ? "DESC" : "ASC"}
-             LIMIT 1`,
-            [ordreActuel]
-        );
-        if (voisineResult.rows.length === 0) {
-            return res.json({ succes: true });
-        }
-        const voisine = voisineResult.rows[0];
-
-        await db.query("UPDATE journal_repas SET ordre = $1 WHERE id = $2", [voisine.ordre, idEntree]);
-        await db.query("UPDATE journal_repas SET ordre = $1 WHERE id = $2", [ordreActuel, voisine.id]);
-
-        res.json({ succes: true });
-    } catch (err) {
-        console.log("ERREUR:", err.message);
-        res.status(500).json({ erreur: err.message });
-    }
-});
-
-// Double-tap sur une carte de la Cuisine : ingrédient mis dans le plat, ou plus.
 app.post("/api/calories/ajoute", async (req, res) => {
     try {
         const idEntree = req.body.idEntree;
@@ -1065,7 +857,6 @@ app.post("/api/calories/ajoute", async (req, res) => {
     }
 });
 
-// Glisser-déposer : l'ordre complet du jour en une requête, positions 1..n.
 app.post("/api/calories/reordonner", async (req, res) => {
     try {
         const ids = req.body.ids;
@@ -1085,7 +876,7 @@ app.post("/api/calories/reordonner", async (req, res) => {
     }
 });
 
-app.post(["/calories/vider", "/api/calories/vider"], async (req, res) => {
+app.post("/api/calories/vider", async (req, res) => {
     try {
         await db.query("DELETE FROM journal_repas WHERE date_entree = CURRENT_DATE");
         res.json({ succes: true });
@@ -1095,14 +886,11 @@ app.post(["/calories/vider", "/api/calories/vider"], async (req, res) => {
     }
 });
 
-// Remplace le journal du jour par tous les ingrédients d'une recette.
-// Remplace la Cuisine du jour par ces lignes ({ food_id, quantite_g, unite }), dans l'ordre donné, en une transaction.
 async function remplacerCuisine(lignes) {
     await db.query("BEGIN");
     try {
         await db.query("DELETE FROM journal_repas WHERE date_entree = CURRENT_DATE");
         const nouvellesEntrees = [];
-        // Ordre explicite requis : un "ordre" NULL casse silencieusement /calories/deplacer ("ordre < NULL" ne trouve jamais de voisine).
         let ordre = 1;
         for (const ligne of lignes) {
             const insertResult = await db.query(
@@ -1141,10 +929,9 @@ async function remplacerCuisine(lignes) {
     }
 }
 
-app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (req, res) => {
+app.post("/api/calories/ajouter-recette", async (req, res) => {
     try {
         const idRecette = req.body.idRecette;
-        // Recette adaptée (onglet RègleX) : toutes les quantités multipliées ; 1 par défaut.
         const facteur = req.body.facteur === undefined ? 1 : Number(req.body.facteur);
 
         if (!idRecette) {
@@ -1181,7 +968,6 @@ app.post(["/calories/ajouter-recette", "/api/calories/ajouter-recette"], async (
     }
 });
 
-// Recette collée dans RègleX (non enregistrée) : remplace la Cuisine du jour, comme une recette.
 app.post("/api/calories/ajouter-ingredients", async (req, res) => {
     try {
         const ingredients = req.body.ingredients;
@@ -1207,7 +993,7 @@ app.post("/api/calories/ajouter-ingredients", async (req, res) => {
     }
 });
 
-app.post(["/recettes/creer", "/api/recettes/creer"], async (req, res) => {
+app.post("/api/recettes/creer", async (req, res) => {
     try {
         const nom = req.body.nom;
         const categorie = req.body.categorie || "plat";
@@ -1239,7 +1025,7 @@ app.post(["/recettes/creer", "/api/recettes/creer"], async (req, res) => {
     }
 });
 
-app.get(["/recettes/:id", "/api/recettes/:id"], async (req, res) => {
+app.get("/api/recettes/:id", async (req, res) => {
     try {
         const idRecette = req.params.id;
 
@@ -1273,7 +1059,7 @@ app.get(["/recettes/:id", "/api/recettes/:id"], async (req, res) => {
     }
 });
 
-app.post(["/recettes/:id/modifier", "/api/recettes/:id/modifier"], async (req, res) => {
+app.post("/api/recettes/:id/modifier", async (req, res) => {
     let transactionStarted = false;
 
     try {
@@ -1295,7 +1081,6 @@ app.post(["/recettes/:id/modifier", "/api/recettes/:id/modifier"], async (req, r
             [nom, categorie, etapes, idRecette]
         );
 
-        // DELETE + réinsertion plutôt qu'un diff ingrédient par ingrédient : plus simple, liste toujours courte.
         await db.query("DELETE FROM recette_ingredients WHERE recette_id = $1", [idRecette]);
 
         for (const ingredient of ingredients) {
@@ -1319,7 +1104,7 @@ app.post(["/recettes/:id/modifier", "/api/recettes/:id/modifier"], async (req, r
     }
 });
 
-app.post(["/recettes/:id/supprimer", "/api/recettes/:id/supprimer"], async (req, res) => {
+app.post("/api/recettes/:id/supprimer", async (req, res) => {
     let transactionStarted = false;
 
     try {
@@ -1381,7 +1166,6 @@ app.post("/recettes/depuis-journal", async (req, res) => {
     }
 });
 
-// Une URL /api inconnue répond en JSON, jamais avec la page d'erreur HTML d'Express.
 app.use("/api", function (req, res) {
     res.status(404).json({ erreur: "Route inconnue." });
 });

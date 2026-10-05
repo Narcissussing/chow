@@ -3,7 +3,6 @@ import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { relancerClasse } from "../../utils/animation.js";
 import { classeNiveauCL } from "../../utils/stock.js";
 
-// "Pop" quand le panier devient cliquable ; classe gérée hors React (le className du bouton ne change jamais).
 export function jouerPopPanier(bouton) {
   if (!bouton) return;
   relancerClasse(bouton, "vient-de-s-activer");
@@ -33,7 +32,6 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
   const [quantite, setQuantite] = useState("");
   const [envoi, setEnvoi] = useState({ achat: false, suppression: false });
 
-  // Note changée sur l'autre téléphone : reprise seulement si le champ n'est pas ouvert (saisie en cours gardée).
   const commentaireServeur = (item.commentaire || "").trim();
   useEffect(() => {
     if (!ligne.cachee || commentaireServeur === note.texte) return;
@@ -43,8 +41,6 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
 
   const estFormQuantite = Boolean(item.food_id) && item.tracking_type !== "cl";
   const quantiteInvalide = quantite.trim() === "" || Number(quantite) < 1;
-
-  // ---------- Notes : seul l'émoji (ou la note affichée) ouvre le champ ----------
 
   function afficherChamp() {
     if (note.texte && !note.cachee) {
@@ -64,12 +60,9 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
       setNote((n) => ({ ...n, cachee: false }));
       return;
     }
-    // Mise à jour immédiate de l'affichage ; un échec réseau ne fait qu'afficher le toast.
     onNote(commentaire);
     setNote({ texte: commentaire, cachee: false, masquage: false });
   }
-
-  // ---------- Achat / suppression (bouton désactivé pendant l'envoi) ----------
 
   async function envoyer(type, quantiteAchetee) {
     if (envoiEnCours.current.has(type)) return;
@@ -94,7 +87,6 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
       ref={refPhoto}
       type="button"
       className="btn-photo-course"
-      // Le CSS change l'icône (télécharger / œil) selon data-a-photo.
       data-a-photo={aPhoto ? "true" : "false"}
       title="Photo de référence"
       onClick={(e) => {
@@ -130,15 +122,12 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
       </span>
 
       <form
-        action="/courses/supprimer"
-        method="post"
         className="form-supprimer"
         onSubmit={(e) => {
           e.preventDefault();
           envoyer("suppression");
         }}
       >
-        <input type="hidden" name="idCourse" value={item.id} />
         <button type="submit" className="btn-supprimer-icone btn-supprimer-dash" disabled={envoi.suppression}>
           Supprimer
         </button>
@@ -164,8 +153,6 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
 
       {estFormQuantite ? (
         <form
-          action="/courses/acheter"
-          method="post"
           className="form-acheter form-quantite"
           onSubmit={(e) => {
             e.preventDefault();
@@ -173,17 +160,14 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
             envoyer("achat", quantite);
           }}
         >
-          <input type="hidden" name="idCourse" value={item.id} />
           <div className="course-item__quantite-groupe">
             <div className="suggestions-quantite">
-              {/* Quantités habituelles d'achat de l'aliment (œufs 20/30, baguettes par 6…), sinon +1/+2/+5. */}
               {(item.pas_achat?.length ? item.pas_achat : [1, 2, 5]).map((v) => (
                 <button
                   key={v}
                   type="button"
                   className="suggestion"
                   onClick={() => {
-                    // Une suggestion remplit le champ et soumet directement, sans repasser par "Acheté".
                     changerQuantite(String(v));
                     envoyer("achat", String(v));
                   }}
@@ -219,15 +203,12 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
         </form>
       ) : (
         <form
-          action="/courses/acheter"
-          method="post"
           className="form-acheter"
           onSubmit={(e) => {
             e.preventDefault();
             envoyer("achat");
           }}
         >
-          <input type="hidden" name="idCourse" value={item.id} />
           <div className="course-item__shop-slot">
             <button ref={refPanier} type="submit" className="btn-icone-rond btn-acheter-icone" disabled={envoi.achat}>
               Acheté

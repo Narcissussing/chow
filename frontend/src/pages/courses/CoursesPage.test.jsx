@@ -248,7 +248,6 @@ test("achat : la liste du serveur apporte l'article ajouté ailleurs, le Stock �
   const toasts = [];
   const desabonner = abonnerToast((m) => m && toasts.push(m));
   const pain = { id: 20, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
-  // Serveur après l'achat du Riz : Puck acheté sur l'autre téléphone, Pain ajouté, Lait passé à "plein".
   const apres = [{ ...COURSES[0], quantite_stock: "plein" }, pain];
   ouvrirCourses({ "/courses/acheter": [200, { succes: true, courses: apres }] });
   await act(async () => jest.runOnlyPendingTimers());
@@ -270,7 +269,6 @@ test("ajout : son propre article n'est pas signalé ; une réponse plus ancienne
   let liberer;
   const pomme = { id: 10, food_id: "pomme", nom: "Pomme", emoji: "🍎", categorie: "Fruits", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
   ouvrirCourses({
-    // Achat lent (réponse périmée qui contient encore Riz), puis ajout rapide.
     "/courses/acheter": () => new Promise((r) => { liberer = () => r([200, { succes: true, courses: COURSES }]); }),
     "/courses/ajouter": [200, { succes: true, item: pomme, courses: [COURSES[0], COURSES[2], pomme] }],
   });
@@ -316,14 +314,12 @@ test("articles de l'autre téléphone : annonce +N vers le compteur, montrés un
   const champ = carte("Riz").querySelector(".input-commentaire");
   fireEvent.change(champ, { target: { value: "Thaï" } });
   await act(async () => fireEvent.blur(champ));
-  // 1. Annonce au centre, compteur inchangé.
   expect(annonce()).toBe("+2");
   expect(bulle()).toBeNull();
   expect(compteur()).toBe("3");
   act(() => jest.advanceTimersByTime(1000));
   expect(annonce()).toBeNull();
   expect(bulle()).toBe("+2");
-  // 2. Un article toutes les 1,3 s, halo à l'arrivée ; le compteur attend.
   act(() => jest.advanceTimersByTime(300));
   expect(vus).toEqual(["🧈 Beurre"]);
   act(() => jest.advanceTimersByTime(450));
@@ -333,7 +329,6 @@ test("articles de l'autre téléphone : annonce +N vers le compteur, montrés un
   act(() => jest.advanceTimersByTime(1));
   expect(vus).toEqual(["🧈 Beurre", "🍞 Pain"]);
   expect(compteur()).toBe("3");
-  // 3. Fin : la bulle se fond, le compteur prend le total.
   act(() => jest.advanceTimersByTime(450 + 1560));
   expect(document.querySelector(".badge-ajout")).toHaveClass("fusion");
   act(() => jest.advanceTimersByTime(350));
@@ -367,4 +362,12 @@ test("achat : quantités habituelles de l'aliment (œufs +10/+20/+30), +1/+2/+5 
   expect(textes("Riz")).toEqual(["+1", "+2", "+5"]);
   await act(async () => fireEvent.click([...carte("Oeuf").querySelectorAll(".suggestion")].find((b) => b.textContent === "+20")));
   expect(requetes).toContainEqual({ chemin: "/courses/acheter", corps: { idCourse: "4", quantiteAchetee: "20" } });
+});
+
+test("liste vide : le caddie animé à la place du texte", async () => {
+  ouvrirCourses({}, { courses: [] });
+  await attendrePage();
+  expect(document.querySelector(".courses-vide")).not.toBeNull();
+  expect(document.getElementById("noResultsCourses")).toBeNull();
+  expect(screen.queryByText("Aucun article dans la liste de courses.")).toBeNull();
 });

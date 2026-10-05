@@ -1,4 +1,3 @@
-// Usage : node scripts/verifier-api.js — vérifie l'API /api sur la branche Neon dev, puis nettoie tout ce qu'il a créé.
 import "dotenv/config";
 import pg from "pg";
 import bcrypt from "bcrypt";
@@ -39,7 +38,7 @@ async function appel(methode, chemin, corps, { json = true, redirect = "manual" 
     if (setCookie) cookie = setCookie.split(";")[0];
     const texte = await reponse.text();
     let donnees = null;
-    try { donnees = JSON.parse(texte); } catch { /* réponse non JSON */ }
+    try { donnees = JSON.parse(texte); } catch { }
     return { statut: reponse.status, donnees, texte, setCookie, location: reponse.headers.get("location") };
 }
 
@@ -59,15 +58,13 @@ try {
     const hash = await bcrypt.hash(MOT_DE_PASSE, 10);
     await db.query("INSERT INTO users (email, password) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET password = $2", [EMAIL, hash]);
 
-    // Sans session
     let r = await appel("GET", "/api/session");
     verifier("session sans cookie → 401 JSON", r.statut === 401 && r.donnees?.erreur === "Non connecté.");
     r = await appel("GET", "/api/stock");
     verifier("lecture sans session → 401 JSON", r.statut === 401 && r.donnees?.erreur === "Non connecté.");
     r = await appel("GET", "/stock");
-    verifier("page EJS sans session → redirection /login", r.statut === 302 && r.location === "/login");
+    verifier("page sans session → app React (elle redirige elle-même vers /login)", r.statut === 200 && r.texte.includes('id="root"'));
 
-    // Connexion
     r = await appel("POST", "/api/login", { email: EMAIL, password: MOT_DE_PASSE }, { json: false });
     verifier("login en formulaire → 415", r.statut === 415);
     r = await appel("POST", "/api/login", { email: EMAIL, password: "faux" });
@@ -78,7 +75,6 @@ try {
     r = await appel("GET", "/api/session");
     verifier("session conservée", r.statut === 200 && r.donnees?.utilisateur?.email === EMAIL);
 
-    // Lectures
     r = await appel("GET", "/api/aliments");
     const aliments = r.donnees?.aliments || [];
     verifier("GET /api/aliments", r.statut === 200 && aliments.length > 0);
@@ -97,9 +93,10 @@ try {
     r = await appel("GET", "/api/inexistante");
     verifier("route /api inconnue → 404 JSON", r.statut === 404 && r.donnees?.erreur === "Route inconnue.");
     r = await appel("GET", "/aliments");
-    verifier("page EJS connectée toujours rendue", r.statut === 200 && r.texte.includes("food-card"));
+    verifier("page connectée → app React", r.statut === 200 && r.texte.includes('id="root"'));
+    r = await appel("POST", "/stock/ajouter", { idAliment: "x", quantiteAliment: 1 });
+    verifier("ancien chemin sans /api → plus servi", r.statut !== 200);
 
-    // Écritures : aller-retour sur des données de test, supprimées à la fin
     r = await appel("POST", "/api/courses/ajouter", { rechercheAliment: MARQUEUR });
     const idCourse = r.donnees?.item?.id;
     if (idCourse) nettoyages.push(() => db.query("DELETE FROM courses WHERE id = $1", [idCourse]));
@@ -128,8 +125,8 @@ try {
     verifier("POST /api/calories/ajouter", r.statut === 200 && idEntree);
     r = await appel("POST", "/api/calories/modifier", { idEntree, nouvelleQuantite: 50 });
     verifier("POST /api/calories/modifier", r.donnees?.item?.calories_calc !== undefined);
-    r = await appel("POST", "/api/calories/deplacer", { idEntree, direction: "travers" });
-    verifier("POST /api/calories/deplacer invalide → 400", r.statut === 400);
+    r = await appel("POST", "/api/calories/reordonner", { ids: [] });
+    verifier("POST /api/calories/reordonner invalide → 400", r.statut === 400);
     r = await appel("POST", "/api/calories/supprimer", { idEntree });
     verifier("POST /api/calories/supprimer", r.donnees?.succes === true);
 
@@ -157,7 +154,6 @@ try {
     r = await appel("GET", "/api/recettes/" + idRecette);
     verifier("recette supprimée → 404", r.statut === 404);
 
-    // Déconnexion
     r = await appel("POST", "/api/logout", {});
     verifier("POST /api/logout", r.donnees?.succes === true);
     r = await appel("GET", "/api/session");

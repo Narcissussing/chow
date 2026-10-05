@@ -1,6 +1,5 @@
 import { normaliserTexte } from "./texte.js";
 
-// Niveaux d'un aliment suivi en "cl" : valeur stockée en base, texte affiché.
 export const OPTIONS_CL = [
   { value: "plein", label: "Plein" },
   { value: "à moitié", label: "À moitié" },
@@ -17,7 +16,6 @@ export function classeNiveauCL(valeur) {
   return "niveau-vide";
 }
 
-// "Bas" : les 2 niveaux les plus bas pour "cl", moins de 2 restants sinon.
 export function estQuantiteBasse(valeur, trackingType) {
   if (trackingType === "cl") return valeur === "presque vide" || valeur === "vide";
   return Number(valeur) < 2;
@@ -38,7 +36,6 @@ function valeurQuantitePourTri(item) {
   return Number(item.quantite) || 0;
 }
 
-// Même tri que trierStock (stock.js) : stable sur l'ordre courant, nom en minuscules.
 export function trierStock(items, critere) {
   return [...items].sort((a, b) => {
     const nomA = a.nom.toLowerCase();
@@ -56,7 +53,6 @@ export function trierStock(items, critere) {
   });
 }
 
-// Filtre unique emplacement OU type (un seul bouton actif), plus la recherche sans accents.
 export function correspondFiltres(item, { emplacement, type, termes }) {
   const okEmplacement = emplacement === "tous" || item.emplacement === emplacement;
   const okType =
@@ -65,7 +61,6 @@ export function correspondFiltres(item, { emplacement, type, termes }) {
   return okEmplacement && okType && normaliserTexte(item.nom.toLowerCase()).includes(termes);
 }
 
-// « À racheter » : aliments déjà achetés, bas ou épuisés ; achetés ce mois-ci d'abord, puis les plus souvent achetés.
 export function suggestionsARacheter(lignes) {
   return lignes
     .filter((l) => l.quantite === null || l.quantite === undefined || estQuantiteBasse(l.quantite, l.tracking_type))

@@ -14,14 +14,12 @@ const RACCOURCIS = [
   { facteur: 2, label: "2" },
   { facteur: 3, label: "3" },
 ];
-// Mêmes boutons icône que la Cuisine : plats (recettes.svg) et fraîcheur (glacon.svg).
 const SELECTS_RECETTES = [
   { categorie: "plat", classe: "select-recette-icone", ariaLabel: "Adapter une recette de plat" },
   { categorie: "fraicheur", classe: "select-recette-icone select-recette-icone--fraicheur", ariaLabel: "Adapter une recette de fraîcheur" },
 ];
 const CATEGORIES = ["Divers", "Épicerie", "Épices", "Féculents", "Fruits", "Laitiers", "Légumes", "Légumineuses", "Lipides", "Oeufs", "Poissons", "Sauces", "Viandes", "Boissons"];
 
-// Entier sans décimale (300), sinon une seule (7.5) ; le facteur garde ses centièmes (× 0.75) sans zéros inutiles.
 function arrondi(v) {
   const r = Math.round(Number(v) * 10) / 10;
   return Number.isInteger(r) ? String(r) : r.toFixed(1);
@@ -36,7 +34,6 @@ const equivalences = (a) => ({
   liquide: estLiquide(a?.unite),
 });
 
-// Quantité lue → grammes pour cet aliment (cuillères : ses équivalences, sinon 5 / 15 g ; pièce : son poids, sinon inconnue).
 function versGrammes(quantite, unite, eq, secours) {
   if (quantite === null || quantite === undefined) return null;
   if (unite === "cafe") return quantite * (Number(eq.gCafe) || 5);
@@ -46,13 +43,10 @@ function versGrammes(quantite, unite, eq, secours) {
   return quantite;
 }
 
-// L'unité lue reste affichée si l'aliment la connaît, sinon tout est en grammes.
 function uniteAffichee(unite, eq) {
   return optionsUnite(eq).some((o) => o.value === unite) ? unite : "g";
 }
 
-// Écran vide : un œuf, un sachet de farine et une plaquette de beurre grandissent puis rétrécissent ensemble,
-// comme une recette qu'on adapte sans changer ses proportions.
 function IngredientsEnsemble() {
   return (
     <svg className="adapter__vide" viewBox="0 0 220 140" aria-hidden="true">
@@ -72,7 +66,6 @@ function IngredientsEnsemble() {
   );
 }
 
-// Choix déjà faits (« vanille » → Gousse de Vanille), gardés sur ce téléphone et repris au prochain collage.
 const CLE_MEMOIRE = "reglex-choix";
 function lireMemoire() {
   try {
@@ -85,14 +78,12 @@ function memoriser(nomLu, idAliment) {
   try {
     localStorage.setItem(CLE_MEMOIRE, JSON.stringify({ ...lireMemoire(), [normaliser(nomLu)]: String(idAliment) }));
   } catch {
-    // Stockage indisponible : le choix vaut seulement pour ce collage.
   }
 }
 
 let compteurLignes = 0;
 function resoudre(ligne, aliment) {
   const eq = equivalences(aliment);
-  // Recette en ml pour tout (« 5 ml (1 c. à thé) ») : la cuillère pour un solide (son vrai poids), les ml pour un liquide.
   const lu = ligne.alternative && aliment && !eq.liquide && ["ml", "l"].includes(ligne.uniteLue) ? ligne.alternative : { quantite: ligne.quantiteLue, unite: ligne.uniteLue };
   const grammes = aliment ? versGrammes(lu.quantite, lu.unite, eq, ligne.poidsSecours) : null;
   const unite = aliment ? uniteAffichee(lu.unite, eq) : "g";
@@ -109,17 +100,14 @@ function lignesDepuisTexte(texte, aliments) {
   });
 }
 
-// Onglet RègleX (règle de trois × multiplicateur) : une recette collée (ou enregistrée) recalculée selon ce qu'on a.
 export default function AdapterRecette({ ref, actif, recettes, aliments, onAjoutee, onEnregistrerRecette, onAlimentCree, onNombre }) {
   const [source, setSource] = useState("coller");
-  // Champ de collage replié par défaut : il s'ouvre au toucher de « Coller » et se replie une fois la recette lue.
   const [collerOuvert, setCollerOuvert] = useState(false);
   const [texte, setTexte] = useState("");
   const [idRecette, setIdRecette] = useState("");
   const [categorieRecette, setCategorieRecette] = useState("");
   const [lignes, setLignes] = useState([]);
   const [facteur, setFacteurBrut] = useState(1);
-  // Facteur changé par toi (pas remis à 1 par un chargement) : les chiffres « Pour toi » sautent.
   const [facteurTouche, setFacteurTouche] = useState(false);
   const setFacteur = (f) => {
     setFacteurTouche(true);
@@ -129,7 +117,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
   const [saisie, setSaisie] = useState("");
   const [creation, setCreation] = useState(null);
   const [envoi, setEnvoi] = useState(false);
-  // Lignes posées une à une (recette chargée, collage) ; pas à chaque frappe dans le champ.
   const [arrivee, setArrivee] = useState(false);
   const [vidage, setVidage] = useState(false);
   const planifier = useMinuteurs();
@@ -140,7 +127,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
   const modifie = Math.abs(facteur - 1) > 0.001;
   const pretes = lignes.filter((l) => l.alimentId && l.grammes > 0);
   const aCompleter = lignes.length - pretes.length;
-  // Nombre d'ingrédients sur la balance, pour le badge du titre.
   useEffect(() => onNombre?.(vidage ? 0 : lignes.length), [lignes.length, vidage]);
   const kcal = pretes.reduce((t, l) => t + ((Number(parId.get(l.alimentId)?.calories) || 0) * l.grammes) / 100, 0);
 
@@ -155,11 +141,9 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
     setCreation(null);
   }
 
-  // Repart de zéro : texte collé, lignes, facteur et recette choisie.
   function effacerTout(event) {
     if (vidage) return;
     relancerClasse(event?.currentTarget, "btn-x-rond--tourne");
-    // Les lignes tombent de la balance l'une après l'autre, puis tout repart de zéro.
     if (lignes.length > 0) {
       setArrivee(false);
       setVidage(true);
@@ -183,7 +167,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
   }
 
   function lireTexte(valeur) {
-    // Un collage (gros ajout d'un coup) fait arriver les lignes ; une frappe non.
     setArrivee(valeur.length - texte.length > 15);
     setTexte(valeur);
     reinitialiser();
@@ -212,7 +195,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
     reinitialiser();
     setLignes([]);
     if (!id) return;
-    // Une lecture plus récente (autre recette choisie entre-temps) l'emporte.
     const numero = ++demande.current;
     api("/recettes/" + id)
       .then(({ donnees }) => {
@@ -227,7 +209,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
       .catch(() => {});
   }
 
-  // Ligne déjà résolue (recette enregistrée, Cuisine) : grammes connus, unité gardée si l'aliment la connaît.
   function ligneResolue(foodId, nom, quantiteG, uniteEnregistree) {
     const eq = equivalences(parId.get(String(foodId)));
     const unite = uniteEnregistree && optionsUnite(eq).some((o) => o.value === uniteEnregistree) ? uniteEnregistree : "g";
@@ -236,11 +217,9 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
   }
 
   useImperativeHandle(ref, () => ({
-    // Recette ouverte → RègleX.
     chargerRecette(id) {
       choisirRecette(String(id), recettes.find((r) => String(r.id) === String(id))?.categorie || "plat");
     },
-    // Cuisine du jour → RègleX.
     chargerCuisine(entrees) {
       setSource("cuisine");
       setCollerOuvert(false);
@@ -251,7 +230,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
     },
   }));
 
-  // Ligne inutile (ex. « sel » sans quantité) : retirée de cette adaptation seulement.
   function retirerLigne(cle) {
     setLignes((liste) => liste.filter((l) => l.cle !== cle));
     if (edition === cle) setEdition(null);
@@ -263,8 +241,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
     if (ligne && id) memoriser(ligne.nomLu, id);
     majLigne(cle, (l) => resoudre(l, parId.get(id)));
   }
-
-
 
   function changerUnite(cle, unite) {
     majLigne(cle, (l) => {
@@ -287,15 +263,12 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
     setSaisie(arrondi((ligne.grammes * facteur) / ratio));
   }
 
-  // « J'ai seulement 300 g » : le rapport avec la quantité de la recette s'applique à tout.
   function appliquerSaisie(ligne) {
     const ratio = grammesParUnite(equivalences(parId.get(ligne.alimentId)), ligne.unite) || 1;
     const valeur = Number(String(saisie).replace(",", ".")) * ratio;
     if (valeur > 0 && ligne.grammes > 0) setFacteur(Math.min(20, valeur / ligne.grammes));
     setEdition(null);
   }
-
-
 
   function ouvrirCreation(ligne) {
     const nom = ligne.nomLu.charAt(0).toUpperCase() + ligne.nomLu.slice(1);
@@ -345,7 +318,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
       .finally(() => setEnvoi(false));
   }
 
-  // Recette collée → formulaire de recette habituel, prérempli avec les quantités de la recette d'origine.
   function enregistrerEnRecette() {
     onEnregistrerRecette(
       pretes.map((l) => {
@@ -364,7 +336,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
       })
     );
   }
-
 
   return (
     <div id="panneauAdapter" className={"calories-tab-panel" + (actif ? " actif" : "")}>
@@ -495,7 +466,6 @@ export default function AdapterRecette({ ref, actif, recettes, aliments, onAjout
                       </span>
                     ) : (
                       <button type="button" className="adapter__qte" disabled={!(ligne.grammes > 0)} onClick={() => commencerSaisie(ligne)}>
-                        {/* Clé = facteur : le chiffre est recréé, donc saute, à chaque ×½, ×2… */}
                         <span key={facteur} className={facteurTouche ? "adapter__qte-valeur saute" : "adapter__qte-valeur"}>
                           {ligne.grammes > 0 ? `${arrondi((ligne.grammes * facteur) / ratio)} ${label}` : "—"}
                         </span>

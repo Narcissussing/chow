@@ -2,7 +2,6 @@ import CustomSelect from "../../components/CustomSelect.jsx";
 import { convertirAffichage, grammesParUnite, minimumPourUnite, optionsUnite } from "../../utils/unites.js";
 import { useTriable } from "../../components/Triable.jsx";
 
-// Comme le Journal/Cuisine : la vraie donnée reste les grammes, l'unité n'est qu'une façon de la saisir.
 export function changerSaisieLigne(ligne, saisie) {
   return { ...ligne, saisie, grammes: Number(saisie) * grammesParUnite(ligne, ligne.unite) };
 }
@@ -15,7 +14,6 @@ export function changerUniteLigne(ligne, unite) {
 
 export default function IngredientLigne({ ligne, onChanger, onRetirer, refLigne, refQuantite }) {
   const triable = useTriable(ligne.foodId, refLigne);
-  // "entree" n'est jamais retirée ici, comme dans calories.js (§3.2-12).
   return (
     <div ref={triable.refNoeud} className={"ligne-ingredient-recette entree" + (ligne.sortant ? " disparait" : "") + triable.classe} style={triable.style}>
       {triable.poignee}

@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 
-// Événement "change" natif (à la sortie d'un champ modifié) ; onChange de React, lui, part à chaque frappe.
 export function useChangeNatif(ref, auChangement) {
   const rappel = useRef(auChangement);
   rappel.current = auChangement;

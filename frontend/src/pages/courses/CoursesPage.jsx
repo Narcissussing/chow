@@ -20,6 +20,7 @@ import {
   supprimerPhotoLocale,
   synchroniserPhotosLocales,
 } from "./photos.js";
+import CoursesVide from "./CoursesVide.jsx";
 import { fetchAvecRetry, gererErreurReseau } from "./reseau.js";
 
 const OPTIONS_TRI = [
@@ -32,12 +33,10 @@ const categorieDe = (item) => item.categorie || "zzz";
 const cleTri = (item, cle) => (cle === "nom" ? item.nom.toLowerCase() : categorieDe(item));
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-// Tri stable par clé seule, comme trierPar (courses.js).
 function trier(items, cle) {
   return [...items].sort((a, b) => cleTri(a, cle).localeCompare(cleTri(b, cle)));
 }
 
-// Insère avant le premier article dont la clé est plus grande, sinon en fin (inserrerSelonTri).
 function inserer(items, nouvel, cle) {
   const index = items.findIndex((i) => cleTri(i, cle).localeCompare(cleTri(nouvel, cle)) > 0);
   if (index === -1) return [...items, nouvel];
@@ -48,8 +47,6 @@ function preparer(ligne) {
   return { ...ligne, aPhoto: ligne.has_photo === true, effets: {} };
 }
 
-// Liste du serveur fusionnée dans l'écran : cartes gardées (place, animations), données et Stock à jour,
-// nouveautés insérées selon le tri, disparues sorties en animation. locaux = articles de l'action faite ici.
 export function fusionnerListe(liste, lignes, cle, locaux = []) {
   const serveur = new Map(lignes.map((l) => [l.id, l]));
   const connus = new Set(liste.map((i) => i.id));
@@ -108,7 +105,6 @@ function Courses({ donnees }) {
 
   useBodyClass("mode-magasin", magasin);
 
-  // Réponses d'ajout/achat numérotées : une réponse plus ancienne que la dernière appliquée est ignorée.
   const itemsActuels = useRef(items);
   itemsActuels.current = items;
   const sequence = useRef(0);
@@ -137,8 +133,6 @@ function Courses({ donnees }) {
     synchroniserPhotosLocales(donnees.courses.filter((c) => c.has_photo).map((c) => c.id));
   }, [donnees]);
 
-  // Articles venus de l'autre téléphone : annonce « +N » qui vole jusqu'au compteur, puis chaque article
-  // montré (défilement + halo) dans l'ordre d'ajout, et enfin la bulle se fond dans le compteur.
   const [aReveler, setAReveler] = useState(0);
   const [annonce, setAnnonce] = useState(null);
   const [fusion, setFusion] = useState(false);
@@ -150,7 +144,6 @@ function Courses({ donnees }) {
     const HALO = 1560;
     setAReveler((r) => r + n);
     if (!reduit) {
-      // Trajet du centre de l'écran jusqu'au badge, mesuré maintenant (le badge peut être dans la barre d'outils).
       const cible = badge.current?.getBoundingClientRect();
       const dx = cible ? cible.left + cible.width / 2 - window.innerWidth / 2 : 0;
       const dy = cible ? cible.top + cible.height / 2 - window.innerHeight / 2 : 0;
@@ -159,10 +152,8 @@ function Courses({ donnees }) {
     }
     lignes.forEach((ligne, index) => {
       planifier(() => {
-        // Rayon masqué en mode magasin : réactivé, sinon la carte resterait invisible.
         setActives((a) => (a.has(categorieDe(ligne)) ? a : new Set([...a, categorieDe(ligne)])));
         cartes.current[ligne.id]?.scrollIntoView?.({ behavior: reduit ? "auto" : "smooth", block: "center" });
-        // Halo lancé quand la carte arrive à l'écran (fin du défilement), sur un calque à part (::after).
         planifier(() => {
           cartes.current[ligne.id]?.style.setProperty("--duree-halo", HALO + "ms");
           majEffets(ligne.id, { vientDArriver: true });
@@ -170,7 +161,6 @@ function Courses({ donnees }) {
         }, 450);
       }, DUREE_ANNONCE + 300 + index * ECART);
     });
-    // Fin : la bulle se fond dans le compteur, qui prend le nouveau total avec son pop.
     planifier(() => {
       setFusion(true);
       planifier(() => {
@@ -181,15 +171,12 @@ function Courses({ donnees }) {
   }
   const nombreAffiche = items.length - aReveler;
 
-  // Note : affichage déjà mis à jour par la carte ; la réponse apporte la liste à jour.
   function enregistrerNote(item, commentaire) {
     const numero = ++sequence.current;
     fetchAvecRetry("/courses/commentaire", { body: { idCourse: String(item.id), commentaire } })
       .then((reponse) => appliquerListe(reponse.courses, numero, [item.id]))
       .catch(gererErreurReseau);
   }
-
-  // ---------- Badge : nombre, animation, navette hero <-> barre d'outils ----------
 
   useEffect(() => {
     const nombre = nombreAffiche;
@@ -203,7 +190,6 @@ function Courses({ donnees }) {
 
   useEffect(() => {
     if (!("IntersectionObserver" in window) || !hero.current || !barreOutils.current) return;
-    // rootMargin = zone cachée derrière header + barre sticky : le badge ne bouge qu'une fois le hero vraiment hors champ.
     const hauteurHeader = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--header-h")) || 65;
     const decalage = hauteurHeader + barreOutils.current.offsetHeight;
     const observateur = new IntersectionObserver(
@@ -211,9 +197,7 @@ function Courses({ donnees }) {
         const versBarre = !entrees[0].isIntersecting;
         if (badgeEnBarreActuel.current === versBarre) return;
         badgeEnBarreActuel.current = versBarre;
-        // Mesuré avant le déplacement : point de départ du glissement FLIP.
         avantDeplacement.current = badge.current?.getBoundingClientRect() ?? null;
-        // Taille imposée pour matcher le bouton "Trier par", mesurée en direct.
         if (versBarre) setTailleBadge(document.querySelector(".sort-wrapper .custom-select__button")?.offsetHeight || 34);
         setBadgeEnBarre(versBarre);
       },
@@ -223,7 +207,6 @@ function Courses({ donnees }) {
     return () => observateur.disconnect();
   }, []);
 
-  // FLIP : le badge part de son ancienne position et glisse vers la nouvelle.
   useLayoutEffect(() => {
     const avant = avantDeplacement.current;
     avantDeplacement.current = null;
@@ -247,7 +230,6 @@ function Courses({ donnees }) {
       <span id="badgeNbCourses" ref={nombreBadge}>
         {nombreAffiche}
       </span>
-      {/* Articles de l'autre téléphone encore à compter : la bulle se vide à mesure que le compteur monte. */}
       {aReveler > 0 && !annonce && (
         <span key={aReveler} className={"badge-ajout" + (fusion ? " fusion" : "")} aria-live="polite">
           +{aReveler}
@@ -256,11 +238,8 @@ function Courses({ donnees }) {
     </div>
   );
 
-  // ---------- Filtres par rayon (mode magasin) ----------
-
   const cleCategories = [...new Set(items.map(categorieDe))].sort().join("|");
   useEffect(() => {
-    // Un rayon vidé perd sa puce ; un nouveau rayon en reçoit une, cochée (synchroniserChipsFiltreCourses).
     const presentes = new Set(cleCategories ? cleCategories.split("|") : []);
     const gardees = puces.filter((c) => presentes.has(c));
     const nouvelles = [...presentes].filter((c) => !puces.includes(c));
@@ -279,7 +258,6 @@ function Courses({ donnees }) {
     if (categorie === "tous") {
       setActives(toutSelectionne ? new Set() : new Set(puces));
     } else if (toutSelectionne) {
-      // Cliquer un rayon depuis "Tous" = "je choisis CE rayon", pas "je retire celui-ci".
       setActives(new Set([categorie]));
     } else {
       setActives((a) => {
@@ -291,17 +269,13 @@ function Courses({ donnees }) {
     }
   }
 
-  // Un rayon apparu sans puce n'est jamais filtré, sinon il disparaîtrait sans repère.
   const estVisible = (item) => !puces.includes(categorieDe(item)) || actives.has(categorieDe(item));
 
   function basculerMagasin() {
     const actif = !magasin;
     setMagasin(actif);
-    // En quittant le mode magasin, plus aucun rayon filtré (sinon des articles resteraient cachés sans repère).
     if (!actif) setActives(new Set(puces));
   }
-
-  // ---------- Preset "Semaine" ----------
 
   const cleListe = new Set(items.map((i) => cleArticlePreset(i.food_id, i.nom)));
   const clePreset = new Set(preset.map((a) => cleArticlePreset(a.food_id, a.nom_libre)));
@@ -340,8 +314,6 @@ function Courses({ donnees }) {
       })
       .catch(gererErreurReseau);
   }
-
-  // ---------- Panneau d'ajout ----------
 
   function fermerPanneau() {
     setPanneauEtat({ ouvert: false, pret: false });
@@ -395,8 +367,6 @@ function Courses({ donnees }) {
     ajouterArticle(aliment.id, null);
   }
 
-  // ---------- Armement : un seul écouteur global, comme courses.js ----------
-
   const surClicDocument = useRef(null);
   surClicDocument.current = (event) => {
     const carte = event.target.closest?.(".course-item");
@@ -405,7 +375,6 @@ function Courses({ donnees }) {
       return;
     }
     const id = carte.dataset.id;
-    // Zones à comportement propre : ne (dés)arment jamais leur carte, mais désarment une autre carte armée.
     if (event.target.closest(".course-nom-emoji, .input-commentaire, .note-affichee, .form-supprimer, .course-item__quantite-groupe, .btn-photo-course")) {
       if (id !== armeId) setArmeId(null);
       return;
@@ -423,8 +392,6 @@ function Courses({ donnees }) {
     return () => document.removeEventListener("click", ecouter);
   }, []);
 
-  // ---------- Achat / suppression ----------
-
   async function envoyer(item, type, quantiteAchetee) {
     const corps = { idCourse: String(item.id) };
     if (type === "achat" && quantiteAchetee !== undefined) corps.quantiteAchetee = quantiteAchetee;
@@ -440,7 +407,6 @@ function Courses({ donnees }) {
       gererErreurReseau(err);
       return false;
     }
-    // La photo de référence n'a plus lieu d'être : le serveur l'efface aussi.
     supprimerPhotoLocale(item.id);
     majEffets(item.id, { sortie: type === "achat" ? "disparait-achete" : "disparait-supprimer" });
     if (reponse.courses) appliquerListe(reponse.courses, numero, [item.id]);
@@ -450,8 +416,6 @@ function Courses({ donnees }) {
     }, 300);
     return true;
   }
-
-  // ---------- Photos ----------
 
   useEffect(() => {
     if (popPhoto === null) return;
@@ -486,7 +450,6 @@ function Courses({ donnees }) {
     if (item.aPhoto) {
       ouvrirApercu(item.id);
     } else {
-      // Sinon rechoisir le même fichier ne redéclenche pas "change".
       inputPhoto.current.value = "";
       inputPhoto.current.click();
     }
@@ -523,7 +486,6 @@ function Courses({ donnees }) {
           alert(reponse.erreur);
           return;
         }
-        // Fermer AVANT de déplacer le bouton : l'animation "vers l'œil" a besoin de sa position actuelle.
         fermerApercu();
         supprimerPhotoLocale(idCourse);
         planifier(() => {
@@ -536,8 +498,6 @@ function Courses({ donnees }) {
       })
       .catch(gererErreurReseau);
   }
-
-  // ---------- Rendu ----------
 
   const enfantsListe = [];
   let derniereCategorie = null;
@@ -663,7 +623,7 @@ function Courses({ donnees }) {
           />
         </div>
 
-        <p className={"no-results" + (items.length > 0 ? " hidden" : "")} id="noResultsCourses">Aucun article dans la liste de courses.</p>
+        {items.length === 0 && <CoursesVide />}
 
         <input type="file" id="inputPhotoCourse" accept="image/*" hidden ref={inputPhoto} onChange={photoChoisie} />
 

@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 import Page from "../components/Page.jsx";
 
-// Icônes au trait, couleur héritée (accent) ; les remplissages légers donnent un peu de volume.
 const ICONES = {
   aliments: (
     <>

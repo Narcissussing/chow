@@ -15,7 +15,6 @@ const OPTIONS_TRI = [
   { value: "proteines-desc", label: "Protéines ↘" },
 ];
 
-// Même tri qu'aliments.js : stable sur l'ordre affiché, nom en minuscules, nombres via Number().
 function trier(aliments, critere) {
   const [cle, direction] = critere.split("-");
   return [...aliments].sort((a, b) => {

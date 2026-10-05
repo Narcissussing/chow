@@ -1,4 +1,3 @@
-// Q2 : casserole qui fume, sans texte ; n'apparaît qu'après 200 ms (voir public/css/etats.css).
 export default function Chargement() {
   return (
     <main className="etat-chargement" aria-busy="true">

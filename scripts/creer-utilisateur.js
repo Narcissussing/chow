@@ -1,5 +1,3 @@
-// Usage local   : node scripts/creer-utilisateur.js email@exemple.com motDePasse
-// Usage prod    : DATABASE_URL="postgresql://...familyhubdb?sslmode=require" node scripts/creer-utilisateur.js email@exemple.com motDePasse
 import "dotenv/config";
 import pg from "pg";
 import bcrypt from "bcrypt";

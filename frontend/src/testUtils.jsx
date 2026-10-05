@@ -3,7 +3,6 @@ import { StrictMode } from "react";
 import { MemoryRouter } from "react-router-dom";
 import App from "./App.jsx";
 
-// Simule les réponses /api : { "/session": [statut, corps], ... }.
 export function simulerApi(reponses) {
   global.fetch = jest.fn(async (url, options = {}) => {
     const chemin = url.replace(/^\/api/, "");
@@ -13,7 +12,6 @@ export function simulerApi(reponses) {
 }
 
 export function rendreApp(chemin) {
-  // StrictMode comme dans main.jsx : chaque effet est monté, nettoyé puis remonté.
   return render(
     <StrictMode>
       <MemoryRouter initialEntries={[chemin]}>

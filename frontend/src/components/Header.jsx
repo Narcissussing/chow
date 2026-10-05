@@ -7,7 +7,6 @@ const LIENS = [
   { chemin: "/calories", texte: "Calories" },
 ];
 
-// Link + classe "actif" (pas NavLink, qui pose "active") : même règle startsWith que header.ejs.
 export default function Header({ ref }) {
   const { pathname } = useLocation();
   return (

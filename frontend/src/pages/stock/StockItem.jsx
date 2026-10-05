@@ -3,7 +3,6 @@ import CustomSelect from "../../components/CustomSelect.jsx";
 import { OPTIONS_CL, classeNiveauCL, estQuantiteBasse, texteEmplacement, texteJours } from "../../utils/stock.js";
 
 function AffichageStatique({ item }) {
-  // "anim-fondu" seulement après une fermeture d'édition, comme construireAffichageStatique.
   const fondu = item.effets.fondu ? " anim-fondu" : "";
   if (item.tracking_type === "cl") {
     return (
@@ -15,7 +14,6 @@ function AffichageStatique({ item }) {
   return <span className={"stock-quantite" + fondu}>{item.quantite}</span>;
 }
 
-// Décidé à l'ouverture de l'édition (quantité basse, pas déjà en courses), comme ajouterBoutonCoursesSiBas.
 export function boutonCoursesVisible(item) {
   return estQuantiteBasse(item.quantite, item.tracking_type) && !item.dejaEnCourses;
 }
@@ -29,7 +27,6 @@ function BoutonAjouterCourses({ item, onAjouterCourses }) {
       title="Ajouter aux courses"
       disabled={item.effets.coursesEnvoi}
       onClick={(e) => {
-        // Toute la carte est cliquable : sans ça, le clic rouvrirait/fermerait l'édition.
         e.stopPropagation();
         onAjouterCourses();
       }}
@@ -54,7 +51,6 @@ function Edition({ item, valeur, setValeur, onSoustraire, onAjouterCourses }) {
     );
   }
 
-  // "-1/-2/-5" seulement pour ce qui ne passe pas sous zéro.
   const actuel = Number(item.quantite);
   const soustractions = actuel ? [1, 2, 5].filter((v) => v <= actuel) : [];
 
@@ -138,15 +134,12 @@ export default function StockItem({ item, visible, edition, setValeurEdition, on
       </div>
 
       <form
-        action="/stock/supprimer"
-        method="post"
         className="form-supprimer-stock"
         onSubmit={(e) => {
           e.preventDefault();
           onSupprimer();
         }}
       >
-        <input type="hidden" name="idStock" value={item.id} />
         <button type="submit" className="btn-supprimer-icone btn-supprimer-dash">Supprimer</button>
       </form>
     </div>

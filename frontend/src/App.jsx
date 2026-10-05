@@ -12,16 +12,13 @@ import CoursesPage from "./pages/courses/CoursesPage.jsx";
 import Login from "./pages/Login.jsx";
 import StockPage from "./pages/stock/StockPage.jsx";
 
-// Page privée : protégée côté écran (Express protège les données) et recréée à chaque navigation (D6).
 const privee = (page) => (
   <Protege>
     <Cle>{page}</Cle>
   </Protege>
 );
 
-// D5 : une route par page EJS, aucune route attrape-tout.
 export default function App() {
-  // Frontière recréée à chaque navigation : une page plantée ne bloque pas les suivantes.
   const { key } = useLocation();
   return (
     <AuthProvider>

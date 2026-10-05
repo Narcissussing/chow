@@ -3,13 +3,11 @@ import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { normaliserTexte } from "../../utils/texte.js";
 
-// Panneau accordéon, toujours dernier enfant de #listeCourses (le CSS en dépend).
 export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliments, onChoisir, onAjouterTexte }) {
   const zone = useRef(null);
   const [texte, setTexte] = useState("");
   const [listeVisible, setListeVisible] = useState(false);
 
-  // Fermer le panneau vide son contenu (texte tapé, liste, bouton "Ajouter").
   useEffect(() => {
     if (ouvert) return;
     setTexte("");
@@ -22,7 +20,6 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
   const suggestions = aliments.map((a) => ({ ...a, visible: normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes) }));
   const aUneCorrespondance = suggestions.some((s) => s.visible);
 
-  // Entrée ajoute toujours en texte libre : le champ caché idAliment n'est jamais rempli (§3.2-1).
   function tenterAjout() {
     const libre = texte.trim();
     if (libre === "") return;
@@ -35,14 +32,12 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
       id="panneauAjoutCourse"
       className={"panneau-ajout" + (ouvert ? " ouvert" : "") + (pret ? " pret" : "")}
       onTransitionEnd={(e) => {
-        // "pret" : overflow visible une fois ouvert, pour que les suggestions dépassent sous le panneau.
         if (e.propertyName === "grid-template-rows" && ouvert) onPret();
       }}
     >
       <div className="panneau-ajout__piege">
         <div className="panneau-ajout__interieur">
-          <form action="/courses/ajouter" method="post" id="formAjouterCourse" onSubmit={(e) => e.preventDefault()}>
-            <input type="hidden" name="idAliment" id="idAlimentCacheCourses" value="" />
+          <form id="formAjouterCourse" onSubmit={(e) => e.preventDefault()}>
 
             <div id="autocompleteCourses" ref={zone}>
               <div className="champ-recherche-wrapper">
@@ -83,7 +78,6 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
                 ))}
               </ul>
             </div>
-            {/* N'apparaît que si le texte tapé ne correspond à aucun aliment connu. */}
             <button type="button" id="btnAjouterCourse" className={termes === "" || aUneCorrespondance ? "hidden" : undefined} onClick={tenterAjout}>
               Ajouter
             </button>

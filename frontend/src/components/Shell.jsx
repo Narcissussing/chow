@@ -17,7 +17,6 @@ function lirePositions() {
   }
 }
 
-// html a scroll-behavior: smooth ; un rechargement EJS, lui, ne défile jamais en douceur.
 function defilerInstantanement(top) {
   window.scrollTo({ top, left: 0, behavior: "instant" });
 }
@@ -29,7 +28,6 @@ export default function Shell({ children }) {
   const positions = useRef(lirePositions());
   useReprisePage();
 
-  // --header-h : vraie hauteur du header, lue par les barres sticky (comme le script de header.ejs).
   useLayoutEffect(() => {
     function publierHauteurHeader() {
       if (header.current) {
@@ -41,7 +39,6 @@ export default function Shell({ children }) {
     return () => window.removeEventListener("resize", publierHauteurHeader);
   }, []);
 
-  // Filet Android : reset du zoom à la sortie d'un champ ("blur" ne remonte pas, d'où la capture).
   useEffect(() => {
     const viewport = document.querySelector('meta[name="viewport"]');
     if (!viewport) return;
@@ -61,7 +58,6 @@ export default function Shell({ children }) {
     };
   }, []);
 
-  // Q7 : position mémorisée par entrée d'historique, restaurée au retour arrière.
   useEffect(() => {
     window.history.scrollRestoration = "manual";
   }, []);
@@ -77,7 +73,6 @@ export default function Shell({ children }) {
         try {
           sessionStorage.setItem(CLE_POSITIONS, JSON.stringify(positions.current));
         } catch {
-          // Stockage indisponible : la position ne survivra simplement pas au rechargement.
         }
       });
     }
@@ -85,7 +80,6 @@ export default function Shell({ children }) {
     return () => window.removeEventListener("scroll", enregistrer);
   }, [location.key]);
 
-  // Nouvelle page : haut tout de suite ; retour arrière : on attend que la page ait ses données.
   useLayoutEffect(() => {
     effacerToast();
     fermerTousLesSelects();

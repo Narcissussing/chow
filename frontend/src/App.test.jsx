@@ -41,7 +41,6 @@ test("un mauvais mot de passe affiche l'erreur, un bon renvoie au chemin demand�
   fireEvent.change(screen.getByLabelText("Mot de passe"), { target: { value: "faux" } });
   fireEvent.click(screen.getByText("Se connecter"));
   expect(await screen.findByText("Email ou mot de passe incorrect.")).toBeInTheDocument();
-  // Page recréée : champs vidés comme après la redirection EJS.
   expect(screen.getByLabelText("Mot de passe")).toHaveValue("");
 
   fireEvent.change(screen.getByLabelText("Email"), { target: { value: "a@b.c" } });

@@ -1,20 +1,17 @@
 import { useLayoutEffect, useRef, useState } from "react";
 
-// Chaque trait du magasin a le même nombre de points que son trait de caddie : morphing SMIL (pris en charge par Safari).
 const TRAITS = [
-  { dehors: "M6 7L42 7L42 15L6 15Z", dedans: "M5 12L10.5 12L10.5 12L5 12Z" }, // enseigne → poignée
-  { dehors: "M9 41L9 15L39 15L39 41", dedans: "M15.4 30L11.8 17L39.6 17L36 30" }, // murs → panier
-  { dehors: "M12 11L36 11", dedans: "M10.5 12L15.4 30" }, // bandeau → montant
-  { dehors: "M7 41L41 41", dedans: "M13.8 34.5L36.5 34.5" }, // trottoir → base
+  { dehors: "M6 7L42 7L42 15L6 15Z", dedans: "M5 12L10.5 12L10.5 12L5 12Z" },
+  { dehors: "M9 41L9 15L39 15L39 41", dedans: "M15.4 30L11.8 17L39.6 17L36 30" },
+  { dehors: "M12 11L36 11", dedans: "M10.5 12L15.4 30" },
+  { dehors: "M7 41L41 41", dedans: "M13.8 34.5L36.5 34.5" },
 ];
 
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-// Bouton icône seul : le magasin, ses portes s'ouvrent, le client entre et le magasin devient caddie (et l'inverse).
 export default function BoutonMagasin({ actif, onBasculer }) {
   const svg = useRef(null);
   const [sens, setSens] = useState(null);
-  // Forme de départ figée au montage : ensuite seules les animations SMIL déplacent les traits.
   const depart = useRef(actif);
   const reduit = mouvementReduit();
 

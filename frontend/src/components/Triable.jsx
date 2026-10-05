@@ -2,7 +2,6 @@ import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, us
 import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import { SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
 
-// Liste réordonnable au glisser (Cuisine, ingrédients de recette) ; onDeplacer(depuis, vers) en index.
 export function ListeTriable({ ids, onDeplacer, children }) {
   const capteurs = useSensors(useSensor(PointerSensor), useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }));
 
@@ -22,7 +21,6 @@ export function ListeTriable({ ids, onDeplacer, children }) {
   );
 }
 
-// Seule la poignée démarre le geste : le reste de la carte garde le défilement tactile et ses champs.
 export function useTriable(id, ref) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({ id });
 
@@ -34,8 +32,6 @@ export function useTriable(id, ref) {
 
   const poignee = <button type="button" ref={setActivatorNodeRef} className="poignee-glisser" title="Glisser pour déplacer" aria-label="Glisser pour déplacer" {...attributes} {...listeners}></button>;
 
-  // Propriété "translate", pas "transform" : l'animation popIn (fill "both") des lignes .entree garderait
-  // son transform final et figerait la ligne sous le doigt.
   return {
     refNoeud,
     style: { translate: transform ? `${Math.round(transform.x)}px ${Math.round(transform.y)}px` : undefined, transition: transition?.replace(/\btransform\b/g, "translate") },

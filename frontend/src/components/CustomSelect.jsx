@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
-// Port de custom-selects.js : <select> natif conservé, bouton visible juste après, liste posée sur <body> pendant l'ouverture.
 const fermeturesInstantanees = new Set();
 let ecouteursGlobaux = 0;
 
@@ -15,7 +14,6 @@ function surClicDocument() {
   fermerTousLesSelects();
 }
 
-// Le défilement interne d'une longue liste ne la ferme pas ; celui de la page ou d'une zone parente, si.
 function surDefilement(event) {
   if (event.target instanceof Element && event.target.closest(".custom-select__list")) return;
   fermerTousLesSelects();
@@ -82,7 +80,6 @@ export default function CustomSelect({
     };
   }, []);
 
-  // Fermeture avec le fondu de 150 ms, seulement après un choix dans la liste.
   function fermerEnDouceur() {
     liste.current?.classList.remove("custom-select__list--ouverte");
     setOuvert(false);
@@ -100,7 +97,6 @@ export default function CustomSelect({
     setListeMontee(true);
   }
 
-  // Après montage : reflow pour que le glissement d'ouverture se joue, puis recalage dans l'écran.
   useLayoutEffect(() => {
     const element = liste.current;
     if (!ouvert || !element) return;
@@ -117,7 +113,6 @@ export default function CustomSelect({
     onChange(String(option.value));
   }
 
-  // Une option vide sans texte ne sert qu'à remettre le select à zéro : jamais affichée dans la liste.
   const optionsVisibles = options.filter((o) => !(String(o.value) === "" && String(o.label).trim() === ""));
 
   return (

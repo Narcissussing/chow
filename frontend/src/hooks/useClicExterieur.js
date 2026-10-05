@@ -1,6 +1,5 @@
 import { useEffect, useRef } from "react";
 
-// Appelle "auClic" pour tout clic hors des éléments donnés (déclencheur + zone, portails compris).
 export function useClicExterieur(refs, auClic, actif = true) {
   const rappel = useRef(auClic);
   rappel.current = auClic;

@@ -1,6 +1,5 @@
 import { relancerClasse } from "../utils/animation.js";
 
-// Bouton icône seul, même rond que les boutons recettes de la Cuisine : « cuisiner » (envoyer à la Cuisine) ou « regle » (envoyer dans RègleX).
 const LABELS = {
   cuisiner: "Ajouter à la Cuisine",
   regle: "Adapter dans RègleX",

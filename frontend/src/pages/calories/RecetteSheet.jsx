@@ -16,7 +16,6 @@ const CATEGORIES = [
   { valeur: "fraicheur", label: "Fraîcheur" },
 ];
 
-// Ligne d'ingrédient : "0.00" de poids_unite_g normalisé ici une fois pour toutes ; unité enregistrée reprise si l'aliment la connaît.
 export function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece, unitePiece, emoji, unite = "g") {
   const poids = Number(poidsPiece) || 0;
   const saisie = quantiteG === "" || quantiteG === undefined || quantiteG === null ? "" : String(Math.round(Number(quantiteG) * 100) / 100);
@@ -38,7 +37,6 @@ export function nouvelleLigne(foodId, nom, quantiteG, gCafe, gSoupe, poidsPiece,
   return unite && unite !== "g" && grammesParUnite(ligne, unite) > 0 ? changerUniteLigne(ligne, unite) : ligne;
 }
 
-// Lecture : quantité dans l'unité enregistrée ("2 tbs"), grammes par défaut.
 function texteQuantite(ing) {
   const ligne = nouvelleLigne(ing.food_id, "", parseFloat(ing.quantite_g), ing.grammes_par_cuil_a_cafe, ing.grammes_par_cuil_a_soupe, poidsPieceDe(ing.tracking_type, ing.poids_unite_g, ing.unite_piece) || null, ing.unite_piece, "", ing.unite);
   const option = optionsUnite(ligne).find((o) => o.value === ligne.unite);
@@ -62,7 +60,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
 
   const [ouvert, setOuvert] = useState(false);
   useVerrouDefilement(ouvert, sheet);
-  // Au chargement de la page, le formulaire est visible et la lecture cachée (état du template).
   const [mode, setMode] = useState("formulaire");
   const [lecture, setLecture] = useState({ nom: "", meta: "", ingredients: [], etapes: null });
   const [recetteChargee, setRecetteChargee] = useState(null);
@@ -70,11 +67,9 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
   const formulaireActuel = useRef(formulaire);
   formulaireActuel.current = formulaire;
   const [recherche, setRecherche] = useState({ ouverte: false, pret: false, texte: "", listeVisible: false });
-  // État posé explicitement, comme majEtatIngredients (rien n'est calculé au chargement de la page).
   const [videCache, setVideCache] = useState(false);
   const [enregistrerDesactive, setEnregistrerDesactive] = useState(false);
   const [texteEnregistrer, setTexteEnregistrer] = useState("Enregistrer");
-
 
   function majEtatIngredients(nombre) {
     setVideCache(nombre > 0);
@@ -88,7 +83,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
   });
 
   function afficher() {
-    // Jamais rouvert en bas : .sheet garde sa position de défilement d'une ouverture à l'autre.
     if (sheet.current) sheet.current.scrollTop = 0;
     setOuvert(true);
   }
@@ -103,7 +97,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     fermerRecherche(formulaire.lignes.length);
   }
 
-  // Remise à zéro (reinitialiserSheet), puis remplissage éventuel.
   function preparerFormulaire(valeurs) {
     setTexteEnregistrer("Enregistrer");
     if (liste.current) liste.current.scrollTop = 0;
@@ -113,13 +106,11 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     majEtatIngredients(lignes.length);
   }
 
-  // Doublons ignorés comme dans ajouterLigneIngredient (on garde la première occurrence).
   function sansDoublons(lignes) {
     return lignes.filter((l, i) => lignes.findIndex((m) => m.foodId === l.foodId) === i);
   }
 
   useImperativeHandle(ref, () => ({
-    // "Nouvelle recette" (catégorie de la section) ou "Enregistrer comme recette" (ingrédients de la Cuisine).
     ouvrirCreation({ categorie, ingredients = [] }) {
       setRecetteChargee(null);
       setMode("formulaire");
@@ -132,7 +123,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
       const numero = ++lectureDemandee.current;
       api("/recettes/" + idRecette)
         .then(({ donnees }) => {
-          // Une lecture plus récente (autre carte touchée entre-temps) l'emporte.
           if (numero !== lectureDemandee.current) return;
           if (donnees?.erreur) {
             alert(donnees.erreur);
@@ -153,12 +143,10 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     },
   }));
 
-  // Recette ouverte → Cuisine du jour (même effet que le sélecteur de la Cuisine), puis panneau fermé.
   const [envoiCuisine, setEnvoiCuisine] = useState(false);
   function envoyerALaCuisine(event) {
     if (!recetteChargee || envoiCuisine) return;
     setEnvoiCuisine(true);
-    // Rectangle gardé : le bouton disparaît avec la feuille avant que les ingrédients ne s'envolent.
     const depart = event?.currentTarget?.getBoundingClientRect();
     api("/calories/ajouter-recette", { method: "POST", body: { idRecette: String(recetteChargee.recette.id) } })
       .then(({ donnees }) => {
@@ -187,8 +175,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     afficher();
   }
 
-  // ---------- Lignes d'ingrédients ----------
-
   function majLigne(foodId, ligne) {
     setFormulaire((f) => ({ ...f, lignes: f.lignes.map((l) => (l.foodId === foodId ? ligne : l)) }));
   }
@@ -213,16 +199,12 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     const lignes = existante ? formulaire.lignes : [...formulaire.lignes, ligne];
     if (!existante) setFormulaire((f) => ({ ...f, lignes }));
     fermerRecherche(lignes.length);
-    // Focus sur la quantité de la dernière ligne (déjà présente ou tout juste ajoutée).
     focusApres.current = lignes[lignes.length - 1]?.foodId ?? null;
   }
-
-  // ---------- Recherche d'ingrédient repliable ----------
 
   function basculerRecherche() {
     if (!recherche.ouverte) {
       setRecherche((r) => ({ ...r, ouverte: true }));
-      // Le champ prend la place du message "vide" le temps de la recherche.
       setVideCache(true);
       liste.current?.scrollTo?.({ top: liste.current.scrollHeight, behavior: "smooth" });
       champRecherche.current?.focus();
@@ -248,12 +230,9 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
   const suggestions = aliments.map((a) => ({ ...a, visible: normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes) }));
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
 
-  // ---------- Enregistrement et suppression ----------
-
   async function enregistrer(event) {
     event.preventDefault();
     const depart = event.nativeEvent?.submitter?.getBoundingClientRect();
-    // Un clic répété pendant l'envoi créerait sinon plusieurs recettes.
     if (enregistrerDesactive) return;
     const texteInitial = texteEnregistrer;
     setEnregistrerDesactive(true);
@@ -269,7 +248,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     const emojis = [];
     formulaire.lignes.forEach((ligne) => {
       if (!ligne.foodId || !ligne.saisie) return;
-      // Quantité toujours en grammes ; l'unité affichée est enregistrée à côté pour être reprise.
       ingredients.push({ food_id: ligne.foodId, quantite_g: Number(ligne.saisie) * grammesParUnite(ligne, ligne.unite), unite: ligne.unite });
       if (ligne.emoji) emojis.push(ligne.emoji);
     });
@@ -314,7 +292,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     );
     setTexteEnregistrer(texteInitial);
     fermer();
-    // Les ingrédients filent ranger la recette dans l'onglet Recettes.
     lancerVers(emojis, depart, [".calories-tab-btn:nth-child(2)"], "recoit");
   }
 
@@ -384,7 +361,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
         </div>
 
         <form id="formRecette" className={mode !== "formulaire" ? "hidden" : undefined} onSubmit={enregistrer}>
-          <input type="hidden" id="recetteId" value={formulaire.id} />
 
           <div className="detail-header">
             <input
@@ -397,7 +373,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
               value={formulaire.nom}
               onChange={(e) => setFormulaire((f) => ({ ...f, nom: e.target.value }))}
               onKeyDown={(e) => {
-                // En édition, Entrée ne doit rien enregistrer tout seul.
                 if (e.key === "Enter" && formulaire.id) e.preventDefault();
               }}
             />
@@ -476,7 +451,6 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
 
           <button type="submit" id="btnEnregistrerSheet" disabled={enregistrerDesactive}>{texteEnregistrer}</button>
 
-          {/* Séparé du ✕ pour ne jamais supprimer par un tap malheureux ; masqué pour une nouvelle recette. */}
           <button type="button" id="btnSupprimerRecetteSheet" className={"btn-supprimer-pleine-largeur" + (formulaire.supprimerVisible ? "" : " hidden")} onClick={supprimer}>
             Supprimer
           </button>

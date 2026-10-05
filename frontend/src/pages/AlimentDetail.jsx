@@ -13,7 +13,6 @@ function Equivalences({ aliment }) {
   const planifier = useMinuteurs();
   const [statutVisible, setStatutVisible] = useState(false);
 
-  // Sauvegarde à la sortie du champ (événement change), comme aliment-detail.js ; vide = NULL côté serveur.
   async function enregistrer() {
     let reponse;
     try {
@@ -22,13 +21,12 @@ function Equivalences({ aliment }) {
         body: { grammesCafe: champCafe.current.value, grammesSoupe: champSoupe.current.value },
       });
     } catch {
-      return; // Échec réseau silencieux, comme aujourd'hui (§3.2).
+      return;
     }
     if (reponse.donnees?.erreur) {
       alert(reponse.donnees.erreur);
       return;
     }
-    // "Enregistré" s'efface après 2 s ; un nouveau succès relance le délai.
     setStatutVisible(true);
     clearTimeout(minuteur.current);
     minuteur.current = planifier(() => setStatutVisible(false), 2000);
@@ -79,7 +77,6 @@ function Detail({ aliment }) {
               {aliment.origine && <p className="detail-origine">Origine : {aliment.origine}</p>}
               {aliment.description && <p className="detail-description">{aliment.description}</p>}
 
-              {/* Valeurs brutes de la base (§3.2-13), pour 100 g. */}
               <div className="detail-macros">
                 <div className="macro-card macro-calories">
                   <span className="macro-valeur">{aliment.calories}</span>

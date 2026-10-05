@@ -122,7 +122,7 @@ Projet, l’Epic, le Type ou le Statut.
 
 | Label | Quand l’utiliser |
 |---|---|
-| `frontend` | EJS, CSS, JavaScript navigateur, DOM ou UX |
+| `frontend` | React, CSS, JavaScript navigateur, DOM ou UX |
 | `backend` | Express, Node.js, routes, middleware, authentification ou logique métier |
 | `database` | PostgreSQL, Neon, SQL, schéma ou migration |
 | `mobile` | Responsive, ergonomie tactile ou comportement propre au mobile |

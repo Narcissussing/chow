@@ -50,7 +50,6 @@ test("rapprochement : sûr, à choisir, inconnu", () => {
   expect(statut("levure")).toEqual(["ok", "levure-chimique"]);
   expect(statut("lait entier")).toEqual(["ok", "lait-entier"]);
   expect(statut("huile d olive")).toEqual(["ok", "huile-olive"]);
-  // « moyen » est descriptif : l'oeuf moyen l'emporte sur le large quand rien d'autre n'est précisé.
   expect(statut("oeufs")).toEqual(["ok", "oeuf-moyen"]);
   expect(trouverAliment("oeufs", ALIMENTS).candidats.map((a) => a.id)).toEqual(expect.arrayContaining(["oeuf-large", "oeuf-moyen"]));
   expect(statut("vanille en poudre")).toEqual(["choix", null]);
@@ -66,7 +65,6 @@ test("« X ou Y » : chaque alternative est cherchée et proposée au choix ; go
   expect(r.candidats.slice(0, 2).map((a) => a.id)).toEqual(["gousse-vanille", "extrait-vanille"]);
   const r2 = trouverAliment("gousse de vanille ou extrait de vanille", ALIMENTS);
   expect(r2.candidats.slice(0, 2).map((a) => a.id)).toEqual(["gousse-vanille", "extrait-vanille"]);
-  // Une seule alternative connue : traitée comme une ligne simple.
   expect(trouverAliment("farine ou fécule de tapioca", ALIMENTS)).toMatchObject({ statut: "ok", aliment: { id: "farine" } });
 });
 

@@ -42,10 +42,10 @@ Le script crée le compte ou remplace son mot de passe.
 
 ## Production
 
-- application Fly.io : `chow-ejs` ;
+- application Fly.io : `ch-ow` ;
 - région : `cdg` ;
 - machine : CPU partagé, 256 Mo ;
-- arrêt et redémarrage automatiques ;
+- une machine toujours allumée (`auto_stop_machines = off`, `min_machines_running = 1`) ;
 - sessions et photos persistées dans PostgreSQL.
 
 Le disque local de la machine n’est pas une source de persistance.

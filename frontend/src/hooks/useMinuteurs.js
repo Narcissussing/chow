@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
 
-// setTimeout suivis et annulés au démontage : une sortie animée ne touche plus une page quittée.
 export function useMinuteurs() {
   const actifs = useRef(new Set());
 

@@ -32,7 +32,6 @@ const OPTIONS_TRI = [
   { value: "quantite-desc", label: "Quantité ↘" },
 ];
 
-// Quantité toujours en texte, comme data-valeur-actuelle : "1" et 1 doivent se comparer égaux.
 function preparer(ligne) {
   return { ...ligne, quantite: String(ligne.quantite), dejaEnCourses: ligne.deja_en_courses === true, effets: {} };
 }
@@ -55,7 +54,6 @@ function Stock({ donnees }) {
   const [critere, setCritere] = useState("alpha");
   const [vue, setVue] = useLocalStorage("vueStock", (v) => (v === "liste" ? "liste" : "grille"));
   const [ajout, setAjout] = useState({ ouvert: false, texte: "", entreeAjout: false, entreeRecherche: false });
-  // Éditions en cours par id ; "ouvertId" = la seule carte ouverte (itemOuvertActuellement).
   const [editions, setEditions] = useState({});
   const [ouvertId, setOuvertId] = useState(null);
   const [aAmenerEnVue, setAAmenerEnVue] = useState(null);
@@ -63,7 +61,6 @@ function Stock({ donnees }) {
   const termes = normaliserTexte(recherche.toLowerCase().trim());
   const filtres = { emplacement, type, termes };
   const visibles = items.filter((i) => correspondFiltres(i, filtres)).length;
-  // Filtre ou recherche en cours : le compteur montre ce qui est affiché, en ambre.
   const filtreActif = emplacement !== "tous" || type !== "tous" || termes !== "";
 
   function majItem(id, maj) {
@@ -73,7 +70,6 @@ function Stock({ donnees }) {
     majItem(id, (i) => ({ ...i, effets: { ...i.effets, ...effets } }));
   }
 
-  // Défilement + halo après le rendu, quand la carte existe réellement dans la page.
   useEffect(() => {
     if (aAmenerEnVue === null) return;
     cartes.current[aAmenerEnVue]?.scrollIntoView?.({ behavior: "smooth", block: "center" });
@@ -82,8 +78,6 @@ function Stock({ donnees }) {
     planifier(() => majEffets(id, { miseEnAvant: false }), 1500);
     setAAmenerEnVue(null);
   }, [aAmenerEnVue, planifier]);
-
-  // ---------- Édition ----------
 
   function fermerEtSauvegarder(id, valeurForcee) {
     const item = items.find((i) => i.id === id);
@@ -98,7 +92,6 @@ function Stock({ donnees }) {
       return;
     }
 
-    // Le champ reste affiché jusqu'à la réponse, comme dans stock.js.
     setEditions((e) => ({ ...e, [id]: { valeur: nouvelle, enAttente: true } }));
     api("/stock/modifier", { method: "POST", body: { idStock: String(id), nouvelleQuantite: nouvelle } })
       .then(({ donnees: reponse }) => {
@@ -112,7 +105,6 @@ function Stock({ donnees }) {
         planifier(() => majEffets(id, { majFlash: false }), 600);
       })
       .catch(() => {
-        // Échec réseau : la carte reste en édition, comme aujourd'hui (§3.2).
       });
   }
 
@@ -140,7 +132,6 @@ function Stock({ donnees }) {
     }
   }
 
-  // Clic hors de toute carte : referme (et sauvegarde) la carte ouverte.
   const fermerSiExterieur = useRef(null);
   fermerSiExterieur.current = (event) => {
     if (ouvertId === null) return;
@@ -172,7 +163,6 @@ function Stock({ donnees }) {
       .catch(() => {});
   }
 
-  // Suggestion envoyée aux Courses : grisée tout de suite, retirée de l'encart, et la carte du Stock ne la repropose plus.
   function ajouterSuggestion(suggestion) {
     const marquer = (envoye) => setARacheter((liste) => liste.map((s) => (s.food_id === suggestion.food_id ? { ...s, envoye } : s)));
     marquer(true);
@@ -201,8 +191,6 @@ function Stock({ donnees }) {
       })
       .catch(() => {});
   }
-
-  // ---------- Ajout ----------
 
   function ouvrirAjout() {
     setAjout({ ouvert: true, texte: recherche, entreeAjout: true, entreeRecherche: false });
@@ -235,7 +223,6 @@ function Stock({ donnees }) {
 
   function choisirSuggestion(aliment) {
     fermerAjout();
-    // Doublon repéré par le nom, comme trouverStockItemParNom.
     const existant = items.find((i) => i.nom.toLowerCase() === aliment.nom.toLowerCase());
     if (existant) {
       afficherToast("Déjà dans le stock.");
@@ -251,7 +238,6 @@ function Stock({ donnees }) {
           alert(reponse.erreur);
           return;
         }
-        // deja_en_courses n'est pas renvoyé par le serveur : "false" par défaut (§3.2).
         const nouvel = { ...preparer({ ...reponse.item, deja_en_courses: false }), effets: { entree: true } };
         setItems((liste) => trierStock([...liste, nouvel], critere));
         if (correspondFiltres(nouvel, filtres)) setAAmenerEnVue(nouvel.id);

@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { relancerClasse } from "../utils/animation.js";
 
-// Total d'une page dans une icône (boîte de rangement pour le Stock, marmite pour la Cuisine), comme le sac des Courses ; pop à chaque changement.
 export default function BadgeCompteur({ icone, nombre, label, filtre = false, className = "", ref }) {
   const chiffre = useRef(null);
   const precedent = useRef(nombre);

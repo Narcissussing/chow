@@ -9,7 +9,6 @@ import AdapterRecette from "./AdapterRecette.jsx";
 import RecetteSheet from "./RecetteSheet.jsx";
 
 let compteurCles = 0;
-// Clé de carte : une recette modifiée reçoit une nouvelle clé, sa carte est recréée en fin de grille (comme en EJS).
 const avecCle = (recette) => ({ ...recette, cle: `${recette.id}-${++compteurCles}` });
 
 function Calories({ donnees }) {
@@ -21,16 +20,13 @@ function Calories({ donnees }) {
   const [onglet, setOnglet] = useState("journal");
   const [nbRegleX, setNbRegleX] = useState(0);
   const [compacte, setCompacte] = useState(false);
-  // Badge du titre : retourné quand l'onglet change d'icône, glissé (FLIP) quand il passe dans la barre collante.
   const badge = useRef(null);
   const avantDeplacement = useRef(null);
   const compacteActuelle = useRef(false);
   const [bascule, setBascule] = useState(false);
   const [entrees, setEntrees] = useState(() => donnees.journal.map((e) => ({ ...e, effets: {} })));
   const [recettes, setRecettes] = useState(() => donnees.recettes.map(avecCle));
-  // État (et non donnees) : un aliment créé depuis RègleX doit apparaître partout tout de suite.
   const [aliments, setAliments] = useState(donnees.aliments);
-  // Un sélecteur vide au chargement reste actif dès sa première recette, même si on la supprime ensuite.
   const [selects, setSelects] = useState(() => {
     const etat = (categorie) => {
       const aucune = !donnees.recettes.some((r) => r.categorie === categorie);
@@ -41,12 +37,10 @@ function Calories({ donnees }) {
 
   const alimentsTries = [...aliments].sort((a, b) => a.nom.localeCompare(b.nom));
 
-  // Sur mobile, le résumé complet se réduit aux calories une fois collé sous le header.
   useEffect(() => {
     function appliquerCompacte(valeur) {
       if (compacteActuelle.current === valeur) return;
       compacteActuelle.current = valeur;
-      // Mesuré avant le déplacement : point de départ du glissement, comme le sac des Courses.
       avantDeplacement.current = badge.current?.getBoundingClientRect() ?? null;
       setBascule(false);
       setCompacte(valeur);
@@ -68,7 +62,6 @@ function Calories({ donnees }) {
     };
   }, []);
 
-  // FLIP : le badge part de son ancienne place (titre ou barre) et glisse vers la nouvelle.
   useLayoutEffect(() => {
     const avant = avantDeplacement.current;
     avantDeplacement.current = null;
@@ -88,8 +81,6 @@ function Calories({ donnees }) {
     setOnglet(suivant);
   }
 
-  // Marmite (aliments de la Cuisine) partout, balance (ingrédients de RègleX) sur son onglet ;
-  // dans le titre, ou dans la barre des kcal une fois le titre caché sous le header (mobile).
   const nbCuisine = entrees.filter((e) => !e.effets.disparait).length;
   const badgeTitre =
     onglet === "adapter" ? (
@@ -98,7 +89,6 @@ function Calories({ donnees }) {
       <BadgeCompteur key="cuisine" ref={badge} icone="cuisine" nombre={nbCuisine} label="Aliments dans la Cuisine du jour" className={bascule ? "bascule" : ""} />
     );
 
-  // Totaux depuis les entrées encore présentes (les lignes "disparait" ne comptent plus).
   const somme = (cle) => entrees.filter((e) => !e.effets.disparait).reduce((total, e) => total + Number(e[cle]), 0);
 
   function recetteEnregistree(recette, ancienId) {

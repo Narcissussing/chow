@@ -29,7 +29,7 @@ une couleur distincte.
 | `--font-display` | Playfair Display, Georgia, serif | Titres et valeurs fortes |
 | `--font-body` | DM Sans, sans-serif | Texte, formulaires et boutons |
 
-Les polices sont chargées dans `views/partials/header.ejs`.
+Les polices sont chargées dans `frontend/index.html`.
 
 ## Icônes
 
@@ -84,8 +84,7 @@ Les animations décoratives doivent respecter `prefers-reduced-motion`.
 
 ### Sélecteur personnalisé
 
-`public/js/custom-selects.js` améliore visuellement les `select` sans les
-retirer du DOM :
+`frontend/src/components/CustomSelect.jsx` remplace les `select` natifs :
 
 - liste d’options placée sous `body` pour éviter les coupures ;
 - valeur synchronisée avec le `select` natif et événement `change` ;

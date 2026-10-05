@@ -4,6 +4,11 @@ Synthèse issue de l’historique Git, qui reste la source détaillée. Le trava
 futur appartient à Jira ; les choix structurants sont indexés dans
 [Décisions](decisions.md).
 
+## 2026-10
+
+- Fin de la migration React : pages EJS, partials, scripts `public/js/` et
+  dépendance `ejs` retirés ; le serveur ne sert plus que l’app React et l’API.
+
 ## 2026-08
 
 - Consultation et modification des étapes de préparation des recettes.

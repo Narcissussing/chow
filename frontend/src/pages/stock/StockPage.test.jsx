@@ -38,7 +38,6 @@ const attendrePage = () => screen.findByText("Chow — Fait maison 🏠");
 test("filtres à choix unique et recherche sans accents", async () => {
   ouvrirStock();
   await attendrePage();
-  // localeCompare range « Œuf » comme « oeuf », entre Lait et Riz.
   expect(nomsVisibles()).toEqual(["Lait", "Œuf", "Riz"]);
   fireEvent.click(screen.getByRole("button", { name: "🫙 Niveau" }));
   expect(nomsVisibles()).toEqual(["Lait"]);
@@ -212,14 +211,12 @@ const SUGGESTIONS = [
 test("À racheter : bas ou épuisés seulement, achetés ce mois d'abord, « + » envoie aux Courses", async () => {
   ouvrirStock({ "/stock": [200, { stock: STOCK, aliments: ALIMENTS, suggestions: SUGGESTIONS }] });
   await attendrePage();
-  // Fermé au départ : un bouton avec le nombre à racheter l'ouvre.
   expect(screen.queryByRole("region", { name: "À racheter" })).toBeNull();
   const bouton = screen.getByRole("button", { name: "À racheter" });
   expect(bouton.closest(".titre-page")).not.toBeNull();
   fireEvent.click(bouton);
   const encart = screen.getByRole("region", { name: "À racheter" });
   const noms = [...encart.querySelectorAll(".stock-suggestions__nom")].map((n) => n.textContent);
-  // Œuf (6 restants) n'est pas bas ; Beurre acheté ce mois passe avant Lait.
   expect(noms).toEqual(["🧈 Beurre", "🥛 Lait"]);
   expect(within(encart).getByText("épuisé")).toBeInTheDocument();
   expect(within(encart).getByText("2× ce mois")).toBeInTheDocument();

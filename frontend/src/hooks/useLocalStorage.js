@@ -1,6 +1,5 @@
 import { useCallback, useState } from "react";
 
-// Mêmes clés et valeurs texte que les scripts EJS ; stockage indisponible = valeur par défaut.
 export function useLocalStorage(cle, lire) {
   const [valeur, setValeur] = useState(() => {
     try {
@@ -16,7 +15,6 @@ export function useLocalStorage(cle, lire) {
       try {
         localStorage.setItem(cle, String(nouvelle));
       } catch {
-        // Quota dépassé ou stockage bloqué : la préférence ne survivra pas au rechargement.
       }
     },
     [cle]

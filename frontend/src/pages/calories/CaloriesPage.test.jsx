@@ -2,7 +2,6 @@ import { act, fireEvent, screen, within } from "@testing-library/react";
 import { abonnerToast } from "../../toast.js";
 import { rendreApp, simulerApi } from "../../testUtils.jsx";
 
-// Dernière fin de geste de chaque liste triable rendue (Cuisine, fiche recette).
 const mockFinsDeGlisse = new Map();
 jest.mock("@dnd-kit/core", () => {
   const reel = jest.requireActual("@dnd-kit/core");
@@ -123,7 +122,6 @@ test("glisser : ordre local immédiat et POST de l'ordre complet", async () => {
   mockFinsDeGlisse.clear();
   ouvrir();
   await attendrePage();
-  // jsdom ne mesure aucune position : on déclenche directement la fin du geste (Oeuf lâché sur Huile).
   await act(async () => mockFinsDeGlisse.forEach((finir) => finir({ active: { id: 2 }, over: { id: 1 } })));
   expect([...document.querySelectorAll(".journal-nom")].map((n) => n.textContent.trim())).toEqual(["🥚 Oeuf", "🫒 Huile"]);
   expect(requetes).toEqual([{ chemin: "/calories/reordonner", corps: { ids: [2, 1] } }]);
@@ -259,7 +257,6 @@ test("édition puis suppression : carte et option retirées, confirmation demand
   fireEvent.click(document.getElementById("btnModifierRecette"));
   expect(document.getElementById("recetteNom")).toHaveValue("Omelette");
   expect(document.getElementById("btnSupprimerRecetteSheet")).not.toHaveClass("hidden");
-  // En édition, Entrée dans le nom n'enregistre rien.
   const entree = fireEvent.keyDown(document.getElementById("recetteNom"), { key: "Enter" });
   expect(entree).toBe(false);
 
@@ -299,23 +296,19 @@ test("RègleX : recette collée lue et reliée aux aliments, aliment manquant cr
   fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
   fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "2 c. à soupe\nd'huile\n\n3\noeufs\n\n100 g\nde beurre" } });
   const qtes = () => [...panneau.querySelectorAll(".adapter__qte")].map((q) => q.textContent);
-  // huile et oeuf reconnus (cuillères et pièces gardées), beurre inconnu.
   expect(qtes()).toEqual(["2 tbs", "3 pièce", "—"]);
   expect(panneau.querySelector(".adapter__reste")).toHaveTextContent("1 à compléter");
   expect(within(panneau).getByRole("button", { name: "Ajouter à la Cuisine" })).toBeDisabled();
-  // Création du beurre (valeurs pour 100 g).
   fireEvent.click(within(panneau).getByRole("button", { name: "Ajouter « beurre » aux aliments" }));
   fireEvent.change(panneau.querySelector(".adapter__valeurs input"), { target: { value: "717" } });
   await act(async () => fireEvent.submit(panneau.querySelector(".adapter__creation")));
   expect(requetes.at(-1)).toEqual({ chemin: "/aliments", corps: { nom: "Beurre", categorie: "Divers", calories: "717", proteines: "", glucides: "", lipides: "" } });
   expect(qtes()).toEqual(["2 tbs", "3 pièce", "100 g"]);
   expect(panneau.querySelector(".adapter__reste")).toBeNull();
-  // ×2 : sens visible, quantités de la recette grisées.
   fireEvent.click(within(panneau).getByRole("button", { name: "2" }));
   expect(qtes()).toEqual(["4 tbs", "6 pièce", "200 g"]);
   expect(within(panneau).getByRole("img", { name: "Recette agrandie" })).toBeInTheDocument();
   expect(panneau.querySelector(".adapter__base")).toHaveClass("grisee");
-  // « J'ai seulement 40 g de beurre » : 40 / 100 = 0,4 pour tout.
   fireEvent.click(panneau.querySelectorAll(".adapter__qte")[2]);
   const champ = within(panneau).getByLabelText("Quantité de beurre que j'ai");
   fireEvent.change(champ, { target: { value: "40" } });
@@ -379,11 +372,9 @@ test("envoyer dans RègleX : depuis une recette ouverte et depuis la Cuisine du 
   await attendrePage();
   const panneau = () => document.getElementById("panneauAdapter");
   const qtes = () => [...panneau().querySelectorAll(".adapter__qte")].map((q) => q.textContent);
-  // Cuisine du jour (Huile 13.5 g en tbs enregistrée ou non, Oeuf 60 g) → RègleX.
   fireEvent.click(within(document.querySelector(".journal-actions-row")).getByRole("button", { name: "Adapter dans RègleX" }));
   expect(panneau()).toHaveClass("actif");
   expect(qtes()).toEqual(["13.5 g", "60 g"]);
-  // Recette ouverte → RègleX : panneau fermé, recette chargée.
   fireEvent.click(screen.getByRole("button", { name: "Recettes" }));
   await act(async () => fireEvent.click(carteRecette("Omelette")));
   fireEvent.click(within(document.getElementById("recetteLecture")).getByRole("button", { name: "Adapter dans RègleX" }));
@@ -401,7 +392,6 @@ test("RègleX : « Tout effacer » fait tomber les lignes puis vide le texte, le
   await attendrePage();
   fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
   const panneau = document.getElementById("panneauAdapter");
-  // Toujours présent pour que la rangée ne bouge pas : seulement désactivé quand il n'y a rien.
   expect(panneau.querySelector("#adapterEffacer")).toBeDisabled();
   const ordre = [...panneau.querySelector(".adapter__sources").children].map((e) => e.getAttribute("aria-label") || e.className);
   expect(ordre[0]).toBe("Coller une recette");
@@ -456,7 +446,6 @@ test("Cuisine : double-tap sur une carte = ingrédient ajouté au plat (coché, 
   ouvrir({ "/calories/ajoute": [200, { succes: true }] });
   await attendrePage();
   const carte = ligne("Huile");
-  // Un seul tap ne fait rien ; un tap sur le champ de quantité non plus.
   fireEvent.click(carte.querySelector(".journal-nom"));
   expect(carte).not.toHaveClass("ajoute");
   fireEvent.click(carte.querySelector(".journal-grammes-input"));
@@ -479,7 +468,6 @@ test("RègleX : « Huile d’olive-10 ml (2 c. à thé) » → 2 tbs/tsp pour un
   fireEvent.click(screen.getByRole("button", { name: "RègleX" }));
   const panneau = document.getElementById("panneauAdapter");
   fireEvent.click(within(panneau).getByRole("button", { name: "Coller une recette" }));
-  // L'huile du jeu de test n'est pas un liquide (unité g) et connaît la cuillère à café : la cuillère l'emporte.
   fireEvent.change(within(panneau).getByLabelText("Ingrédients de la recette"), { target: { value: "Huile d’olive-10 ml (2 c. à thé)\nRiz-150 ml (½ tasse)" } });
   expect([...panneau.querySelectorAll(".adapter__qte")].map((q) => q.textContent)).toEqual(["2 tsp", "150 g"]);
 });
@@ -489,7 +477,6 @@ test("Cuisine vide : une des quatre animations de cuisson, tirée au hasard ; di
   await attendrePage();
   const animation = document.querySelector(".cuisine-vide");
   expect(["marmite", "couvercle", "poele", "recette"]).toContain(animation.dataset.animation);
-  // Plus de texte « Rien d'ajouté aujourd'hui » : l'animation suffit.
   expect(document.getElementById("noResultsJournal")).toBeNull();
 });
 

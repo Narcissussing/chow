@@ -1,4 +1,3 @@
-// Petit canal sans React : api.js doit pouvoir afficher un toast hors de tout composant.
 const abonnes = new Set();
 
 export function afficherToast(message) {

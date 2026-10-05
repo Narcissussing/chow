@@ -1,4 +1,3 @@
-// Q2 : échec de lecture, avec la classe existante (aucun nouveau style).
 export default function ErreurPage() {
   return (
     <main>

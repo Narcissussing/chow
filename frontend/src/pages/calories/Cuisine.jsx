@@ -20,7 +20,6 @@ const SELECTS = [
 
 const preparer = (ligne, effets = {}) => ({ ...ligne, effets });
 
-// Visible à partir de 3 aliments distincts, si aucune recette n'a exactement la même combinaison.
 function boutonRecetteVisible(entrees, recettes) {
   const ids = [...new Set(entrees.filter((e) => !e.effets.disparait).map((e) => String(e.food_id)))];
   if (ids.length < 3) return false;
@@ -61,8 +60,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   const suggestions = aliments.map((a) => ({ ...a, visible: normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes) }));
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
 
-  // ---------- Ajout direct (100 g), doublon mis en avant ----------
-
   function choisir(aliment, ligne) {
     setTexte("");
     setListeVisible(false);
@@ -81,7 +78,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
           alert(donnees.erreur);
           return;
         }
-        // "entree" n'a pas de règle CSS sur une ligne de Cuisine : posée comme en EJS, jamais retirée.
         setEntrees((liste) => [...liste, preparer(donnees.item, { entree: true })]);
       })
       .catch((err) => {
@@ -89,8 +85,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
       })
       .finally(() => verrous.current.delete(aliment.id));
   }
-
-  // ---------- Quantité, ordre, retrait ----------
 
   async function enregistrerQuantite(entree, grammes, unite) {
     let reponse;
@@ -113,7 +107,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
     return true;
   }
 
-  // Changer d'unité ne change pas les grammes : seule l'unité est enregistrée, pour être reprise.
   function changerUnite(entree, unite) {
     setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, unite } : e)));
     api("/calories/modifier", { method: "POST", body: { idEntree: String(entree.id), nouvelleQuantite: parseFloat(entree.quantite_g), unite } }).catch(() => {});
@@ -122,7 +115,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   function deplacer(depuis, vers) {
     const suivantes = arrayMove(entrees, depuis, vers);
     setEntrees(suivantes);
-    // Optimiste : pas de retour arrière si le serveur refuse (§3.2-10).
     api("/calories/reordonner", { method: "POST", body: { ids: suivantes.map((e) => e.id) } })
       .then(({ donnees }) => {
         if (donnees?.erreur) alert(donnees.erreur);
@@ -130,12 +122,10 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
       .catch(() => {});
   }
 
-  // Coché tout de suite ; revient en arrière si le serveur refuse ou si le réseau tombe.
   function basculerAjoute(entree) {
     const ajoute = !entree.ajoute;
     const appliquer = (valeur) => setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, ajoute: valeur } : e)));
     appliquer(ajoute);
-    // Petit saut et étincelles quand l'ingrédient part dans le plat.
     if (ajoute) {
       majEffets(entree.id, { saut: false });
       planifier(() => majEffets(entree.id, { saut: true }), 0);
@@ -155,7 +145,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
           alert(donnees.erreur);
           return;
         }
-        // Totaux mis à jour tout de suite (lignes "disparait" ignorées), ligne retirée après l'animation.
         majEffets(entree.id, { disparait: true });
         planifier(() => setEntrees((liste) => liste.filter((e) => e.id !== entree.id)), 300);
       })
@@ -171,15 +160,12 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
           alert(donnees.erreur);
           return;
         }
-        // Tout tombe de la planche, l'un après l'autre.
         const n = entrees.length;
         setEntrees((liste) => liste.map((e, i) => ({ ...e, effets: { ...e.effets, disparait: true, chute: true, rang: Math.min(i, 8) } })));
         planifier(() => setEntrees([]), 420 + Math.min(n - 1, 8) * 50);
       })
       .catch(() => {});
   }
-
-  // ---------- Recette appliquée : remplace la Cuisine du jour, sans confirmation (§3.2-11) ----------
 
   function appliquerRecette(categorie, idRecette) {
     setValeursSelects((v) => ({ ...v, [categorie]: idRecette }));
@@ -282,7 +268,6 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
               return {
                 food_id: e.food_id,
                 nom: `${e.emoji} ${e.nom}`,
-                // Toujours en grammes, quelle que soit l'unité affichée dans la ligne.
                 quantite_g: String(parseFloat(e.quantite_g)),
                 unite: e.unite || "g",
                 grammes_par_cuil_a_cafe: eq.gCafe,

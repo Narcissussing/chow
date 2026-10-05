@@ -9,7 +9,6 @@ function texteNiveau(s) {
   return Number(s.quantite) === 0 ? "épuisé" : `${s.quantite} restant${Number(s.quantite) > 1 ? "s" : ""}`;
 }
 
-// Bouton « À racheter » du titre : icône de réassort seule.
 export function BoutonRacheter({ suggestions, ouvert, onBasculer }) {
   if (suggestions.length === 0) return null;
   return (
@@ -19,8 +18,6 @@ export function BoutonRacheter({ suggestions, ouvert, onBasculer }) {
   );
 }
 
-// Liste « À racheter », ouverte depuis le bouton du titre : bas ou épuisés, ce que tu achètes vraiment d'abord ;
-// « + » l'ajoute aux Courses.
 export default function StockSuggestions({ suggestions, onAjouter }) {
   const [tout, setTout] = useState(false);
   if (suggestions.length === 0) return null;

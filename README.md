@@ -7,7 +7,7 @@ courses et une Cuisine (calories du jour) avec recettes.
 ## Stack
 
 - Node.js et Express 5
-- EJS et JavaScript vanilla
+- React 19, Vite et React Router (dossier `frontend/`)
 - PostgreSQL sur Neon : branche `family-hub-dev` en local, `production` sur Fly
 - Passport Local, bcrypt et sessions PostgreSQL
 - Fly.io
@@ -84,6 +84,6 @@ La page Notion `Chow → Qualité (QA)` donne accès à :
 
 ## Déploiement
 
-Le déploiement cible l’application Fly.io `chow-ejs` en région `cdg`.
+Le déploiement cible l’application Fly.io `ch-ow` en région `cdg`.
 Les migrations idempotentes s’exécutent au démarrage : un déploiement peut
 donc modifier le schéma. Voir [Exploitation](docs/operations.md).

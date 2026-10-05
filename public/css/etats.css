@@ -1,5 +1,3 @@
-/* États ajoutés par la migration React (Q2) ; style.css reste intact (décision D3). */
-
 .etat-chargement {
   display: flex;
   align-items: center;
@@ -8,7 +6,6 @@
   color: var(--accent);
 }
 
-/* Invisible les 200 premières ms : une page rapide ne clignote pas. */
 .etat-chargement svg {
   width: 144px;
   height: 144px;
@@ -82,7 +79,6 @@
   }
 }
 
-/* Poignée de glisser-déposer (Cuisine, ingrédients de recette), à la place des flèches .reorder-controls. */
 .poignee-glisser {
   position: absolute;
   left: 0;
@@ -94,7 +90,7 @@
   background: transparent;
   color: var(--text-muted);
   cursor: grab;
-  touch-action: none; /* sinon Safari iOS fait défiler la page au lieu de glisser */
+  touch-action: none;
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
@@ -116,15 +112,12 @@
   color: var(--accent);
 }
 
-/* Carte soulevée pendant le geste, au-dessus de ses voisines. */
 .en-glisse {
   position: relative;
   z-index: 10;
   background: var(--surface);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
-
-/* ---------- Accueil : icônes SVG et les 4 cartes sur un seul écran de téléphone (main:has : seule page avec .home-links) ---------- */
 
 .home-link-icone {
   width: 48px;
@@ -170,7 +163,6 @@
   }
 }
 
-/* Footer en bas de l'écran quand la page est courte, après le contenu sinon. */
 #root {
   min-height: 100dvh;
   display: flex;
@@ -181,7 +173,6 @@
   margin-top: auto;
 }
 
-/* Bandeau compact (Stock, Courses, Calories) : le titre seul, sans phrase (Courses garde son badge). */
 .titre-page {
   display: flex;
   align-items: center;
@@ -224,8 +215,6 @@
   }
 }
 
-/* Article arrivé de l'autre téléphone : teinte chaude + deux ondes, sur ::after pour ne jamais entrer
-   en conflit avec l'animation d'apparition (.entree) de la carte. Durée posée en JS selon le nombre d'articles. */
 .course-item.vient-d-arriver::after {
   content: "";
   position: absolute;
@@ -265,7 +254,6 @@
   }
 }
 
-/* Bulle "+N" sur le badge sac : articles venus de l'autre téléphone, rejouée à chaque article compté. */
 .badge-ajout {
   position: absolute;
   top: -8px;
@@ -302,7 +290,6 @@
   }
 }
 
-/* ---------- Bouton mode magasin : icône seule, le magasin devient caddie (remplace l'interrupteur) ---------- */
 .btn-magasin {
   flex-shrink: 0;
   width: 42px;
@@ -384,7 +371,6 @@
   opacity: 0;
 }
 
-/* Entrée : portes ouvertes, le client entre, portes effacées, puis le panier se remplit et les roues sortent. */
 .btn-magasin.entre .btn-magasin__porte-g { animation: magPorteG 0.95s ease both; }
 .btn-magasin.entre .btn-magasin__porte-d { animation: magPorteD 0.95s ease both; }
 .btn-magasin.entre .btn-magasin__client { animation: magEntrer 0.8s ease-in 0.12s both; }
@@ -393,7 +379,6 @@
 .btn-magasin.entre .btn-magasin__grille { animation: magGrille 0.35s ease 1.5s both; }
 .btn-magasin.entre .btn-magasin__roues { animation: magRoues 0.45s cubic-bezier(0.2, 1.6, 0.4, 1) 1.5s both; }
 
-/* Sortie : le caddie redevient magasin, les portes s'ouvrent et le client ressort. */
 .btn-magasin.sort .btn-magasin__grille,
 .btn-magasin.sort .btn-magasin__teinte,
 .btn-magasin.sort .btn-magasin__roues { animation: magEfface 0.2s ease both; }
@@ -417,7 +402,6 @@
   }
 }
 
-/* Grand « +N » au centre de l'écran : apparaît, marque une pause, puis vole jusqu'au badge (--dx, --dy posés en JS). */
 .annonce-ajout {
   position: fixed;
   left: 50%;
@@ -454,7 +438,6 @@
   }
 }
 
-/* Fin de la séquence : la bulle descend dans le chiffre du compteur. */
 .badge-ajout.fusion {
   animation: bulleFusion 0.35s ease-in both;
 }
@@ -470,7 +453,6 @@
   }
 }
 
-/* ---------- Onglet Adapter : recette recalculée, nouvelle quantité à côté de l'ancienne grisée ---------- */
 .adapter {
   display: flex;
   flex-direction: column;
@@ -599,25 +581,21 @@
 
 }
 
-/* Panneau recette : le défilement arrivé en bout ne se propage jamais à la page derrière. */
 .sheet {
   overscroll-behavior: contain;
 }
 
-/* Panneau recette sur iPhone : 100vh passe sous la barre de Safari et cache le bas de la recette. */
 .sheet {
   height: calc(100dvh - var(--header-h, 65px));
   padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
 
-/* Toutes les listes déroulantes : 5 lignes visibles, le reste en défilant (avant : seulement 2 sélecteurs). */
 .custom-select__list {
   max-height: 215px;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
-/* Champs de saisie : une seule hauteur et un seul texte partout ; les quantités ont aussi la même largeur. */
 .journal-grammes-input,
 .ingredient-quantite-recette,
 .champ-quantite-achat,
@@ -651,7 +629,6 @@
   text-align: center;
 }
 
-/* RègleX : toutes les quantités ont la même taille, et la saisie prend exactement la même place (la ligne ne bouge pas). */
 .adapter__qte,
 .adapter__saisie {
   box-sizing: border-box;
@@ -680,7 +657,6 @@
   }
 }
 
-/* ---------- RègleX : recette collée d'abord, lignes modifiables, sens de l'adaptation, icône de cuisson ---------- */
 .adapter__sources {
   display: flex;
   gap: 8px;
@@ -879,8 +855,6 @@
   cursor: default;
 }
 
-/* Boutons icône (cuisiner, RègleX) : même rond que les boutons recettes de la Cuisine ; balance en couleurs
-   (comme recettes.svg / glacon.svg), poêle à la couleur d'accent. */
 .btn-outil {
   flex-shrink: 0;
   width: 38px;
@@ -905,12 +879,10 @@
   background: url("/images/svg/scale.svg") center / contain no-repeat;
 }
 
-/* En couleurs, comme la balance à côté. */
 .btn-outil--cuisiner .btn-outil__icone {
   background: url("/images/svg/cuisiner.svg") center / contain no-repeat;
 }
 
-/* En-tête d'une recette ouverte : à la taille de Modifier et ✕. */
 .detail-header-actions .btn-outil {
   width: 30px;
   height: 30px;
@@ -936,7 +908,6 @@
   cursor: default;
 }
 
-/* Cuisine : « Tout effacer » toujours à l'extrême droite de la rangée. */
 #btnToutEffacer {
   margin-left: auto;
 }
@@ -955,7 +926,6 @@
   }
 }
 
-/* RègleX : mêmes boutons icône que la Cuisine pour choisir une recette (plats, fraîcheur). */
 .select-recette-icone + .custom-select {
   flex: 0 0 auto;
   min-width: 0;
@@ -993,7 +963,6 @@
   align-items: center;
 }
 
-/* Écran vide de RègleX : les ingrédients grandissent puis rétrécissent ensemble (proportions gardées). */
 .adapter__vide {
   display: block;
   width: 220px;
@@ -1059,12 +1028,10 @@
   }
 }
 
-/* RègleX : « Tout effacer » à l'extrême droite, comme dans la Cuisine. */
 #adapterEffacer {
   margin-left: auto;
 }
 
-/* RègleX : ✕ de chaque ligne à l'extrême droite. */
 .adapter__ligne {
   grid-template-columns: minmax(0, 1fr) auto 8rem 22px;
 }
@@ -1078,7 +1045,6 @@
     grid-template-columns: minmax(0, 1fr) 8rem 22px;
   }
 
-  /* Ligne 1 : l'aliment, puis ✕ à droite ; ligne 2 : quantité de la recette et résultat. */
   .adapter__aliment {
     grid-column: 1 / 3;
     grid-row: 1;
@@ -1090,10 +1056,8 @@
   }
 }
 
-/* ---------- RègleX, mise en page finale des lignes (remplace les grilles précédentes) ----------
-   Ligne 1 : nom (discret, tronqué) … ✕ ; ligne 2 : recette (grise) → pour toi (en gras, accent). */
 .adapter__sources .btn-ajout-icone {
-  order: 0; /* style.css le passe en dernier sur mobile (order: 1) : ici il reste toujours le premier */
+  order: 0;
 }
 
 #adapterEffacer:disabled {
@@ -1170,7 +1134,6 @@
   grid-row: 3;
 }
 
-/* Nom : texte simple et discret (on le touche pour changer d'aliment), jamais un gros bouton. */
 .adapter__choix + .custom-select {
   max-width: 100%;
 }
@@ -1197,7 +1160,6 @@
   text-underline-offset: 3px;
 }
 
-/* Recette d'origine : petite et grise ; barrée dès que la recette est adaptée. */
 .adapter__base input {
   width: 64px;
   height: 32px;
@@ -1217,7 +1179,6 @@
   opacity: 0.5;
 }
 
-/* Pour toi : la valeur qui compte, en gras et à la couleur d'accent. */
 .adapter__qte {
   height: 36px;
   padding: 0 14px;
@@ -1238,7 +1199,6 @@
     grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr) 22px;
   }
 
-  /* Annule l'ancienne place mobile (colonnes 1 à 3) : les zones nommées décident. */
   .adapter__aliment {
     grid-area: nom;
   }
@@ -1248,8 +1208,6 @@
   }
 }
 
-
-/* RègleX : pas de flèches natives dans les petits champs ; l'unité entière (« pièce ») tient. */
 .adapter__base input,
 .adapter__saisie input {
   -moz-appearance: textfield;
@@ -1268,7 +1226,6 @@
   width: 68px;
 }
 
-/* RègleX : précision de la recette sous l'aliment choisi (« pulpe en conserve », « Kiri »). */
 .adapter__aliment {
   flex-wrap: wrap;
   row-gap: 2px;
@@ -1285,7 +1242,6 @@
   white-space: nowrap;
 }
 
-/* RègleX : la précision reste sur la ligne du nom (« Fromage à Tartiner · type kiri… ») : 2 lignes par carte au maximum. */
 .adapter__aliment {
   flex-wrap: nowrap;
   min-width: 0;
@@ -1307,7 +1263,6 @@
   content: "· ";
 }
 
-/* Cuisine : ingrédient déjà mis dans le plat (double-tap) — grisé, barré, coché ; pas de zoom au double-tap. */
 .journal-item {
   touch-action: manipulation;
   -webkit-user-select: none;
@@ -1321,7 +1276,7 @@
 
 .journal-item.ajoute {
   opacity: 0.55;
-  transition: opacity 0.25s ease 0.3s; /* le saut d'abord, le gris ensuite */
+  transition: opacity 0.25s ease 0.3s;
 }
 
 .journal-item.ajoute .journal-nom {
@@ -1356,7 +1311,6 @@
   }
 }
 
-/* Badges de total : même gabarit que le sac des Courses, autre icône (boîte de rangement pour le Stock ; marmite et balance pour Calories, plus bas). */
 .titre-page .badge-compteur {
   width: 52px;
   height: 52px;
@@ -1376,13 +1330,11 @@
   padding-bottom: 9px;
 }
 
-/* Compteur filtré : ambre au lieu du rouge, pour ne pas le confondre avec le total. */
 .badge-compteur--filtre::before {
   background-color: var(--accent-2);
   transition: background-color 0.2s ease;
 }
 
-/* ---------- Cuisine vide : une des quatre animations « on cuisine », tirée au hasard ---------- */
 .cuisine-vide {
   display: block;
   width: 200px;
@@ -1413,7 +1365,6 @@
 .cuisine-vide .cv-oignon { fill: #e9c38a; stroke: #b88a4a; stroke-width: 1.2; }
 .cuisine-vide .cv-flamme { fill: var(--accent-2); }
 
-/* 1. Marmite : légumes qui tombent, éclaboussure, couvercle, vapeur. */
 .cuisine-vide--marmite .cv-l { opacity: 0; animation: cvTombe 6s cubic-bezier(0.5, 0, 0.75, 0) infinite; }
 .cuisine-vide--marmite .cv-l2 { animation-delay: 0.35s; }
 .cuisine-vide--marmite .cv-l3 { animation-delay: 0.7s; }
@@ -1426,7 +1377,6 @@
 .cuisine-vide--marmite .cv-vapeur:nth-of-type(2) { animation-delay: 0.4s; }
 @keyframes cvVapeur { 0%, 52% { opacity: 0; transform: translateY(6px); } 62% { opacity: 0.7; } 92%, 100% { opacity: 0; transform: translateY(-16px); } }
 
-/* 2. Couvercle qui danse : à-coups, bulles, vapeur. */
 .cuisine-vide--couvercle .cv-couvercle { transform-box: fill-box; transform-origin: 50% 100%; animation: cvDanse 1.6s ease-in-out infinite; }
 @keyframes cvDanse { 0%, 40%, 100% { transform: none; } 48% { transform: translateY(-5px) rotate(-4deg); } 56% { transform: translateY(-1px) rotate(2deg); } 64% { transform: translateY(-4px) rotate(3deg); } 72% { transform: none; } }
 .cuisine-vide--couvercle .cv-vapeur { animation: cvVapeurCourte 1.6s ease-out infinite; }
@@ -1438,7 +1388,6 @@
 .cuisine-vide--couvercle .cv-bulle:nth-of-type(3) { animation-delay: 0.9s; }
 @keyframes cvBulle { 0% { opacity: 0; transform: translateY(0) scale(0.5); } 30% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(-10px) scale(1); } }
 
-/* 3. Poêle : les légumes sautent, flammes. */
 .cuisine-vide--poele .cv-poele { transform-box: fill-box; transform-origin: 85% 50%; animation: cvPoele 2.4s ease-in-out infinite; }
 @keyframes cvPoele { 0%, 30%, 100% { transform: none; } 38% { transform: rotate(-6deg) translateY(2px); } 46% { transform: rotate(3deg); } 54% { transform: none; } }
 .cuisine-vide--poele .cv-l { animation: cvSaut 2.4s cubic-bezier(0.3, 0, 0.5, 1) infinite; }
@@ -1450,7 +1399,6 @@
 .cuisine-vide--poele .cv-flamme:nth-of-type(3) { animation-delay: 0.3s; }
 @keyframes cvFlamme { from { transform: scaleY(0.75); } to { transform: scaleY(1.1); } }
 
-/* 4. Recette complète : légumes, cuillère, couvercle, ébullition (8 s). */
 .cuisine-vide--recette .cv-l { opacity: 0; animation: cvTombeLent 8s cubic-bezier(0.5, 0, 0.75, 0) infinite; }
 .cuisine-vide--recette .cv-l2 { animation-delay: 0.3s; }
 .cuisine-vide--recette .cv-l3 { animation-delay: 0.6s; }
@@ -1475,7 +1423,6 @@
   }
 }
 
-/* ---------- Stock : encart « À racheter » (bas ou épuisés, déjà achetés) ---------- */
 .stock-suggestions {
   background: var(--surface, #fffdf8);
   border: 1.5px solid var(--border, #e0d8cc);
@@ -1547,7 +1494,6 @@
   cursor: pointer;
 }
 
-/* ---------- Cuisine qui s'amuse : l'aliment vole dans la marmite, les cartes tombent, sautent, sont jetées ---------- */
 .emoji-volant {
   position: fixed;
   z-index: 1000;
@@ -1557,7 +1503,6 @@
   will-change: transform;
 }
 
-/* La marmite du titre encaisse l'aliment : écrasée, rebond, éclaboussures. */
 .badge-compteur--cuisine.recoit {
   animation: marmitePlouf 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1606,7 +1551,6 @@
   }
 }
 
-/* Nouvelle carte : tombe dans la liste et s'écrase un peu ; une recette tombe carte par carte. */
 .journal-item.arrivee {
   animation: cuisineTombe 0.55s cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
   animation-delay: calc(var(--rang, 0) * 70ms);
@@ -1629,7 +1573,6 @@
   }
 }
 
-/* Double-tap « dans le plat » : la carte saute, des étincelles jaillissent. */
 .journal-item.saut {
   animation: cuisineSaut 0.6s cubic-bezier(0.3, 1.3, 0.5, 1);
 }
@@ -1683,7 +1626,6 @@
   }
 }
 
-/* Supprimer : la carte prend son élan puis est jetée par-dessus l'épaule. */
 .calories-tab-panel .journal-item.disparait {
   animation: cuisineJete 0.3s cubic-bezier(0.5, 0, 0.75, 0) forwards;
 }
@@ -1701,7 +1643,6 @@
   }
 }
 
-/* Tout effacer : tout tombe de la planche, l'un après l'autre, en tournant d'un côté puis de l'autre. */
 .calories-tab-panel .journal-item.disparait.chute {
   animation: cuisineChute 0.42s cubic-bezier(0.5, 0, 0.9, 0.5) both;
   animation-delay: calc(var(--rang, 0) * 50ms);
@@ -1725,7 +1666,6 @@
   }
 }
 
-/* Les kcal sautillent quand la quantité change. */
 .journal-kcal.kcal-saut {
   display: inline-block;
   animation: kcalSaut 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -1759,12 +1699,10 @@
   }
 }
 
-/* ---------- Envois entre onglets : les ingrédients volent vers la Cuisine, RègleX ou les Recettes ---------- */
 .emoji-volant {
-  z-index: 10000; /* au-dessus des feuilles de recette */
+  z-index: 10000;
 }
 
-/* Bouton outil touché : il se tasse puis se détend, comme un coup de cuillère. */
 .btn-outil.btn-outil--tape {
   animation: outilTape 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1784,7 +1722,6 @@
   }
 }
 
-/* Onglet qui reçoit des ingrédients : il rebondit et rougit un instant. */
 .calories-tab-btn.recoit {
   animation: ongletRecoit 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1805,7 +1742,6 @@
   }
 }
 
-/* Tout effacer : la croix fait un tour complet. */
 .btn-x-rond.btn-x-rond--tourne {
   animation: croixTourne 0.45s cubic-bezier(0.34, 1.3, 0.64, 1);
 }
@@ -1822,7 +1758,6 @@
   }
 }
 
-/* RègleX : chaque ingrédient est posé sur la balance, qui penche un peu puis s'équilibre. */
 .adapter__liste--arrivee .adapter__ligne {
   animation: regleXPose 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
   animation-delay: calc(var(--rang, 0) * 60ms);
@@ -1846,7 +1781,6 @@
   }
 }
 
-/* RègleX vidée : les lignes glissent de la balance et tombent, en cascade. */
 .adapter__liste--vidage .adapter__ligne {
   animation: cuisineChute 0.42s cubic-bezier(0.5, 0, 0.9, 0.5) both;
   animation-delay: calc(min(var(--rang, 0), 8) * 50ms);
@@ -1857,7 +1791,6 @@
   --sens: -1;
 }
 
-/* ×½, ×2… : les quantités « Pour toi » et les kcal sautent à chaque changement. */
 .adapter__qte-valeur {
   display: inline-block;
 }
@@ -1866,7 +1799,6 @@
   animation: kcalSaut 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Recette enregistrée : la carte arrive en tournoyant, avec un éclat. */
 .recette-card.recette-card--nouvelle {
   animation: recetteNouvelle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
 }
@@ -1901,7 +1833,6 @@
   }
 }
 
-/* ---------- Badge du titre Calories : balance sur RègleX (ingrédients sur la balance), marmite ailleurs ---------- */
 .badge-compteur--regle::before {
   -webkit-mask-image: url("/images/svg/scale.svg");
   mask-image: url("/images/svg/scale.svg");
@@ -1911,7 +1842,6 @@
   padding-bottom: 6px;
 }
 
-/* Changement d'onglet : le badge arrive en se retournant (pas pendant son pop ni quand il reçoit). */
 .badge-compteur.bascule:not(.badge-pop):not(.recoit) {
   animation: badgeBascule 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -1927,7 +1857,6 @@
   }
 }
 
-/* La balance reçoit des ingrédients : le plateau s'enfonce, oscille, puis s'équilibre. */
 .badge-compteur--regle.recoit {
   animation: balancePese 0.7s cubic-bezier(0.3, 1.2, 0.5, 1);
   transform-origin: 50% 100%;
@@ -1961,10 +1890,6 @@
   }
 }
 
-/* Titre caché sous le header (mobile) : marmite ou balance glisse dans la barre des kcal, à droite, comme le sac des Courses. */
-/* La barre est déjà en position: sticky (mobile) : elle sert de repère au badge en absolute. */
-
-/* ---------- Badges Calories : marmite (marmite.svg) et balance (scale.svg) d'une seule couleur, nombre dedans ---------- */
 .badge-compteur--cuisine::before {
   -webkit-mask-image: url("/images/svg/marmite.svg");
   mask-image: url("/images/svg/marmite.svg");
@@ -1974,8 +1899,6 @@
   padding-bottom: 9px;
 }
 
-/* Dans la barre des kcal (mobile) : kcal à gauche, marmite / balance de 36 px à droite, posées sur la même ligne :
-   le bas du badge s'aligne sur le bas du chiffre des kcal (.macro-valeur). Dans le flux de la grille, pas en absolute. */
 @media (max-width: 768px) {
   .journal-totaux.compacte {
     align-items: end;
@@ -1986,7 +1909,6 @@
     align-self: end;
   }
 
-  /* Chiffre des kcal plus grand, à l'échelle de la marmite. */
   .journal-totaux.compacte .macro-calories .macro-valeur {
     font-size: 1.6rem;
     line-height: 1;
@@ -2020,15 +1942,12 @@
   line-height: 1;
 }
 
-/* Nombre plus lisible dans la marmite et la balance du titre. */
 .titre-page .badge-compteur--cuisine span,
 .titre-page .badge-compteur--regle span {
   font-size: 1.45rem;
   line-height: 1;
 }
 
-/* Stock : « À racheter » est un bouton (nombre dans une bulle) ; la liste s'ouvre en dessous. */
-/* Même largeur et mêmes marges que le titre (.page-header), pour ne pas coller au bord de l'écran. */
 .stock-suggestions-zone {
   max-width: 1200px;
   margin: 0 auto 14px;
@@ -2042,12 +1961,11 @@
   }
 }
 
-/* Bouton « À racheter » du titre, entre « Stock » et le compteur : icône de réassort seule. */
 .btn-racheter {
   position: relative;
   flex-shrink: 0;
   margin-left: auto;
-  margin-right: 28px; /* de l'air avant le compteur */
+  margin-right: 28px;
   width: 46px;
   height: 46px;
   padding: 0;
@@ -2099,11 +2017,10 @@
   animation: slideDownNote 0.18s ease both;
 }
 
-/* Cuisine : recherche et boutons sur une seule ligne ; la recherche prend la place qui reste et rétrécit pour leur laisser la leur. */
 .calories-tab-panel .journal-actions-row {
   flex-wrap: nowrap;
   gap: 8px;
-  position: relative; /* repère de la liste d'aliments, qui garde toute la largeur de la ligne */
+  position: relative;
 }
 
 .calories-tab-panel #autocompleteCalories {
@@ -2115,4 +2032,82 @@
 
 .calories-tab-panel .journal-actions-row > :not(#autocompleteCalories) {
   flex-shrink: 0;
+}
+
+.courses-vide {
+  display: block;
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  margin: 24px auto 0;
+  overflow: hidden;
+}
+
+.courses-vide g {
+  transform-box: fill-box;
+}
+
+.courses-vide .kv-t { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.courses-vide .kv-tf { fill: var(--surface); stroke: var(--accent); stroke-width: 2.4; }
+.courses-vide .kv-fin { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; }
+.courses-vide .kv-sol { fill: none; stroke: var(--text-muted); stroke-width: 1.6; stroke-linecap: round; opacity: 0.4; }
+.courses-vide .kv-carotte { fill: #e07a3a; }
+.courses-vide .kv-fane { fill: none; stroke: #6b8e4e; stroke-width: 2; stroke-linecap: round; }
+.courses-vide .kv-tomate { fill: var(--accent); }
+.courses-vide .kv-queue { fill: #6b8e4e; }
+.courses-vide .kv-pain { fill: var(--accent-2); }
+.courses-vide .kv-entaille { fill: none; stroke: #b07a28; stroke-width: 1.6; stroke-linecap: round; }
+
+.courses-vide .kv-caddie {
+  transform-origin: 50% 100%;
+  animation: kvCaddie 6s cubic-bezier(0.25, 0.7, 0.35, 1) infinite;
+}
+
+.courses-vide .kv-roue {
+  transform-origin: center;
+  animation: kvRoue 6s linear infinite;
+}
+
+.courses-vide .kv-aliment {
+  transform-origin: center;
+  opacity: 0;
+  animation: kvAliment 6s ease-in-out infinite;
+}
+
+.courses-vide .kv-a2 { animation-delay: 0.2s; }
+.courses-vide .kv-a3 { animation-delay: 0.4s; }
+
+@keyframes kvCaddie {
+  0% { transform: translateX(-170px); }
+  22% { transform: translateX(6px); }
+  26% { transform: rotate(-4deg); }
+  30% { transform: none; }
+  36% { transform: scale(1.02, 0.96); }
+  40% { transform: none; }
+  74% { transform: none; }
+  92%, 100% { transform: translateX(180px); }
+}
+
+@keyframes kvRoue {
+  0% { transform: rotate(0); }
+  24%, 74% { transform: rotate(700deg); }
+  92%, 100% { transform: rotate(1400deg); }
+}
+
+@keyframes kvAliment {
+  0%, 27% { opacity: 0; transform: translateY(-90px) rotate(-30deg); }
+  29% { opacity: 1; }
+  35% { opacity: 1; transform: none; }
+  38% { transform: translateY(-6px); }
+  41%, 52% { opacity: 1; transform: none; }
+  62% { opacity: 1; transform: translate(60px, -72px) rotate(210deg); }
+  68%, 100% { opacity: 0; transform: translate(80px, -90px) rotate(280deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .courses-vide .kv-caddie,
+  .courses-vide .kv-roue,
+  .courses-vide .kv-aliment {
+    animation: none;
+  }
 }

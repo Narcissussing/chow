@@ -1165,6 +1165,10 @@ Sur iPhone et Mac (Q1), Safari à jour, **build de production servi par Express*
 
 ## Phase 15 — Bascule, nettoyage, documentation
 
+**Fait le 5 octobre 2026 :** routes et vues EJS, `public/js/`, dépendance `ejs`,
+chemins POST sans `/api` (sauf `/recettes/depuis-journal`) et test de parité
+retirés ; Express sert toujours React. `scripts/verifier-api.js` passe.
+
 1. Retirer les routes GET EJS, `app.set("view engine")`, `views/`,
    `public/js/`, la dépendance `ejs`, et les chemins POST non `/api` (après
    vérification qu'aucun client ne les appelle encore). **Exception :**

@@ -44,9 +44,6 @@ FROM base
 COPY --from=build /app /app
 COPY --from=frontend /app/frontend/dist /app/frontend/dist
 
-# Express serves the React build instead of the EJS pages
-ENV INTERFACE="react"
-
 # Start the server by default, this can be overwritten at runtime
 EXPOSE 3000
 CMD [ "npm", "run", "start" ]

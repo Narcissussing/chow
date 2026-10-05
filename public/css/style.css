@@ -1,35 +1,29 @@
-/* CHOW — style.css. Utilitaires toujours en dernier : doivent gagner sur les composants, peu importe la spécificité. */
-
-/* ---------- VARIABLES ---------- */
-
 :root {
-  --bg: #f5f0e8; /* couleur de fond générale du site */
-  --surface: #fffdf8; /* couleur de fond des "cartes" (blocs blancs/crème) */
-  --text: #1a1a1a; /* couleur du texte principal (presque noir) */
-  --text-muted: #6b6257; /* couleur du texte secondaire, plus discret */
-  --accent: #c8472b; /* couleur d'accent principale (rouge-orangé) */
-  --accent-2: #e8a838; /* couleur d'accent secondaire (jaune-orangé) */
-  --border: #e0d8cc; /* couleur des bordures */
-  --radius: 14px; /* arrondi des coins utilisé sur les grandes cartes */
+  --bg: #f5f0e8;
+  --surface: #fffdf8;
+  --text: #1a1a1a;
+  --text-muted: #6b6257;
+  --accent: #c8472b;
+  --accent-2: #e8a838;
+  --border: #e0d8cc;
+  --radius: 14px;
   --font-display:
-    "Playfair Display", Georgia, serif; /* police utilisée pour les titres */
+    "Playfair Display", Georgia, serif;
   --font-body:
-    "DM Sans", sans-serif; /* police utilisée pour le texte courant */
+    "DM Sans", sans-serif;
 }
-
-/* ---------- RESET & BASE ---------- */
 
 *,
 *::before,
 *::after {
-  box-sizing: border-box; /* la largeur/hauteur d'un élément inclut son padding et sa bordure (plus simple à calculer) */
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
 
 html {
   scroll-behavior: smooth;
-  overflow-x: hidden; /* évite qu'un léger débordement élargisse la page et décale le header sur mobile */
+  overflow-x: hidden;
 }
 
 body {
@@ -40,7 +34,6 @@ body {
   line-height: 1.6;
 }
 
-/* 16px minimum sur mobile pour bloquer le zoom auto iOS au focus (voir partials/header.ejs) ; desktop garde des champs plus compacts. */
 @media (max-width: 768px) {
   input,
   select,
@@ -49,20 +42,18 @@ body {
   }
 }
 
-/* ---------- HEADER ---------- */
-
 .header {
   background: var(--surface);
   border-bottom: 1.5px solid var(--border);
   padding: 18px 40px;
-  position: sticky; /* "collé" en haut de l'écran : reste visible même quand on défile la page */
+  position: sticky;
   top: 0;
-  z-index: 100; /* s'affiche au-dessus des autres éléments de la page */
+  z-index: 100;
 }
 
 .header__inner {
   max-width: 1200px;
-  margin: 0 auto; /* centre le contenu horizontalement */
+  margin: 0 auto;
   display: flex;
   align-items: center;
   gap: 20px;
@@ -73,7 +64,7 @@ body {
   font-size: 1.7rem;
   font-weight: 900;
   color: var(--accent);
-  text-decoration: none; /* enlève le soulignement par défaut des liens */
+  text-decoration: none;
   letter-spacing: -0.5px;
 }
 
@@ -88,7 +79,7 @@ body {
 .nav {
   display: flex;
   gap: 24px;
-  margin-left: auto; /* pousse le menu de navigation tout à droite du header */
+  margin-left: auto;
 }
 
 .nav__link {
@@ -97,7 +88,7 @@ body {
   font-weight: 500;
   color: var(--text-muted);
   text-decoration: none;
-  transition: color 0.2s ease; /* le changement de couleur au survol se fait en douceur plutôt que d'un coup */
+  transition: color 0.2s ease;
 }
 
 .nav__link:hover {
@@ -105,8 +96,6 @@ body {
 }
 
 .nav__link.actif {
-  /* Page actuelle : couleur accent (comme au survol) + petit trait en dessous, pour la
-     reconnaître d'un coup d'œil même sans passer la souris dessus */
   color: var(--accent);
   font-weight: 700;
   position: relative;
@@ -123,12 +112,8 @@ body {
   border-radius: 999px;
 }
 
-/* ---------- HOME (page d'accueil) ---------- */
-
 .home-links {
   display: grid;
-  /* Grille dont les colonnes font au moins 220px, et se répètent automatiquement
-     pour remplir l'espace disponible : le nombre de colonnes s'adapte tout seul à la largeur de l'écran */
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 24px;
 }
@@ -142,24 +127,23 @@ body {
   flex-direction: column;
   gap: 8px;
   text-decoration: none;
-  color: inherit; /* utilise la couleur du texte du parent plutôt que le bleu/violet par défaut des liens */
+  color: inherit;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
     border-color 0.2s ease;
-  animation: fadeIn 0.35s ease both; /* petite apparition en fondu à l'affichage (voir @keyframes fadeIn plus bas) */
+  animation: fadeIn 0.35s ease both;
 }
 
 .home-link-card:hover {
   transform: translateY(
     -4px
-  ); /* la carte se soulève légèrement au survol de la souris */
+  );
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
   border-color: var(--accent-2);
 }
 
 .home-link-card:active {
-  /* Après :hover dans le fichier pour gagner sur le translateY pendant le clic/tap */
   transform: scale(0.97);
 }
 
@@ -179,14 +163,12 @@ body {
   color: var(--text-muted);
 }
 
-/* ---------- CARTES D'ARTICLE (stock, courses, calories) : même structure partout ---------- */
-
 .carte-article {
-  position: relative; /* nécessaire pour que le bouton "supprimer" (position: absolute) se positionne par rapport à cette carte */
+  position: relative;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  padding: 12px 50px 12px 16px; /* padding à droite plus large pour laisser la place au bouton supprimer */
+  padding: 12px 50px 12px 16px;
   transition: border-color 0.2s ease;
 }
 
@@ -195,12 +177,10 @@ body {
 }
 
 .form-supprimer-stock {
-  position: absolute; /* sort du flux normal, se positionne par rapport à la carte parente (position: relative) */
+  position: absolute;
   top: -8px;
   right: -8px;
 }
-
-/* ---------- HERO ---------- */
 
 .hero {
   max-width: 1200px;
@@ -214,7 +194,7 @@ body {
 
 .hero__text h1 {
   font-family: var(--font-display);
-  font-size: 2.6rem; /* même taille fixe que .page-header h1 (Stock/Courses/Calories) */
+  font-size: 2.6rem;
   font-weight: 900;
   line-height: 1.1;
   color: var(--text);
@@ -233,17 +213,17 @@ body {
 }
 
 .hero__badge {
-  flex-shrink: 0; /* empêche ce badge rond de rétrécir si l'espace vient à manquer */
+  flex-shrink: 0;
   width: 110px;
   height: 110px;
   background: var(--accent);
-  border-radius: 50%; /* transforme le carré en cercle parfait */
+  border-radius: 50%;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   color: white;
-  animation: rotate-slow 12s linear infinite; /* tourne lentement et en continu (voir @keyframes rotate-slow) */
+  animation: rotate-slow 12s linear infinite;
 }
 
 .hero__badge span {
@@ -260,7 +240,6 @@ body {
   text-transform: uppercase;
 }
 
-/* Badge Courses : sac (sac-courses.svg) au lieu du cercle plein "160 ALIMENTS". */
 .hero__badge--courses {
   width: 65px;
   height: 65px;
@@ -269,7 +248,7 @@ body {
   animation: none;
   position: relative;
   justify-content: flex-end;
-  padding-bottom: 8px; /* px, pas % : un % de padding se calcule sur la largeur du bloc, pas sa hauteur */
+  padding-bottom: 8px;
   box-sizing: border-box;
 }
 
@@ -293,7 +272,6 @@ body {
   z-index: 1;
 }
 
-/* Variante toolbar : taille imposée en JS (hauteurBoutonTri), transition en FLIP (voir courses.js). */
 .badge-courses-toolbar {
   flex-shrink: 0;
 }
@@ -302,7 +280,6 @@ body {
   font-size: 0.95rem;
 }
 
-/* Rebond joué uniquement quand le nombre change vraiment. */
 .badge-pop {
   animation: badgeSacPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -322,7 +299,6 @@ body {
   }
 }
 
-/* Suppression = shake horizontal, pas le rebond du pop (pas une victoire). */
 .badge-shake {
   animation: badgeSacShake 0.4s ease;
 }
@@ -346,15 +322,13 @@ body {
   }
 }
 
-/* ---------- FILTRES / RECHERCHE / TRI (page Aliments) ---------- */
-
 .filters {
   background: var(--surface);
   border-top: 1.5px solid var(--border);
   border-bottom: 1.5px solid var(--border);
   padding: 18px 40px;
   position: sticky;
-  top: var(--header-h, 65px); /* --header-h mesurée en JS, voir partials/header.ejs */
+  top: var(--header-h, 65px);
   z-index: 90;
 }
 
@@ -367,11 +341,11 @@ body {
 
 .filter-buttons {
   display: flex;
-  flex-wrap: nowrap; /* défile horizontalement sur écran étroit plutôt que de passer sur 2 lignes */
+  flex-wrap: nowrap;
   overflow-x: auto;
-  margin: 0 auto; /* centré si la place le permet ; s'annule et retombe en défilement sur mobile */
+  margin: 0 auto;
   gap: 10px;
-  scrollbar-width: none; /* cache la barre de défilement, le scroll au doigt/molette reste possible */
+  scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
@@ -380,15 +354,14 @@ body {
 }
 
 .filter-btn {
-  flex-shrink: 0; /* garde sa taille normale plutôt que de s'écraser dans la ligne qui défile */
-  /* Hauteur fixe (pas juste le padding) : un emoji (ex: "🧊 Frigo") rend sinon ~5px plus haut qu'un texte seul. */
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   height: 34px;
   background: transparent;
   border: 1.5px solid var(--border);
-  border-radius: 999px; /* valeur très grande = bouton en forme de pilule/capsule */
+  border-radius: 999px;
   padding: 0 18px;
   font-family: var(--font-body);
   font-size: 0.85rem;
@@ -404,7 +377,7 @@ body {
 }
 
 .filter-btn:active {
-  transform: scale(0.95); /* petit effet "pressé" au tap/clic, comme sur iOS */
+  transform: scale(0.95);
 }
 
 .filter-btn.active {
@@ -414,16 +387,14 @@ body {
 }
 
 .search-ajout-row {
-  /* "+" à gauche en desktop (ordre HTML) ; une règle "order" en media query le passe à droite en mobile. */
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
-  position: relative; /* doit rester au-dessus de .ajout-backdrop pour ne jamais être assombrie */
+  position: relative;
   z-index: 65;
 }
 
-/* Assombrit filtres/liste pendant l'ajout, même principe que .sheet-backdrop (Calories) ; header reste au-dessus. */
 .ajout-backdrop {
   position: fixed;
   inset: 0;
@@ -443,11 +414,11 @@ body {
   width: 30px;
   height: 30px;
   flex-shrink: 0;
-  border-radius: 9px; /* léger, pas 50% : suit la forme déjà arrondie de l'icône ajouter.svg */
+  border-radius: 9px;
   background: transparent;
   border: none;
   color: var(--accent);
-  font-size: 0; /* cache le texte du bouton (gardé pour l'accessibilité), seule l'icône ::before est visible */
+  font-size: 0;
   cursor: pointer;
   position: relative;
   transition:
@@ -457,7 +428,6 @@ body {
 }
 
 .btn-ajout-icone::before {
-  /* Centré par position absolue + translate (pas flex) : centre sur l'encre réelle, évite un décalage de 1-2px selon la police. */
   content: "";
   position: absolute;
   top: 50%;
@@ -476,7 +446,6 @@ body {
   mask-position: center;
 }
 
-/* (hover: hover) exclut le tactile : sans ça, le bouton restait rouge après un tap (pas de vrai mouseout au doigt). */
 @media (hover: hover) and (pointer: fine) {
   .btn-ajout-icone:hover {
     background: var(--accent);
@@ -485,13 +454,11 @@ body {
 }
 
 .btn-ajout-icone:active {
-  /* Le retour visuel au tap vient d'ici : actif seulement pendant l'appui, jamais "collé" après */
   transform: scale(0.92);
   background: var(--accent);
   color: white;
 }
 
-/* Classe posée/retirée en JS tant que le panneau d'ajout est ouvert (voir stock.js/courses.js), contrairement à :hover/:active. */
 .btn-ajout-icone.actif {
   background: var(--accent);
   color: white;
@@ -512,22 +479,20 @@ body {
 .search-wrapper {
   flex: 1;
   min-width: 220px;
-  position: relative; /* ancre le bouton "✕" mobile (voir .btn-effacer-recherche) */
+  position: relative;
 }
 
-/* Même rôle que .search-wrapper pour les champs sans conteneur dédié (Stock ajout, Courses, Journal, Recettes). */
 .champ-recherche-wrapper {
   position: relative;
 }
 
-/* Vide le champ d'un tap, mobile uniquement (desktop a déjà la souris) ; affiché via la classe "visible" posée en JS. */
 .btn-effacer-recherche {
   display: none;
 }
 
 #searchInput {
   width: 100%;
-  height: 30px; /* même hauteur que .btn-ajout-icone à côté ; box-sizing border-box pour un alignement pile */
+  height: 30px;
   box-sizing: border-box;
   background: var(--surface);
   border: 1.5px solid var(--border);
@@ -544,14 +509,13 @@ body {
 }
 
 #searchInput:focus {
-  outline: none; /* enlève le contour bleu par défaut du navigateur quand on clique dans le champ */
-  border-color: #d77a4291; /* focus neutre (terracotta adouci) : le rouge est réservé à .recherche-invalide */
+  outline: none;
+  border-color: #d77a4291;
 }
 
-/* Partagé par tous les champs de recherche : rouge seulement si la recherche ne trouve rien, jamais au simple focus. */
 input.recherche-invalide,
 input.recherche-invalide:focus {
-  border-color: var(--accent) !important; /* nécessaire : un id (#searchInput...) l'emporterait sinon sur cette classe générique */
+  border-color: var(--accent) !important;
 }
 
 .sort-wrapper {
@@ -564,14 +528,13 @@ input.recherche-invalide:focus {
   font-size: 0.85rem;
   color: var(--text-muted);
   font-weight: 500;
-  white-space: nowrap; /* empêche le texte du label de se couper sur deux lignes */
+  white-space: nowrap;
 }
 
 .vue-toggle {
-  /* Boutons "Grille"/"Liste" (page Stock) : réutilise .filter-btn, pas de style propre à dupliquer */
   display: flex;
   gap: 8px;
-  margin-left: auto; /* pousse la bascule tout à droite de la ligne recherche/tri */
+  margin-left: auto;
 }
 
 #sortSelect,
@@ -580,14 +543,13 @@ input.recherche-invalide:focus {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 999px;
-  padding: 7px 32px 7px 16px; /* padding à droite plus large pour laisser la place à la flèche personnalisée */
+  padding: 7px 32px 7px 16px;
   font-family: var(--font-body);
   font-size: 0.85rem;
   font-weight: 500;
   color: var(--text);
   cursor: pointer;
-  appearance: none; /* supprime l'apparence par défaut du navigateur (dont sa petite flèche) */
-  /* On dessine nous-mêmes une flèche (chevron) en SVG directement dans le CSS, pour la remplacer */
+  appearance: none;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23c8472b' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>");
   background-repeat: no-repeat;
   background-position: right 12px center;
@@ -612,8 +574,6 @@ input.recherche-invalide:focus {
   outline: none;
 }
 
-/* ---------- GRILLE ALIMENTS ---------- */
-
 .grid-section {
   max-width: 1200px;
   margin: 0 auto;
@@ -622,8 +582,6 @@ input.recherche-invalide:focus {
 
 .food-grid {
   display: grid;
-  /* Chaque carte fait au moins 220px de large ; le nombre de colonnes s'ajuste automatiquement
-     selon la largeur de l'écran (contrairement à auto-fit, auto-fill garde des colonnes vides visibles) */
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 28px;
 }
@@ -632,7 +590,7 @@ input.recherche-invalide:focus {
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden; /* coupe net l'image aux coins arrondis de la carte, au lieu qu'elle déborde en carré */
+  overflow: hidden;
   cursor: pointer;
   text-decoration: none;
   color: inherit;
@@ -651,20 +609,18 @@ input.recherche-invalide:focus {
 }
 
 .food-card:active {
-  /* Après :hover dans le fichier pour gagner sur le translateY pendant le clic/tap */
   transform: scale(0.97);
 }
 
 .food-card__img {
   width: 100%;
-  aspect-ratio: 4/3; /* garde toujours ce ratio largeur/hauteur, quelle que soit la taille réelle de l'image */
-  object-fit: cover; /* l'image remplit tout l'espace sans se déformer, quitte à être recadrée */
+  aspect-ratio: 4/3;
+  object-fit: cover;
   background: var(--bg);
   display: block;
 }
 
 .food-card__img-placeholder {
-  /* Bloc affiché à la place d'une vraie photo, tant qu'aucune image n'a été ajoutée pour cet aliment */
   width: 100%;
   aspect-ratio: 4/3;
   background: var(--bg);
@@ -679,8 +635,6 @@ input.recherche-invalide:focus {
 }
 
 .food-card__name {
-  /* Police de texte courant (pas la serif des titres) et poids plus léger : le nom d'un
-     aliment n'a pas besoin de crier aussi fort qu'un titre de page */
   font-family: var(--font-body);
   font-size: 1.1rem;
   font-weight: 400;
@@ -695,8 +649,6 @@ input.recherche-invalide:focus {
   text-transform: uppercase;
   letter-spacing: 0.8px;
 }
-
-/* ---------- PAGE DÉTAIL ALIMENT ---------- */
 
 .detail-section {
   max-width: 1000px;
@@ -723,7 +675,6 @@ input.recherche-invalide:focus {
   border-radius: var(--radius);
   overflow: hidden;
   display: grid;
-  /* Deux colonnes : la 2e (les infos texte) est un peu plus large que la 1ère (l'image) */
   grid-template-columns: 1fr 1.3fr;
 }
 
@@ -732,15 +683,15 @@ input.recherche-invalide:focus {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 8rem; /* utilisé seulement pour l'emoji de secours, si l'aliment n'a pas encore de photo */
+  font-size: 8rem;
   min-height: 400px;
-  overflow: hidden; /* empêche la photo de déborder des coins arrondis de la carte */
+  overflow: hidden;
 }
 
 .detail-image__photo {
   width: 100%;
   height: 100%;
-  object-fit: cover; /* la photo remplit tout l'espace disponible sans se déformer */
+  object-fit: cover;
   display: block;
 }
 
@@ -785,7 +736,7 @@ input.recherche-invalide:focus {
   grid-template-columns: repeat(
     4,
     1fr
-  ); /* 4 colonnes de taille égale (calories/glucides/protéines/lipides) */
+  );
   gap: 12px;
 }
 
@@ -801,7 +752,6 @@ input.recherche-invalide:focus {
 }
 
 .macro-card.macro-calories {
-  /* La carte "calories" est mise en avant visuellement par rapport aux autres macros */
   background: var(--accent);
   border-color: var(--accent);
   color: white;
@@ -826,7 +776,7 @@ input.recherche-invalide:focus {
     255,
     255,
     0.85
-  ); /* label légèrement transparent, pour rester lisible sur le fond coloré */
+  );
 }
 
 .not-found {
@@ -835,8 +785,6 @@ input.recherche-invalide:focus {
   font-size: 1.1rem;
   padding: 80px 0;
 }
-
-/* ---------- ÉQUIVALENCES (poids d'une cuillère, page détail Aliment) ---------- */
 
 .detail-equivalences {
   margin-top: 24px;
@@ -916,17 +864,13 @@ input.recherche-invalide:focus {
   mask-position: center;
 }
 
-/* ---------- PAGE COURSES ---------- */
-
 .courses-section {
-  /* Même largeur max que les autres pages (voir .page-header) */
   max-width: 1200px;
   margin: 0 auto;
   padding: 30px 40px 80px;
 }
 
 .courses-controls-row {
-  /* Sticky sous le header, même principe que .filters (Aliments/Stock). */
   position: sticky;
   top: var(--header-h, 65px);
   z-index: 90;
@@ -935,14 +879,12 @@ input.recherche-invalide:focus {
   border-bottom: 1.5px solid var(--border);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
   margin-bottom: 0;
-  /* Fond full-bleed, contenu recentré via .courses-controls-row__inner (comme .filters/.filters__inner). */
   width: 100vw;
   margin-left: calc(50% - 50vw);
   box-sizing: border-box;
 }
 
 .courses-controls-row__inner {
-  /* space-between : "Trier par" à gauche, "+" à droite, le reste réparti entre les deux. */
   max-width: 1200px;
   margin: 0 auto;
   display: flex;
@@ -951,26 +893,21 @@ input.recherche-invalide:focus {
   padding: 14px 40px;
 }
 
-/* Repère pour courses.js (insertAdjacentElement) ; display:none pour ne pas compter comme enfant flex. */
 #badgeCoursesAncre {
   display: none;
 }
 
-/* Largeur fixe : sinon la boîte bougeait selon le mot choisi ("Nom" vs "Catégorie"). */
 .courses-controls-row .sort-wrapper .custom-select {
   flex: 0 0 92px;
   width: 92px;
   min-width: 0;
 }
 
-/* Plus compact que le bouton générique, à l'échelle des autres contrôles de cette barre. */
 .courses-controls-row .sort-wrapper .custom-select__button {
   padding: 6px 20px 6px 10px;
   font-size: 0.76rem;
   background-position: right 7px center;
 }
-
-/* ---- Bascule "Au magasin" façon interrupteur iOS, plus simple qu'un bouton pilule ---- */
 
 .toggle-ios {
   display: flex;
@@ -1013,21 +950,19 @@ input.recherche-invalide:focus {
 }
 
 .toggle-ios.actif .toggle-ios__track {
-  background: #34c759; /* même vert que la coche "Acheté" plus bas dans la liste */
+  background: #34c759;
 }
 
 .toggle-ios.actif .toggle-ios__thumb {
   transform: translateX(16px);
 }
 
-/* Hauteur fixe : les deux groupes qu'elle contient se superposent en crossfade, la rangée elle-même ne bouge jamais. */
 .preset-hebdo-row {
   position: relative;
   height: 34px;
   margin-top: 10px;
 }
 
-/* Le groupe inactif passe en absolute (hors flux), l'actif en static (lui donne sa vraie taille) : évite le chevauchement pendant la transition. */
 .preset-hebdo-row__normal,
 .preset-hebdo-row__filtres {
   display: flex;
@@ -1072,7 +1007,6 @@ body.mode-magasin .preset-hebdo-row__filtres {
   margin-bottom: 0;
 }
 
-/* "Enregistrer" : icône seule (même langage que .btn-ajout-icone), à gauche du preset "Semaine" */
 .btn-enregistrer-preset {
   width: 30px;
   height: 30px;
@@ -1082,7 +1016,7 @@ body.mode-magasin .preset-hebdo-row__filtres {
   border: 1.5px solid var(--accent);
   color: var(--accent);
   cursor: pointer;
-  font-size: 0; /* cache le texte du bouton (gardé pour l'accessibilité), seule l'icône ::before est visible */
+  font-size: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1122,8 +1056,6 @@ body.mode-magasin .preset-hebdo-row__filtres {
   cursor: not-allowed;
 }
 
-/* Confirmation "réussi" temporaire (voir courses.js) : même icône que sur Aliments (reussi.svg),
-   le temps que l'icône redevienne la disquette */
 .btn-enregistrer-preset.confirme {
   border-color: #34c759;
   background: rgba(52, 199, 89, 0.12);
@@ -1135,14 +1067,10 @@ body.mode-magasin .preset-hebdo-row__filtres {
   mask-image: url("/images/svg/reussi.svg");
 }
 
-/* Flux bloc normal (pas flex), sinon #panneauAjoutCourse s'étirait comme un item flexible au lieu de garder la hauteur de son contenu. */
-
-/* Espace fixe avant le 1er article, sinon la pastille de stock (absolute, top:-8px) chevauchait la barre sticky quand .preset-hebdo-row disparaît. */
 #listeCourses {
   margin-top: 14px;
 }
 
-/* .panneau-ajout exclu : sa propre marge anime déjà son ouverture/fermeture. */
 #listeCourses > *:not(.panneau-ajout) {
   margin-bottom: 8px;
 }
@@ -1151,7 +1079,6 @@ body.mode-magasin .preset-hebdo-row__filtres {
   margin-bottom: 0;
 }
 
-/* Repère discret entre groupes de catégorie (voir courses.js, trierPar), pas un vrai titre. */
 .course-categorie-entete {
   font-family: var(--font-body);
   font-size: 0.72rem;
@@ -1168,7 +1095,7 @@ body.mode-magasin .preset-hebdo-row__filtres {
 
 .course-item {
   display: grid;
-  grid-template-columns: 1fr auto; /* 1ère colonne = tout l'espace (nom), 2e = son contenu (boutons) */
+  grid-template-columns: 1fr auto;
   align-items: center;
   column-gap: 14px;
   row-gap: 8px;
@@ -1185,7 +1112,7 @@ body.mode-magasin .preset-hebdo-row__filtres {
 }
 
 .course-nom-emoji {
-  cursor: pointer; /* seule cette partie ouvre la note (voir courses.js), pas tout le nom */
+  cursor: pointer;
 }
 
 .course-item .form-supprimer {
@@ -1194,7 +1121,6 @@ body.mode-magasin .preset-hebdo-row__filtres {
   right: -8px;
 }
 
-/* "Déjà en stock" : badge numéroté (quantité) ou point de couleur (suivi "cl", couleurs de .stock-barre-cl-remplissage). */
 .course-stock-indicator {
   position: absolute;
   top: -8px;
@@ -1241,7 +1167,7 @@ body.mode-magasin .preset-hebdo-row__filtres {
 
 .note-affichee,
 .ligne-commentaire {
-  grid-column: 1; /* ligne 2 de la grille, sous le nom */
+  grid-column: 1;
   grid-row: 2;
 }
 
@@ -1269,11 +1195,10 @@ body.mode-magasin .preset-hebdo-row__filtres {
 
 .form-acheter,
 .form-quantite {
-  display: contents; /* le <form> "disparaît" visuellement : ses enfants se comportent comme s'ils étaient directement dans .course-item */
+  display: contents;
 }
 
 .course-item__quantite-groupe {
-  /* max-height à 0 (pas display:none, non transitionnable) : "Au magasin" déplie en douceur. */
   display: flex;
   grid-column: 1;
   grid-row: 3;
@@ -1289,7 +1214,6 @@ body.mode-magasin .preset-hebdo-row__filtres {
 }
 
 .course-item__shop-slot {
-  /* Toujours colonne 2 pour tous les types : le bouton "Acheté" reste aligné d'une carte à l'autre. */
   display: flex;
   grid-column: 2;
   grid-row: 3;
@@ -1303,7 +1227,6 @@ body.mode-magasin .preset-hebdo-row__filtres {
     opacity 0.25s ease;
 }
 
-/* Quand le body a la classe "mode-magasin" (ajoutée par courses.js), ces deux blocs se déplient */
 body.mode-magasin .course-item__quantite-groupe {
   max-height: 60px;
   opacity: 1;
@@ -1314,7 +1237,6 @@ body.mode-magasin .course-item__shop-slot {
   opacity: 1;
 }
 
-/* Panier inerte tant que la carte n'est pas "armée" (voir activerArmement dans courses.js), pour éviter un achat accidentel sur un article "cl"/libre. ":not(.form-quantite)" exclut les articles à quantité : taper un nombre est déjà un geste volontaire. */
 body.mode-magasin
   .course-item:not(.arme)
   .form-acheter:not(.form-quantite)
@@ -1325,7 +1247,6 @@ body.mode-magasin
     opacity 0.2s ease;
 }
 
-/* pointer-events:none sur le bouton, pas sur .course-item__shop-slot : sinon le tap retombe sur .course-item et arme la carte par effet de bord. */
 body.mode-magasin
   .course-item:not(.arme)
   .form-acheter:not(.form-quantite)
@@ -1334,7 +1255,6 @@ body.mode-magasin
   pointer-events: none;
 }
 
-/* Terracotta adouci, pas rouge plein : le rouge est réservé aux états invalides (voir .en-edition, .custom-select--open). */
 .course-item.arme {
   border-color: #d77a4291;
 }
@@ -1345,7 +1265,6 @@ body.mode-magasin
   gap: 6px;
 }
 
-/* Même structure que .stock-quick-subtract .suggestion, recolorée en vert sauge désaturé (le vert vif iOS ressortait trop sur le fond crème). */
 .form-quantite .suggestion {
   width: 26px;
   height: 26px;
@@ -1393,8 +1312,6 @@ body.mode-magasin
   border-color: #d77a4291;
 }
 
-/* ---- Formulaire ajout courses ---- */
-
 #formAjouterCourse {
   display: flex;
   width: 100%;
@@ -1405,13 +1322,11 @@ body.mode-magasin
 }
 
 #autocompleteCourses {
-  position: relative; /* repère pour positionner la liste de suggestions en dessous */
+  position: relative;
   flex: 0 1 280px;
   min-width: 200px;
   margin: 0 auto;
 }
-
-/* ---- Erreur ---- */
 
 .erreur {
   background: var(--accent);
@@ -1422,7 +1337,6 @@ body.mode-magasin
   margin-bottom: 20px;
 }
 
-/* Toast réseau (voir afficherToast/gererErreurReseau dans courses.js) : bandeau discret, pas d'alert() bloquante. Couleur neutre, pas rouge (notice, pas erreur grave). */
 .toast-reseau {
   position: fixed;
   left: 50%;
@@ -1449,8 +1363,6 @@ body.mode-magasin
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
-
-/* ---- Connexion ---- */
 
 .login-carte {
   max-width: 380px;
@@ -1512,15 +1424,13 @@ body.mode-magasin
   transform: scale(0.98);
 }
 
-/* ---- Notes / commentaires ---- */
-
 .note-affichee {
   font-size: 0.72rem;
   color: var(--text-muted);
   font-style: italic;
   cursor: pointer;
   margin-top: 4px;
-  flex-basis: 100%; /* force cet élément à prendre toute la largeur, comme s'il était seul sur sa ligne */
+  flex-basis: 100%;
 }
 
 .note-affichee:hover {
@@ -1543,7 +1453,6 @@ body.mode-magasin
   margin-top: 4px;
 }
 
-/* Vit dans .ligne-commentaire sans photo (icône "télécharger"), ou en enfant direct de .course-item avec photo (icône "oeil", voir placerBoutonPhoto* dans courses.js). */
 .btn-photo-course {
   grid-column: 2;
   grid-row: 1;
@@ -1579,7 +1488,6 @@ body.mode-magasin
   mask-position: center;
 }
 
-/* Photo posée : juste l'oeil, sans cercle/bordure (consultation, pas une invite à agir). */
 .btn-photo-course[data-a-photo="true"] {
   width: 25px;
   height: 25px;
@@ -1600,12 +1508,10 @@ body.mode-magasin
   transform: scale(0.92);
 }
 
-/* Rebond à l'ajout réussi, même animation que le badge sac de courses. */
 .btn-photo-course.photo-pop {
   animation: badgeSacPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Suppression : l'oeil se ferme (paupière) et s'efface avant de reloger le bouton dans la note. */
 .btn-photo-course.oeil-fermeture {
   animation: oeilSeFerme 0.3s ease-in forwards;
 }
@@ -1637,10 +1543,8 @@ body.mode-magasin
   border-color: #d77a4291;
 }
 
-/* ---------- EN-TÊTE PARTAGÉ (Stock / Courses) : même gabarit que .hero d'Aliments ---------- */
-
 .page-header {
-  max-width: 1200px; /* même largeur max que .grid-section/.filters__inner, mêmes colonnes qu'Aliments */
+  max-width: 1200px;
   margin: 0 auto;
   padding: 50px 40px 20px;
 }
@@ -1661,17 +1565,12 @@ body.mode-magasin
   font-weight: 300;
 }
 
-/* ---------- PAGE STOCK ---------- */
-
 .stock-section {
   max-width: 1200px;
   margin: 0 auto;
   padding: 30px 40px 80px;
 }
 
-/* ---- Panneau d'ajout (repliable) ---- */
-
-/* Accordéon : grid-template-rows 0fr->1fr, overflow:hidden sur .panneau-ajout__piege ; fond/bordure sur __interieur pour rester invisibles à 0px. */
 .panneau-ajout {
   display: grid;
   grid-template-rows: 0fr;
@@ -1693,7 +1592,6 @@ body.mode-magasin
   min-height: 0;
 }
 
-/* "pret" (posé par JS après l'anim d'ouverture) repasse en overflow:visible, sinon la liste de suggestions débordante resterait coupée. */
 .panneau-ajout.ouvert.pret .panneau-ajout__piege {
   overflow: visible;
 }
@@ -1703,7 +1601,7 @@ body.mode-magasin
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
   padding: 12px 20px;
-  height: 90px; /* 108px en mode magasin (voir plus bas) */
+  height: 90px;
   display: flex;
   align-items: center;
   transition: height 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1713,21 +1611,17 @@ body.mode-magasin .panneau-ajout__interieur {
   height: 108px;
 }
 
-/* ---- Liste stock (grille de cartes, avec emoji en attendant de vraies photos) ---- */
-
 #listeStock {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); /* mêmes proportions que .food-grid (Aliments) */
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 28px;
 }
 
 .stock-item {
-  /* Colonne (emoji en haut, infos en dessous) comme une .food-card, plutôt que la ligne 1fr/auto d'origine. */
   display: flex;
   flex-direction: column;
-  padding: 0; /* géré par .stock-item__body */
-  /* Pas de overflow:hidden : .form-supprimer-stock flotte volontairement hors du cadre (top/right négatifs), un overflow le couperait. */
-  cursor: pointer; /* toute la carte est cliquable pour ouvrir l'édition (voir stock.js) */
+  padding: 0;
+  cursor: pointer;
   transition:
     transform 0.2s ease,
     box-shadow 0.2s ease,
@@ -1741,7 +1635,6 @@ body.mode-magasin .panneau-ajout__interieur {
 }
 
 .stock-item:active {
-  /* Après :hover pour gagner sur le translateY pendant le clic/tap */
   transform: scale(0.98);
 }
 
@@ -1752,14 +1645,11 @@ body.mode-magasin .panneau-ajout__interieur {
   justify-content: center;
   font-size: 2.6rem;
   background: var(--bg);
-  /* On arrondit seulement les coins du haut, pour suivre le coin arrondi de la carte (var(--radius))
-     sans avoir besoin d'un overflow:hidden sur toute la carte */
   border-top-left-radius: var(--radius);
   border-top-right-radius: var(--radius);
 }
 
 .stock-item__img {
-  /* Même boîte que .stock-item__emoji, mais pour une vraie photo plutôt qu'un emoji */
   width: 100%;
   aspect-ratio: 4/3;
   object-fit: cover;
@@ -1769,7 +1659,6 @@ body.mode-magasin .panneau-ajout__interieur {
   border-top-right-radius: var(--radius);
 }
 
-/* Vue liste : même carte/HTML, la classe "vue-liste" réarrange juste l'image à gauche et le corps à droite. */
 #listeStock.vue-liste {
   display: flex;
   flex-direction: column;
@@ -1784,9 +1673,9 @@ body.mode-magasin .panneau-ajout__interieur {
 .vue-liste .stock-item__img,
 .vue-liste .stock-item__emoji {
   width: 90px;
-  aspect-ratio: auto; /* la hauteur suit celle de la ligne (align-items: stretch) plutôt qu'un ratio fixe */
+  aspect-ratio: auto;
   flex-shrink: 0;
-  border-top-left-radius: var(--radius); /* seuls les coins gauches, l'image est à gauche ici */
+  border-top-left-radius: var(--radius);
   border-top-right-radius: 0;
   border-bottom-left-radius: var(--radius);
 }
@@ -1802,14 +1691,14 @@ body.mode-magasin .panneau-ajout__interieur {
 
 .stock-item__body {
   display: grid;
-  grid-template-columns: 1fr auto; /* nom/emplacement à gauche, quantité à droite selon son contenu */
-  padding-right: 14px; /* sinon la zone quantité touche directement le bord droit de la carte */
+  grid-template-columns: 1fr auto;
+  padding-right: 14px;
 }
 
 .stock-item__infos {
   display: flex;
   flex-direction: column;
-  min-width: 0; /* permet au nom de tronquer avec "..." plutôt que d'élargir la carte */
+  min-width: 0;
 }
 
 .stock-item__ligne--nom {
@@ -1828,7 +1717,7 @@ body.mode-magasin .panneau-ajout__interieur {
 }
 
 .stock-item__ligne--meta {
-  display: block; /* pas flex : redevient un flux de texte, qui peut tronquer proprement avec "..." */
+  display: block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -1836,7 +1725,6 @@ body.mode-magasin .panneau-ajout__interieur {
 }
 
 .stock-emplacement {
-  /* Plus petit que .food-card__category : doit tenir sur une ligne avec la fraîcheur même sur carte étroite. */
   margin-right: 5px;
   font-size: 0.66rem;
   font-weight: 500;
@@ -1869,12 +1757,11 @@ body.mode-magasin .panneau-ajout__interieur {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 0 12px; /* réduit (était 16px) pour laisser plus de largeur au bloc nom/emplacement */
+  padding: 0 12px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-/* Affiché seulement si l'article est bas ET pas déjà en attente d'achat (voir chercherStock/stock.ejs). Contour, pas plein : reste secondaire. */
 .btn-ajouter-courses {
   width: 26px;
   height: 26px;
@@ -1884,7 +1771,7 @@ body.mode-magasin .panneau-ajout__interieur {
   border: 1.5px solid var(--accent);
   color: var(--accent);
   cursor: pointer;
-  font-size: 0; /* cache le texte du bouton (gardé pour l'accessibilité), seule l'icône ::before est visible */
+  font-size: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1931,7 +1818,6 @@ body.mode-magasin .panneau-ajout__interieur {
   background: var(--bg);
 }
 
-/* Terracotta adouci, pas rouge : éditer n'est pas une erreur (voir .course-item.arme plus haut). */
 .stock-item.en-edition {
   border-color: #d77a4291;
 }
@@ -1977,26 +1863,22 @@ body.mode-magasin .panneau-ajout__interieur {
   outline: none;
 }
 
-/* Ligne du haut en édition (champ + "Ajouter aux courses" côte à côte), posée en JS (voir ouvrirEdition dans stock.js). */
 .stock-edition-ligne {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-/* Empile champ + boutons de soustraction en édition (retiré à la fermeture, voir fermerEditionEtSauvegarder). */
 .stock-editable-zone.stock-edition-colonne {
   flex-direction: column;
   gap: 6px;
 }
 
-/* "-1/-2/-5" (voir ajouterBoutonsSoustraction) : assez petits pour tenir sur la largeur du champ (95px). */
 .stock-quick-subtract {
   display: flex;
   gap: 4px;
 }
 
-/* Même structure que .form-quantite .suggestion (Courses, vert) : rouge fané ici pour un retrait, réutilise var(--accent). */
 .stock-quick-subtract .suggestion {
   width: 26px;
   height: 26px;
@@ -2028,20 +1910,17 @@ body.mode-magasin .panneau-ajout__interieur {
   background: rgba(200, 71, 43, 0.22);
 }
 
-/* Discret pour ne pas dominer le chiffre. Partagé entre Stock ("−") et Courses ("+", voir .form-quantite .suggestion). */
 .signe-mini {
   font-size: 0.7em;
   opacity: 0.65;
 }
-
-/* ---- Barre de remplissage (cl) ---- */
 
 .stock-barre-cl {
   width: 50px;
   height: 8px;
   background: var(--border);
   border-radius: 999px;
-  overflow: hidden; /* la barre de remplissage à l'intérieur ne dépasse jamais du contour arrondi */
+  overflow: hidden;
 }
 
 .stock-barre-cl-remplissage {
@@ -2049,40 +1928,36 @@ body.mode-magasin .panneau-ajout__interieur {
   border-radius: 999px;
   transition:
     width 0.3s ease,
-    background 0.3s ease; /* le changement de niveau s'anime en douceur */
+    background 0.3s ease;
 }
 
 .stock-barre-cl-remplissage.niveau-plein {
   width: 100%;
-  background: #4caf50; /* vert */
+  background: #4caf50;
 }
 
 .stock-barre-cl-remplissage.niveau-moitie {
   width: 50%;
-  background: #e8a838; /* orange */
+  background: #e8a838;
 }
 
 .stock-barre-cl-remplissage.niveau-presque-vide {
   width: 25%;
-  background: #e0752b; /* orange foncé */
+  background: #e0752b;
 }
 
 .stock-barre-cl-remplissage.niveau-vide {
-  width: 6%; /* jamais totalement à 0%, pour que la barre reste visible même vide */
-  background: #c8472b; /* rouge */
+  width: 6%;
+  background: #c8472b;
 }
 
-/* ---- Suppression (visible uniquement en mode édition, par item) ---- */
-
 .stock-item .form-supprimer-stock {
-  display: none; /* le bouton supprimer est caché tant que l'article n'est pas en cours d'édition */
+  display: none;
 }
 
 .stock-item.en-edition .form-supprimer-stock {
   display: block;
 }
-
-/* ---- Formulaire ajout stock ---- */
 
 #formAjouterStock {
   display: flex;
@@ -2094,17 +1969,15 @@ body.mode-magasin .panneau-ajout__interieur {
 
 #autocomplete {
   position: relative;
-  flex: 0 1 320px; /* tap-to-add (stock.js) : plus besoin de s'étirer sur toute la largeur */
+  flex: 0 1 320px;
   min-width: 220px;
 }
 
-/* Remplace la recherche du stock dans .search-ajout-row (jamais les deux ensemble) : même place qu'elle (flex:1). */
 .search-ajout-row #autocomplete {
   flex: 1;
   min-width: 220px;
 }
 
-/* Même hauteur que #searchInput qu'elle remplace, sinon le bouton "+" et le reste de la ligne "sautent". */
 .search-ajout-row #autocomplete input {
   height: 30px;
   box-sizing: border-box;
@@ -2122,17 +1995,11 @@ body.mode-magasin .panneau-ajout__interieur {
   color: var(--text);
 }
 
-/* Le style de #btnAjouter (et son état disabled/hover) est défini une seule fois,
-   plus bas, dans la section "CONTRÔLES PARTAGÉS" (partagé avec le bouton "Créer la recette") */
-
-/* ---------- ICÔNES SUR LES BOUTONS D'ACTION ---------- */
-/* Un seul système, utilisé par supprimer ET acheté, pour garantir une taille identique partout */
-
 .btn-icone-rond {
   width: 30px;
   height: 30px;
   padding: 0;
-  font-size: 0; /* cache le texte du bouton (ex: "Acheté") pour ne garder que l'icône affichée via ::before */
+  font-size: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2156,10 +2023,9 @@ body.mode-magasin .panneau-ajout__interieur {
 .btn-icone-rond:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  pointer-events: none; /* bloque aussi :hover/:active, sinon l'animation d'appui jouait quand même au tap */
+  pointer-events: none;
 }
 
-/* Style "coche" façon iOS plutôt que l'emoji panier (teinte peu cohérente) ; vert plus saturé que .form-quantite .suggestion pour que l'état "prêt" ressorte. */
 .btn-acheter-icone {
   background: rgba(58, 122, 69, 0.12);
   border-color: rgba(107, 142, 111, 0.45);
@@ -2171,7 +2037,6 @@ body.mode-magasin .panneau-ajout__interieur {
   border-color: #35be4a;
 }
 
-/* Même couleur qu'actif, estompée par opacité, comme le bouton "cl" avant armement (voir .arme). */
 .btn-acheter-icone:disabled {
   opacity: 0.4;
   background: rgba(58, 122, 69, 0.12);
@@ -2179,7 +2044,6 @@ body.mode-magasin .panneau-ajout__interieur {
   border-color: rgba(107, 142, 111, 0.45);
 }
 
-/* Pop joué une fois quand le bouton passe de désactivé à cliquable (voir activerQuantite dans courses.js). */
 .vient-de-s-activer {
   animation: popActivation 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -2212,8 +2076,6 @@ body.mode-magasin .panneau-ajout__interieur {
   mask-position: center;
 }
 
-/* ---------- FOOTER ---------- */
-
 .footer {
   border-top: 1.5px solid var(--border);
   text-align: center;
@@ -2221,8 +2083,6 @@ body.mode-magasin .panneau-ajout__interieur {
   font-size: 0.82rem;
   color: var(--text-muted);
 }
-
-/* ---------- ANIMATIONS ---------- */
 
 @keyframes fadeIn {
   from {
@@ -2255,7 +2115,6 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 }
 
-/* Halo terracotta (pas rouge) sur la carte visée par scrollIntoView (voir ajouterAuStock dans stock.js), s'efface seul. */
 .mise-en-avant {
   animation: pulseMiseEnAvant 1.5s ease;
 }
@@ -2376,17 +2235,13 @@ body.mode-magasin .panneau-ajout__interieur {
   animation: flashMaj 0.6s ease;
 }
 
-/* ---------- RESPONSIVE — MOBILE (≤768px) ---------- */
-
 @media (max-width: 768px) {
-  /* Bug iOS : zoom auto sur un champ <16px. !important pour gagner sur les dizaines de font-size existants sans les retrouver un par un. */
   input,
   select,
   textarea {
     font-size: 16px !important;
   }
 
-  /* Visibilité réelle ("visible") posée par JS dès qu'il y a du texte, jamais avant. */
   .btn-effacer-recherche {
     display: flex;
     position: absolute;
@@ -2412,12 +2267,11 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   .btn-effacer-recherche::before {
-    /* effacer-x.svg (traits fins) plutôt que fermer.svg, trop lourd à cette taille. */
     content: "";
     display: block;
     width: 12px;
     height: 12px;
-    background-color: #d77a42; /* famille de la bordure terracotta, pas --accent (rouge, réservé aux erreurs) */
+    background-color: #d77a42;
     -webkit-mask-image: url("/images/svg/effacer-x.svg");
     mask-image: url("/images/svg/effacer-x.svg");
     -webkit-mask-size: contain;
@@ -2428,7 +2282,6 @@ body.mode-magasin .panneau-ajout__interieur {
     mask-position: center;
   }
 
-  /* De la place pour que le texte tapé ne passe pas sous le "✕" */
   #searchInput,
   #rechercheAliment,
   #rechercheAlimentCourses,
@@ -2442,7 +2295,7 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   .tagline {
-    display: none; /* on cache l'accroche du header sur petit écran, faute de place */
+    display: none;
   }
 
   .nav {
@@ -2453,7 +2306,6 @@ body.mode-magasin .panneau-ajout__interieur {
     font-size: 0.82rem;
   }
 
-  /* Grille (pas flex) : titre+badge sur la 1ère ligne, le texte prend toute la largeur en dessous. */
   .hero {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -2462,16 +2314,16 @@ body.mode-magasin .panneau-ajout__interieur {
       "texte texte";
     column-gap: 16px;
     row-gap: 10px;
-    padding: 16px 20px 24px; /* peu de marge au-dessus : le H1 doit rester collé sous le header */
+    padding: 16px 20px 24px;
   }
 
   .hero__text {
-    display: contents; /* "dissout" ce conteneur : h1 et p deviennent des cases directes de la grille */
+    display: contents;
   }
 
   .hero__text h1 {
     grid-area: titre;
-    font-size: 1.9rem; /* 2.6rem prenait 2 lignes et dominait toute la hero sur mobile */
+    font-size: 1.9rem;
     margin-bottom: 0;
   }
 
@@ -2483,7 +2335,7 @@ body.mode-magasin .panneau-ajout__interieur {
   .hero__badge {
     grid-area: badge;
     align-self: start;
-    width: 78px; /* réduit à l'échelle du H1 raccourci */
+    width: 78px;
     height: 78px;
   }
 
@@ -2507,7 +2359,7 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   .filter-btn {
-    height: 30px; /* pilules plus compactes, la barre de filtres prenait trop de hauteur */
+    height: 30px;
     padding: 0 14px;
     font-size: 0.8rem;
   }
@@ -2520,15 +2372,14 @@ body.mode-magasin .panneau-ajout__interieur {
     grid-template-columns: repeat(
       auto-fill,
       minmax(160px, 1fr)
-    ); /* cartes plus petites sur mobile */
+    );
     gap: 16px;
   }
 
   .btn-ajout-icone {
-    order: 1; /* passe après la recherche (à droite) en mobile, alors qu'il précède dans le HTML */
+    order: 1;
   }
 
-  /* Les 3 éléments tiennent sur une ligne en mobile ; le select perd son label/largeur mini pour laisser la place aux boutons. */
   .search-sort-wrapper {
     flex-wrap: nowrap;
     gap: 8px;
@@ -2539,7 +2390,6 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   .search-sort-wrapper .sort-wrapper .custom-select {
-    /* Plus spécifique que la règle globale ".sort-wrapper .custom-select" (min-width: 190px) pour pouvoir la réduire ici. */
     flex: 0 1 auto;
     min-width: 0;
   }
@@ -2554,7 +2404,7 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   #listeStock {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); /* même traitement que .food-grid */
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     gap: 16px;
   }
 
@@ -2567,7 +2417,7 @@ body.mode-magasin .panneau-ajout__interieur {
   .stock-emplacement,
   .stock-separateur,
   .stock-jours {
-    font-size: 0.52rem; /* plus petit que le desktop : la colonne étroite doit tenir sur 1 ligne sans "..." */
+    font-size: 0.52rem;
   }
 
   .stock-emplacement,
@@ -2580,16 +2430,15 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   .stock-item__body {
-    padding-right: 8px; /* était 14px sur desktop : moins de place à revendre sur une carte à 2 colonnes */
+    padding-right: 8px;
   }
 
   .stock-barre-cl {
-    /* 50px sur desktop laisse trop peu de place au nom/emplacement sur une carte à 2 colonnes */
     width: 34px;
   }
 
   .stock-quantite {
-    font-size: 1.2rem; /* la règle à 420px ci-dessous la réduit encore, à 1.1rem */
+    font-size: 1.2rem;
   }
 
   .detail-section {
@@ -2597,7 +2446,7 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 
   .detail-carte {
-    grid-template-columns: 1fr; /* l'image et les infos s'empilent au lieu d'être côte à côte */
+    grid-template-columns: 1fr;
   }
 
   .detail-image {
@@ -2617,11 +2466,11 @@ body.mode-magasin .panneau-ajout__interieur {
     grid-template-columns: repeat(
       2,
       1fr
-    ); /* 2 colonnes au lieu de 4 sur mobile */
+    );
   }
 
   .home-links {
-    grid-template-columns: 1fr; /* une seule colonne sur mobile */
+    grid-template-columns: 1fr;
   }
 
   .courses-section,
@@ -2635,12 +2484,9 @@ body.mode-magasin .panneau-ajout__interieur {
 
   .page-header h1,
   .journal-section h1 {
-    /* .journal-section (Calories) manquait cette règle : son titre restait à 2.6rem sur
-       mobile alors que Stock/Courses/Aliments retombaient déjà à 2rem, seule page à ne pas suivre */
     font-size: 2rem;
   }
 
-  /* Le nom passe sur sa propre ligne, tout le reste reste en ligne et wrap librement */
   .course-nom,
   .stock-nom {
     flex-basis: 100%;
@@ -2663,21 +2509,18 @@ body.mode-magasin .panneau-ajout__interieur {
     flex-shrink: 0;
   }
 
-
   #formAjouterCourse,
   #formAjouterStock {
-    flex-direction: column; /* les champs du formulaire s'empilent verticalement sur mobile */
+    flex-direction: column;
     align-items: stretch;
   }
 
   #autocomplete,
   #autocompleteCourses {
-    /* flex-basis devient une hauteur en colonne : sans ce reset le champ prendrait 280-320px de haut. */
     width: 100%;
     flex-basis: auto;
   }
 
-  /* Courses seulement : plafonné et centré (margin:0 auto), pas pleine largeur. */
   #autocompleteCourses {
     width: 100%;
     max-width: 280px;
@@ -2690,26 +2533,23 @@ body.mode-magasin .panneau-ajout__interieur {
 
   .courses-controls-row__inner {
     gap: 6px;
-    padding: 12px 20px; /* même padding horizontal que .courses-section en mobile (20px, vs 40px en desktop) */
+    padding: 12px 20px;
   }
 
   .courses-controls-row .sort-wrapper label {
-    /* Le mot "Trier par :" ne tient plus à côté du select sur un petit écran : on le cache,
-       le select seul reste assez clair */
     display: none;
   }
 
   .courses-controls-row .sort-wrapper .custom-select {
-    min-width: 0; /* laisse le select rétrécir plutôt que déborder */
+    min-width: 0;
   }
 
   .toggle-ios__label {
-    display: none; /* ne garde que l'interrupteur sur petit écran, sans le mot "Au magasin" */
+    display: none;
   }
 }
 
 @media (max-width: 420px) {
-  /* Réglages supplémentaires pour les très petits écrans (petits téléphones) */
   .hero__text h1 {
     font-size: 2rem;
   }
@@ -2719,13 +2559,10 @@ body.mode-magasin .panneau-ajout__interieur {
   }
 }
 
-/* ---------- UTILITAIRES : toujours en dernier, doivent gagner sur les règles de composant ---------- */
-
 .hidden {
   display: none;
 }
 
-/* Posée sur <body> tant que le panneau détail recette est ouvert (voir afficherSheet/fermerSheet dans calories.js). */
 .scroll-bloque {
   overflow: hidden;
 }
@@ -2736,8 +2573,6 @@ body.mode-magasin .panneau-ajout__interieur {
   font-size: 1rem;
   padding: 60px 0;
 }
-
-/* ---------- JOURNAL (compteur de calories) ---------- */
 
 .journal-actions-row {
   display: flex;
@@ -2757,7 +2592,7 @@ body.mode-magasin .panneau-ajout__interieur {
   font-size: 0.85rem;
   color: var(--text);
   text-align: center;
-  -moz-appearance: textfield; /* flèches natives retirées : grignotaient la place du chiffre sur ce champ étroit */
+  -moz-appearance: textfield;
   appearance: textfield;
 }
 
@@ -2783,7 +2618,6 @@ body.mode-magasin .panneau-ajout__interieur {
   min-width: 0;
 }
 
-/* Largeur fixe : sinon un libellé plus long ("gousse", "tbsp"...) désaligne les lignes entre elles. */
 .journal-quantite-groupe .custom-select__button {
   width: 62px;
   padding: 6px 24px 6px 8px;
@@ -2821,7 +2655,7 @@ body.mode-magasin .panneau-ajout__interieur {
   grid-template-columns: repeat(
     4,
     1fr
-  ); /* 4 colonnes égales : kcal / glucides / protéines / lipides */
+  );
   gap: 12px;
   margin-bottom: 30px;
 }
@@ -2840,18 +2674,16 @@ body.mode-magasin .panneau-ajout__interieur {
 
 .journal-item {
   display: grid;
-  /* Pas de colonne dédiée pour monter/descendre : ils flottent en absolute dans la marge gauche, comme le "−" flotte à droite (.form-supprimer-journal), sans réduire la largeur du nom. */
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
-  padding-left: 22px; /* réserve la place des boutons flottants sans leur donner de vraie colonne */
+  padding-left: 22px;
 }
 
-/* Chevrons "stepper" iOS plutôt qu'une poignée de drag (peu fiable au tactile). Réutilisés pour le Journal et les ingrédients de recette (.ligne-ingredient-recette). */
 .reorder-controls {
   position: absolute;
   left: 0;
-  top: 6px; /* space-between pousse monter/descendre vers les bords, 6px pour ne pas les coller pile dessus */
+  top: 6px;
   bottom: 6px;
   display: flex;
   flex-direction: column;
@@ -2958,7 +2790,7 @@ body.mode-magasin .panneau-ajout__interieur {
   background: none;
   color: var(--accent);
   cursor: pointer;
-  font-size: 0; /* le texte du bouton est caché, seule l'icône ::before est visible */
+  font-size: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2967,7 +2799,6 @@ body.mode-magasin .panneau-ajout__interieur {
     transform 0.12s ease;
 }
 
-/* Icône par défaut (Journal, ingrédients recette) : retirer un aliment est une action légère, pas une vraie suppression (voir .btn-supprimer-icone pour Stock/Courses, la poubelle). */
 .btn-supprimer-dash::before {
   content: "";
   display: block;
@@ -2984,7 +2815,6 @@ body.mode-magasin .panneau-ajout__interieur {
   mask-position: center;
 }
 
-/* Stock/Courses seuls ajoutent cette classe à .btn-supprimer-dash : vraie suppression, donc la poubelle (supprimer.svg) plutôt que le "−" léger. */
 .btn-supprimer-icone {
   background: var(--accent);
   border: 2px solid var(--surface);
@@ -3016,9 +2846,6 @@ body.mode-magasin .panneau-ajout__interieur {
   transform: scale(0.85);
 }
 
-/* ---------- ONGLETS JOURNAL / RECETTES (page Calories) : deux onglets pilotés en JS (calories.js), pas de rechargement ---------- */
-
-/* Traités comme des titres qu'on choisit, pas des boutons qu'on presse : police des titres, gras, soulignés façon .nav__link.actif. */
 .calories-tabs {
   display: flex;
   margin-bottom: 24px;
@@ -3027,7 +2854,7 @@ body.mode-magasin .panneau-ajout__interieur {
 }
 
 .calories-tab-btn {
-  flex: 1; /* chaque onglet prend une part égale de la largeur, comme une vraie barre d'onglets */
+  flex: 1;
   text-align: center;
   padding: 0;
   border: none;
@@ -3068,8 +2895,6 @@ body.mode-magasin .panneau-ajout__interieur {
   display: block;
 }
 
-/* Bouton rond "X" (remplace l'ancien "Tout effacer" en texte) : même langage que
-   .btn-supprimer-dash mais en contour, puisque ce n'est pas l'action principale de la ligne */
 .btn-x-rond {
   width: 30px;
   height: 30px;
@@ -3090,8 +2915,6 @@ body.mode-magasin .panneau-ajout__interieur {
 }
 
 .btn-x-rond::before {
-  /* Icône dédiée "tout supprimer" (public/images/svg/tout-supprimer.svg), pas juste un "✕" :
-     vider tout le journal d'un coup est une action bien plus lourde qu'un "−" sur une seule ligne */
   content: "";
   display: block;
   width: 14px;
@@ -3116,8 +2939,6 @@ body.mode-magasin .panneau-ajout__interieur {
   transform: scale(0.9);
 }
 
-/* Caché par défaut (voir calories.js, miseAJourBoutonEnregistrerRecette) : n'apparaît que si
-   le journal du jour a 3 aliments ou plus formant une combinaison pas déjà enregistrée */
 .btn-enregistrer-recette {
   display: flex;
   align-items: center;
@@ -3139,7 +2960,6 @@ body.mode-magasin .panneau-ajout__interieur {
     transform 0.12s ease;
 }
 
-/* Spécificité renforcée (2 classes) : .hidden seule perdait contre "display:flex" à spécificité égale. */
 .btn-enregistrer-recette.hidden {
   display: none;
 }
@@ -3169,8 +2989,6 @@ body.mode-magasin .panneau-ajout__interieur {
   transform: scale(0.97);
 }
 
-/* ---------- RECETTES : deux grilles séparées (Boissons / Plats) ---------- */
-
 .recette-groupe {
   margin-bottom: 32px;
 }
@@ -3179,7 +2997,6 @@ body.mode-magasin .panneau-ajout__interieur {
   margin-bottom: 0;
 }
 
-/* 1fr auto 1fr : nom vraiment centré, pas juste poussé par margin-left:auto qui ne centre rien si gauche/droite diffèrent. */
 .recette-groupe-titre {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -3202,8 +3019,6 @@ body.mode-magasin .panneau-ajout__interieur {
   white-space: nowrap;
 }
 
-/* Petites icônes de tri (nom / calories) : remplace l'ancien menu déroulant, trop imposant à
-   côté d'un simple titre de groupe. Clic direct pour basculer, pas de liste à ouvrir. */
 .recette-tri-icones {
   display: flex;
   align-items: center;
@@ -3211,7 +3026,6 @@ body.mode-magasin .panneau-ajout__interieur {
   justify-self: start;
 }
 
-/* Bascule grille/liste, symétrique au tri mais à droite (voir recette-vue-icone plus bas) */
 .recette-vue-icones {
   display: flex;
   align-items: center;
@@ -3311,7 +3125,6 @@ body.mode-magasin .panneau-ajout__interieur {
   height: 19px;
 }
 
-/* .cat-pill reste utilisé par le sélecteur de catégorie du panneau détail (boisson/plat) */
 .cat-pill {
   display: inline-flex;
   align-items: center;
@@ -3334,7 +3147,6 @@ body.mode-magasin .panneau-ajout__interieur {
   color: var(--accent);
 }
 
-/* SVG affichés tels quels (pas mask-image recolorable), utilisés sur les pastilles, le titre de groupe et en repli sur une carte sans émoji. */
 .icone-categorie-recette {
   display: inline-block;
   width: 16px;
@@ -3406,13 +3218,11 @@ body.mode-magasin .panneau-ajout__interieur {
   color: var(--text-muted);
 }
 
-/* Même couleur/poids qu'en vue liste (.vue-liste .recette-kcal) : reconnaissable peu importe la vue. */
 .recette-kcal {
   font-weight: 700;
   color: var(--accent);
 }
 
-/* Vue liste : mêmes cartes/HTML (voir #listeStock.vue-liste). .recette-corps/.recette-sub passent en display:contents pour éviter de dupliquer le HTML entre vues. */
 .recette-grid.vue-liste {
   display: flex;
   flex-direction: column;
@@ -3442,8 +3252,6 @@ body.mode-magasin .panneau-ajout__interieur {
   background: none;
   border-radius: 0;
   font-size: 1rem;
-  /* Annule le margin-bottom:8px hérité de la vue grille (voir .recette-emoji plus haut) :
-     sinon le bas de la carte respirait plus que le haut, malgré un padding identique. */
   margin-bottom: 0;
 }
 
@@ -3472,8 +3280,6 @@ body.mode-magasin .panneau-ajout__interieur {
   gap: 10px;
 }
 
-/* Même bouton/position que .form-supprimer-journal + .btn-supprimer-dash (Journal) : rond
-   rouge avec un "−", posé sur le coin de la carte plutôt qu'un "✕" intégré dans le cadre */
 .btn-supprimer-recette {
   position: absolute;
   top: -8px;
@@ -3514,8 +3320,6 @@ body.mode-magasin .panneau-ajout__interieur {
   mask-position: center;
 }
 
-/* ---------- PANNEAU DÉTAIL DE RECETTE (overlay plein écran, pas un onglet) ---------- */
-
 .sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -3536,7 +3340,7 @@ body.mode-magasin .panneau-ajout__interieur {
   left: 0;
   right: 0;
   bottom: 0;
-  height: calc(100vh - var(--header-h, 65px)); /* fixe, pas max-height : doit toujours démarrer sous le header même à contenu court */
+  height: calc(100vh - var(--header-h, 65px));
   margin: 0 auto;
   max-width: 560px;
   background: var(--surface);
@@ -3548,7 +3352,7 @@ body.mode-magasin .panneau-ajout__interieur {
   z-index: 201;
   overflow-y: auto;
   padding: 10px 24px 28px;
-  display: flex; /* #formRecette s'étire (flex:1) pour garder Enregistrer/Supprimer collés en bas */
+  display: flex;
   flex-direction: column;
 }
 
@@ -3744,7 +3548,7 @@ body.mode-magasin .panneau-ajout__interieur {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0; /* le texte du HTML est caché (gardé pour l'accessibilité), seule l'icône ::before est visible */
+  font-size: 0;
   cursor: pointer;
   flex-shrink: 0;
   border: 1.5px solid var(--border);
@@ -3775,7 +3579,6 @@ body.mode-magasin .panneau-ajout__interieur {
   mask: url("/images/svg/note.svg") center / 14px 14px no-repeat;
 }
 
-/* Pleine largeur, tout en bas, jamais collée au "✕" fermer : un tap malheureux ne peut pas la déclencher. */
 .btn-supprimer-pleine-largeur {
   display: block;
   width: 100%;
@@ -3794,7 +3597,6 @@ body.mode-magasin .panneau-ajout__interieur {
     color 0.15s ease;
 }
 
-/* Même souci de cascade que .btn-enregistrer-recette.hidden : sans ce filet, "hidden" perdait contre display:block. */
 .btn-supprimer-pleine-largeur.hidden {
   display: none;
 }
@@ -3837,11 +3639,10 @@ body.mode-magasin .panneau-ajout__interieur {
   display: flex;
   flex-direction: column;
   margin-bottom: 12px;
-  max-height: 40vh; /* pas flex:1 : ne prend que la hauteur de son contenu, scrollable seulement au-delà */
+  max-height: 40vh;
   overflow-y: auto;
 }
 
-/* Classe posée en JS pendant la recherche (voir btnToggleAjoutIngredient dans calories.js) : sinon l'overflow-y de cette liste coupait les suggestions débordantes, invisibles même si présentes dans le DOM. */
 #listeIngredientsRecette.recherche-ouverte {
   overflow: visible;
   max-height: none;
@@ -3881,11 +3682,10 @@ body.mode-magasin .panneau-ajout__interieur {
   border-color: #d77a4291;
 }
 
-/* Toujours dernier enfant de #listeIngredientsRecette (voir ajouterLigneIngredient dans calories.js) : se comporte comme la ligne du prochain ingrédient. */
 #autocompleteIngredient {
   position: relative;
   margin-bottom: 14px;
-  max-height: 60px; /* ".replie" (pas display:none) pour transitionner en douceur, rebond façon .panneau-ajout */
+  max-height: 60px;
   opacity: 1;
   overflow: hidden;
   transition:
@@ -3900,7 +3700,6 @@ body.mode-magasin .panneau-ajout__interieur {
   margin-bottom: 0;
 }
 
-/* "pret" (posé par JS après transitionend, même principe que .panneau-ajout) repasse en overflow:visible, sinon la liste de suggestions débordante resterait coupée. */
 #autocompleteIngredient.pret {
   overflow: visible;
 }
@@ -3916,7 +3715,7 @@ body.mode-magasin .panneau-ajout__interieur {
   gap: 10px;
   padding: 9px 0 9px 22px;
   border-bottom: 1px solid var(--border);
-  position: relative; /* ancre .reorder-controls (absolute) à cette ligne, pas à #listeIngredientsRecette */
+  position: relative;
 }
 
 .ingredient-nom-recette {
@@ -3951,13 +3750,11 @@ body.mode-magasin .panneau-ajout__interieur {
   border-color: #d77a4291;
 }
 
-/* Sélecteur d'unité (g / tsp / tbsp) : toujours affiché, voir ajouterLigneIngredient dans calories.js */
 .ligne-ingredient-recette .custom-select {
   flex: 0 0 auto;
   min-width: 0;
 }
 
-/* Largeur fixe : sinon un libellé plus long ("gousse", "tbsp"...) désaligne les lignes entre elles. */
 .ligne-ingredient-recette .custom-select__button {
   width: 62px;
   padding: 6px 24px 6px 8px;
@@ -3967,7 +3764,6 @@ body.mode-magasin .panneau-ajout__interieur {
   white-space: nowrap;
 }
 
-/* Même bouton que .btn-supprimer-dash : un seul langage visuel pour "retirer cet élément" partout dans l'app. */
 .ingredient-x-recette {
   flex-shrink: 0;
 }
@@ -3975,13 +3771,10 @@ body.mode-magasin .panneau-ajout__interieur {
 #formRecette #btnEnregistrerSheet {
   width: 100%;
   flex-shrink: 0;
-  margin-top: auto; /* pousse Enregistrer/Supprimer tout en bas du panneau même à contenu court */
+  margin-top: auto;
 }
 
-/* ---------- CONTRÔLES PARTAGÉS : "custom select" pilotant un <select> caché, voir public/js/custom-selects.js ---------- */
-
 .custom-select-native {
-  /* Réduit à 1px et invisible (pas display:none) pour rester accessible/fonctionnel tout en étant caché visuellement. */
   position: absolute;
   width: 1px;
   height: 1px;
@@ -4022,7 +3815,6 @@ body.mode-magasin .panneau-ajout__interieur {
   border-color: #d77a4291;
 }
 
-/* (hover: hover) exclut le tactile : sinon la bordure accentuée restait "collée" après un tap. */
 @media (hover: hover) and (pointer: fine) {
   .custom-select__button:hover {
     outline: none;
@@ -4034,7 +3826,6 @@ body.mode-magasin .panneau-ajout__interieur {
   transform: scale(0.98);
 }
 
-/* Terracotta adouci, pas rouge : un menu ouvert n'est pas une erreur (voir .course-item.arme). */
 .custom-select--open .custom-select__button {
   border-color: #d77a4291;
 }
@@ -4042,23 +3833,22 @@ body.mode-magasin .panneau-ajout__interieur {
 .custom-select__label {
   display: block;
   overflow: hidden;
-  text-overflow: ellipsis; /* si le texte est trop long pour la largeur disponible, on affiche "..." à la fin */
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .custom-select__list {
-  /* fixed (pas absolute) : posée sur <body> à l'ouverture (voir custom-selects.js), donc jamais piégée sous une carte voisine ; top/left calculés en JS. */
   position: fixed;
-  width: max-content; /* suit le texte des options (JS ne fixe qu'une largeur minimum) */
+  width: max-content;
   max-width: calc(100vw - 24px);
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 10px;
   list-style: none;
   overflow: hidden;
-  z-index: 1000; /* bien au-dessus de tout le reste de la page (header compris) */
+  z-index: 1000;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  opacity: 0; /* fermée par défaut : glisse/s'estompe à l'ouverture (voir .custom-select__list--ouverte, custom-selects.js) */
+  opacity: 0;
   transform: translateY(-6px);
   transform-origin: top;
   transition:
@@ -4109,7 +3899,6 @@ body.mode-magasin .panneau-ajout__interieur {
   min-width: 120px;
 }
 
-/* N'affichent qu'une icône (pas de texte, voir calories.ejs) : rond compact plutôt que la largeur prévue pour un nom de recette. */
 #selectRecettePlat + .custom-select,
 #selectRecetteFraicheur + .custom-select {
   flex: 0 0 auto;
@@ -4125,7 +3914,7 @@ body.mode-magasin .panneau-ajout__interieur {
   border-radius: 50%;
   background-color: transparent;
   text-align: center;
-  background-image: url("/images/svg/recettes.svg"); /* icône en plusieurs couleurs, affichée telle quelle (pas mask-image) */
+  background-image: url("/images/svg/recettes.svg");
   background-repeat: no-repeat;
   background-position: center;
   background-size: 20px 20px;
@@ -4138,10 +3927,9 @@ body.mode-magasin .panneau-ajout__interieur {
 
 #selectRecettePlat + .custom-select .custom-select__label,
 #selectRecetteFraicheur + .custom-select .custom-select__label {
-  font-size: 0; /* seule l'icône compte, le texte reste pour l'accessibilité */
+  font-size: 0;
 }
 
-/* [data-for-select] plutôt qu'un sélecteur par parenté : la liste est déplacée sur <body> à l'ouverture (voir open() dans custom-selects.js), donc plus descendante de son wrapper. */
 .custom-select__list[data-for-select="selectRecettePlat"],
 .custom-select__list[data-for-select="selectRecetteFraicheur"] {
   max-height: 215px;
@@ -4166,7 +3954,6 @@ body.mode-magasin .panneau-ajout__interieur {
   color: var(--text);
 }
 
-/* "normal" plutôt que le line-height:1.6 hérité du body, qui décalait le texte/placeholder du centrage vertical. */
 #rechercheAlimentCourses {
   line-height: normal;
 }
@@ -4180,8 +3967,6 @@ body.mode-magasin .panneau-ajout__interieur {
 #champQuantite:focus,
 #champCL:focus {
   outline: none;
-  /* Terracotta adouci, pas rouge : le focus n'est pas une erreur (voir .recherche-invalide,
-     seul cas où ces champs de recherche redeviennent vraiment rouges). */
   border-color: #d77a4291;
 }
 
@@ -4199,11 +3984,9 @@ body.mode-magasin .panneau-ajout__interieur {
   list-style: none;
   z-index: 50;
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
-  /* On affiche tous les résultats correspondants (plus de limite arbitraire côté JS),
-     mais on ne montre que ~5 lignes à la fois : au-delà, on peut faire défiler */
   max-height: 215px;
   overflow-y: auto;
-  overflow-x: hidden; /* garde les coins arrondis nets même pendant le défilement vertical */
+  overflow-x: hidden;
 }
 
 #listeAlimentsCourses li,
@@ -4239,8 +4022,6 @@ body.mode-magasin .panneau-ajout__interieur {
   transition: opacity 0.2s ease;
 }
 
-/* Icône disquette (public/images/svg/enregistrer.svg) devant le texte, plutôt que "Enregistrer"
-   tout seul : mêmes contrôles que .btn-supprimer-dash pour recolorer l'icône via currentColor */
 #btnEnregistrerSheet {
   display: flex;
   align-items: center;
@@ -4426,12 +4207,7 @@ body.mode-magasin .panneau-ajout__interieur {
     width: 100%;
   }
 
-  /* Pas de "pleine largeur" pour .journal-actions-row .custom-select : ne concerne que les ronds compacts #selectRecettePlat/#selectRecetteFraicheur, restent compacts sur mobile comme sur desktop. */
 }
-
-/* ---------- PHOTO DE RÉFÉRENCE (Courses) ---------- */
-/* Même principe que .sheet-backdrop (panneau détail recette) : fond assombri + contenu, ouvert/
-   fermé via la classe "ouvert" posée par courses.js. */
 
 .photo-backdrop {
   position: fixed;
@@ -4461,7 +4237,6 @@ body.mode-magasin .panneau-ajout__interieur {
   gap: 14px;
 }
 
-/* --vers-x/--vers-y posées en JS (fermerApercuPhoto) : la photo "s'aspire" vers l'oeil qui l'a ouverte. */
 .photo-apercu.fermeture {
   animation: aspirePhotoVersOeil 0.35s cubic-bezier(0.55, 0, 1, 0.45) forwards;
 }

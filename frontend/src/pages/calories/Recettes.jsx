@@ -11,7 +11,6 @@ const ICONES_TRI = {
   kcal: { asc: "/images/svg/calorie-asc.svg", desc: "/images/svg/calorie-desc.svg" },
 };
 
-// Même tri que trierGrilleRecettes : stable sur l'ordre courant, nom en minuscules ou kcal en nombre.
 function trier(recettes, { critere, direction }) {
   return [...recettes].sort((a, b) => {
     if (critere === "nom") {
@@ -23,7 +22,6 @@ function trier(recettes, { critere, direction }) {
   });
 }
 
-// 3 premiers émojis d'ingrédients, repli sur l'icône de catégorie.
 function IconeRecette({ recette }) {
   const emojis = recette.emoji_combo ?? (recette.emojis_ingredients || []).slice(0, 3).join("");
   return <span className="recette-emoji">{emojis || <span className={"icone-categorie-recette icone-categorie-recette--" + recette.categorie}></span>}</span>;
@@ -32,7 +30,6 @@ function IconeRecette({ recette }) {
 function GroupeRecettes({ categorie, recettes, onOuvrir, onNouvelle }) {
   const [tri, setTri] = useState({ critere: "nom", direction: "asc" });
   const [vue, setVue] = useLocalStorage("vueRecettes-" + categorie.valeur, (v) => (v === "liste" ? "liste" : "grille"));
-  // Ordre affiché par clé de carte : une carte modifiée est recréée en fin de grille puis retriée, comme en EJS.
   const [ordre, setOrdre] = useState(() => trier(recettes, tri).map((r) => r.cle));
 
   const parCle = Object.fromEntries(recettes.map((r) => [r.cle, r]));
@@ -72,7 +69,6 @@ function GroupeRecettes({ categorie, recettes, onOuvrir, onNouvelle }) {
           <span className={"icone-categorie-recette icone-categorie-recette--" + categorie.valeur}></span> {categorie.label}
         </span>
         <div className="recette-vue-icones">
-          {/* data-vue choisit l'icône dans le CSS (.recette-vue-icone[data-vue="…"]::before). */}
           <button type="button" className={"recette-vue-icone" + (vue === "grille" ? " active" : "")} data-vue="grille" title="Vue grille" onClick={() => setVue("grille")}></button>
           <button type="button" className={"recette-vue-icone" + (vue === "liste" ? " active" : "")} data-vue="liste" title="Vue liste" onClick={() => setVue("liste")}></button>
         </div>

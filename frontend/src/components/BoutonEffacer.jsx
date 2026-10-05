@@ -1,4 +1,3 @@
-// Bouton ✕ des recherches (visible sur mobile seulement, via le CSS) : vide le champ et lui rend le focus.
 export default function BoutonEffacer({ cible, valeur, onEffacer, champ }) {
   return (
     <button

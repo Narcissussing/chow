@@ -5,7 +5,6 @@ import { useChangeNatif } from "../../hooks/useChangeNatif.js";
 import { relancerClasse } from "../../utils/animation.js";
 import { convertirAffichage, estLiquide, grammesParUnite, minimumPourUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
 
-// Équivalences d'une entrée : mêmes valeurs que les data-* de calories.ejs.
 export function equivalencesEntree(entree) {
   return {
     gCafe: entree.grammes_par_cuil_a_cafe ?? "",
@@ -16,12 +15,10 @@ export function equivalencesEntree(entree) {
   };
 }
 
-// Unité enregistrée reprise si l'aliment la connaît encore, sinon grammes.
 function uniteDepart(entree, equivalences) {
   return entree.unite && entree.unite !== "g" && grammesParUnite(equivalences, entree.unite) > 0 ? entree.unite : "g";
 }
 
-// Double-tap détecté à la main : le dblclick de Safari iOS n'est pas fiable (zoom, délai).
 const DELAI_DOUBLE_TAP = 350;
 const ZONES_PROPRES = "input, select, button, .custom-select, .poignee-glisser, form";
 
@@ -33,11 +30,8 @@ export default function CuisineItem({ entree, onEnregistrerQuantite, onChangerUn
   const [unite, setUnite] = useState(() => uniteDepart(entree, equivalences));
   const [saisie, setSaisie] = useState(() => convertirAffichage(parseFloat(entree.quantite_g), grammesParUnite(equivalences, unite)));
   const [minimum, setMinimum] = useState(() => minimumPourUnite(grammesParUnite(equivalences, unite)));
-  // La vraie donnée reste les grammes ; le champ peut afficher "0.5" c. à café pour 2.5 g.
   const grammes = useRef(Number(parseFloat(entree.quantite_g)));
-  // Les kcal sautillent quand la quantité change.
   const kcal = useRef(null);
-  // Chute à l'arrivée, jouée une seule fois : retirée à la fin pour ne pas rejouer après un autre effet.
   const [arrivee, setArrivee] = useState(!!entree.effets.entree);
   const kcalPrecedentes = useRef(entree.calories_calc);
   useEffect(() => {
@@ -53,7 +47,6 @@ export default function CuisineItem({ entree, onEnregistrerQuantite, onChangerUn
     onChangerUnite(nouvelle);
   }
 
-  // "change" natif : à la sortie du champ modifié, pas à chaque frappe ; toujours envoyé en grammes.
   useChangeNatif(champ, () => {
     const ratio = grammesParUnite(equivalences, unite);
     const valeur = Number(champ.current.value);
@@ -71,7 +64,6 @@ export default function CuisineItem({ entree, onEnregistrerQuantite, onChangerUn
   if (entree.effets.saut) classes.push("saut");
   if (entree.ajoute) classes.push("ajoute");
 
-  // Double-tap sur la carte (hors champ, unité, poignée, Supprimer) : ingrédient mis dans le plat, ou plus.
   function surTap(event) {
     if (event.target.closest(ZONES_PROPRES)) return;
     const maintenant = Date.now();
@@ -101,15 +93,12 @@ export default function CuisineItem({ entree, onEnregistrerQuantite, onChangerUn
         <span ref={kcal} className="journal-kcal">{Number(entree.calories_calc).toFixed(0)} kcal</span>
       </div>
       <form
-        action="/calories/supprimer"
-        method="post"
         className="form-supprimer-journal"
         onSubmit={(e) => {
           e.preventDefault();
           onSupprimer();
         }}
       >
-        <input type="hidden" name="idEntree" value={entree.id} />
         <button type="submit" className="btn-supprimer-dash">Supprimer</button>
       </form>
     </div>

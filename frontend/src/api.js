@@ -3,14 +3,12 @@ import { afficherToast } from "./toast.js";
 export class ErreurApi extends Error {
   constructor(type, message) {
     super(message);
-    // "reseau" | "annulation" | "session"
     this.type = type;
   }
 }
 
 let sessionExpireeSignalee = false;
 
-// Q3 : un seul message puis rechargement, même si plusieurs requêtes reçoivent 401 en même temps.
 function signalerSessionExpiree() {
   if (sessionExpireeSignalee) return;
   sessionExpireeSignalee = true;
@@ -18,7 +16,6 @@ function signalerSessionExpiree() {
   setTimeout(() => window.location.reload(), 1500);
 }
 
-// Renvoie { statut, donnees } ; les erreurs métier ({ erreur }) restent à l'appelant, comme dans l'EJS.
 export async function api(chemin, { method = "GET", body, signal, ignorer401 = false } = {}) {
   const envoieCorps = method !== "GET";
   let reponse;
@@ -43,7 +40,6 @@ export async function api(chemin, { method = "GET", body, signal, ignorer401 = f
   try {
     donnees = await reponse.json();
   } catch {
-    // Corps non JSON (photo, erreur proxy) : donnees reste null.
   }
   return { statut: reponse.status, donnees };
 }

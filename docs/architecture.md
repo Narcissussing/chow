@@ -2,31 +2,30 @@
 
 ## Vue d’ensemble
 
-Chow est un monolithe Node.js rendu côté serveur.
+Chow est une app React servie par un serveur Express qui expose une API JSON.
 
 ```text
-Navigateur
-   │ HTML, formulaires et fetch JSON
+Navigateur (app React, frontend/dist)
+   │ fetch JSON vers /api/*
    ▼
-Express 5 + Passport + EJS
+Express 5 + Passport
    │ SQL brut via pg
    ▼
-PostgreSQL local / Neon en production
+PostgreSQL sur Neon (branche dev en local, production sur Fly)
 ```
 
-Il n’existe ni framework frontend, ni bundler, ni ORM. `index.js` contient
-la configuration, les migrations au démarrage, l’authentification, les accès
-aux données et toutes les routes. Cette concentration est une dette technique
-suivie dans Jira.
+Pas d’ORM. `index.js` contient la configuration, les migrations au démarrage,
+l’authentification, les accès aux données et toutes les routes `/api`. Cette
+concentration est une dette technique suivie dans Jira.
 
 ## Structure
 
 | Emplacement | Responsabilité |
 |---|---|
 | `index.js` | Serveur, SQL, migrations, authentification et routes |
-| `views/` | Pages et partials EJS |
-| `public/js/` | Interactivité JavaScript par page |
+| `frontend/` | App React (Vite) : pages, composants, hooks, tests Jest |
 | `public/css/style.css` | Styles globaux |
+| `public/css/etats.css` | Styles propres à React (états, animations) |
 | `public/images/` | Photos et icônes SVG |
 | `scripts/` | Administration ponctuelle, notamment les comptes |
 
@@ -34,11 +33,11 @@ suivie dans Jira.
 
 1. Express analyse les formulaires et sert les ressources statiques.
 2. Les corps JSON sont acceptés jusqu’à 4 Mo pour les photos compressées.
-3. `currentPath` est exposé aux vues pour la navigation active.
 4. La session PostgreSQL et Passport chargent l’utilisateur.
 5. Les routes de connexion restent publiques.
 6. `requireAuth` protège toutes les routes déclarées ensuite.
-7. Les routes interrogent PostgreSQL et rendent une vue ou une réponse JSON.
+7. Les routes `/api` interrogent PostgreSQL et répondent en JSON. Les pages
+   (`/`, `/stock`…) renvoient toutes `frontend/dist/index.html`.
 
 L’ordre des middlewares est une contrainte de sécurité : toute nouvelle route
 privée doit rester déclarée après `app.use(requireAuth)`.
@@ -47,12 +46,11 @@ privée doit rester déclarée après `app.use(requireAuth)`.
 
 | Domaine | Routes principales |
 |---|---|
-| Accès | `GET/POST /login`, `POST /logout` |
-| Accueil | `GET /` |
-| Aliments | `GET /aliments`, `GET /aliments/:id`, équivalences |
-| Stock | `GET /stock`, ajouter, modifier, supprimer |
-| Courses | `GET /courses`, ajouter, acheter, supprimer, notes, photos, preset |
-| Calories | `GET /calories`, ajouter, modifier, supprimer, déplacer, vider |
+| Accès | `POST /api/login`, `POST /api/logout`, `GET /api/session` |
+| Aliments | `GET /api/aliments`, `GET /api/aliments/:id`, créer, équivalences |
+| Stock | `GET /api/stock`, ajouter, modifier, supprimer |
+| Courses | `GET /api/courses`, ajouter, acheter, supprimer, notes, photos, preset |
+| Calories | `GET /api/calories`, ajouter, modifier, supprimer, réordonner, vider |
 | Recettes | créer, consulter, modifier, supprimer, appliquer à la Cuisine |
 
 La liste exacte et les contrats de réponse restent définis par `index.js`.
@@ -60,14 +58,12 @@ Ce document décrit l’architecture, pas chaque gestionnaire ligne par ligne.
 
 ## Rendu et état client
 
-- le serveur rend le contenu initial en EJS ;
-- chaque page dispose de son fichier JavaScript ;
-- les mutations utilisent principalement `fetch()` puis mettent le DOM à
-  jour sans rechargement ;
-- les recherches, filtres, tris et bascules d’affichage sont généralement
-  locaux au navigateur ;
-- `public/js/custom-selects.js` améliore les `select` natifs tout en les
-  gardant comme source fonctionnelle.
+- chaque page charge ses données d’un `GET /api/...` puis garde son état dans
+  React ;
+- les mutations passent par `api()` (`frontend/src/api.js`) et mettent l’état
+  à jour sans rechargement ;
+- les recherches, filtres, tris et bascules d’affichage restent locaux ;
+- `CustomSelect.jsx` remplace les `select` natifs.
 
 Les conventions visuelles et composants partagés sont documentés dans
 [Design system](design-system.md).

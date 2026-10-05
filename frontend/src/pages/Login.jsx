@@ -3,7 +3,6 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import Page from "../components/Page.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 
-// Q3 : seulement un chemin interne ("/stock"), jamais "//autre-site.com".
 function cheminRetour(valeur) {
   return valeur && valeur.startsWith("/") && !valeur.startsWith("//") ? valeur : "/";
 }
@@ -23,7 +22,6 @@ export default function Login() {
     try {
       statut = await connecter(email, password);
     } catch {
-      // Réseau coupé : traité comme une panne, jamais comme un mauvais mot de passe.
     }
     if (statut === 200) {
       navigate(retour);
@@ -47,7 +45,7 @@ export default function Login() {
         </div>
 
         <div className="login-carte">
-          <form action="/login" method="post" className="login-form" onSubmit={soumettre}>
+          <form className="login-form" onSubmit={soumettre}>
             <label htmlFor="email">Email</label>
             <input type="email" name="email" id="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
 

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "../api.js";
 
-// Lecture d'une page : un AbortController par montage (sûr sous StrictMode), aucune réponse obsolète gardée.
 export function usePageData(chemin) {
   const [lecture, setLecture] = useState({ etat: "chargement", donnees: null, statut: null });
 
@@ -14,7 +13,6 @@ export function usePageData(chemin) {
         else setLecture({ etat: "pret", donnees, statut });
       })
       .catch((err) => {
-        // Annulation : page quittée. Session : le rechargement Q3 est déjà prévu.
         if (err.type === "annulation" || err.type === "session") return;
         setLecture({ etat: "erreur", donnees: null, statut: null });
       });
