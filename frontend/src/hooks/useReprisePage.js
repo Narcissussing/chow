@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from "react-router-dom";
 const CLE = "chow-derniere-page";
 const DELAI_REPRISE = 60 * 60 * 1000;
 let repriseFaite = false;
+// Seules les vraies pages de Chow sont gardées et reprises : une adresse inconnue (ex. /cart venue d'un autre projet) bouclerait.
+const PAGES = /^\/(aliments(\/[^/]+)?|stock|courses|calories)(\?.*)?$/;
 
 export function reinitialiserReprisePourTests() {
   repriseFaite = false;
@@ -25,13 +27,13 @@ export function useReprisePage() {
     if (repriseFaite) return;
     repriseFaite = true;
     const derniere = lire();
-    if (pathname !== "/" || !derniere?.chemin || derniere.chemin === "/") return;
+    if (pathname !== "/" || !derniere?.chemin || !PAGES.test(derniere.chemin)) return;
     if (Date.now() - derniere.quand > DELAI_REPRISE) return;
     navigate(derniere.chemin, { replace: true });
   }, [pathname, navigate]);
 
   useEffect(() => {
-    if (pathname === "/login") return;
+    if (pathname !== "/" && !PAGES.test(pathname)) return;
     try {
       localStorage.setItem(CLE, JSON.stringify({ chemin: pathname + search, quand: Date.now() }));
     } catch {

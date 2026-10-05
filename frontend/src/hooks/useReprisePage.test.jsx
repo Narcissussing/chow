@@ -46,3 +46,14 @@ test("ouverture directe d'une autre page : aucune reprise", () => {
   ouvrirSur("/stock");
   expect(screen.getByTestId("chemin").textContent).toBe("/stock");
 });
+
+test("adresse inconnue (ex. /cart d'un autre projet) : ni gardée ni reprise", () => {
+  derniere("/cart", 5);
+  ouvrirSur("/");
+  expect(screen.getByTestId("chemin").textContent).toBe("/");
+  reinitialiserReprisePourTests();
+  localStorage.clear();
+  derniere("/courses", 5);
+  ouvrirSur("/cart");
+  expect(JSON.parse(localStorage.getItem("chow-derniere-page")).chemin).toBe("/courses");
+});
