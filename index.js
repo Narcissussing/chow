@@ -46,6 +46,10 @@ await db.query(
                   ('yaourt', '{1,5,16}'::int[]), ('baguette-viennoise', '{6,12,18}'::int[])) AS v(id, pas)
      WHERE foods.id = v.id AND foods.pas_achat IS NULL`
 );
+await db.query(
+    `UPDATE foods SET calories = 167, lipides = 9.6, graisses_saturees = 3.1, glucides = 11.9, sucres = 0.7, proteines = 8.4, sel = 2.1
+     WHERE id = 'mortadelle' AND calories = 288`
+);
 const yaourtEnNiveau = await db.query("SELECT 1 FROM foods WHERE id = 'yaourt' AND tracking_type = 'cl'");
 if (yaourtEnNiveau.rows.length) {
     await db.query("BEGIN");
