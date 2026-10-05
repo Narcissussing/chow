@@ -1,0 +1,136 @@
+.cuisine-vide {
+  display: block;
+  width: 200px;
+  max-width: 100%;
+  height: auto;
+  margin: 8px auto 0;
+  overflow: visible;
+}
+
+.cuisine-vide g {
+  transform-box: view-box;
+}
+
+.cuisine-vide .cv-l {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.cuisine-vide .cv-t { fill: var(--surface); stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.cuisine-vide .cv-tv { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.cuisine-vide .cv-vapeur { fill: none; stroke: var(--text-muted); stroke-width: 2; stroke-linecap: round; opacity: 0; }
+
+.cuisine-vide .cv-bulle { fill: var(--accent-2); opacity: 0; }
+
+.cuisine-vide .cv-carotte { fill: #e07a3a; }
+
+.cuisine-vide .cv-fane { fill: none; stroke: #6b8e4e; stroke-width: 2; stroke-linecap: round; }
+
+.cuisine-vide .cv-tomate { fill: var(--accent); }
+
+.cuisine-vide .cv-queue,
+.cuisine-vide .cv-feuille { fill: #6b8e4e; }
+
+.cuisine-vide .cv-oignon { fill: #e9c38a; stroke: #b88a4a; stroke-width: 1.2; }
+
+.cuisine-vide .cv-flamme { fill: var(--accent-2); }
+
+.cuisine-vide--marmite .cv-l { opacity: 0; animation: cvTombe 6s cubic-bezier(0.5, 0, 0.75, 0) infinite; }
+
+.cuisine-vide--marmite .cv-l2 { animation-delay: 0.35s; }
+
+.cuisine-vide--marmite .cv-l3 { animation-delay: 0.7s; }
+
+@keyframes cvTombe { 0% { opacity: 0; transform: translate(0, -70px) rotate(-40deg); } 4% { opacity: 1; } 18% { opacity: 1; transform: translate(0, 0) rotate(20deg); } 22%, 100% { opacity: 0; transform: translate(0, 12px) rotate(30deg); } }
+
+.cuisine-vide--marmite .cv-eclabousse { opacity: 0; transform-box: fill-box; transform-origin: 50% 100%; animation: cvEclabousse 6s ease-out infinite; }
+
+@keyframes cvEclabousse { 0%, 17% { opacity: 0; transform: scale(0.4); } 22% { opacity: 1; transform: scale(1); } 34%, 100% { opacity: 0; transform: scale(1.3); } }
+
+.cuisine-vide--marmite .cv-couvercle { transform-box: fill-box; transform-origin: 50% 100%; animation: cvCouvercle 6s cubic-bezier(0.3, 1.3, 0.5, 1) infinite; }
+
+@keyframes cvCouvercle { 0%, 34% { transform: translate(30px, -50px) rotate(25deg); opacity: 0; } 38% { opacity: 1; } 50% { transform: none; } 58%, 62% { transform: translateY(-3px) rotate(-3deg); } 66%, 70% { transform: none; } 74%, 78% { transform: translateY(-3px) rotate(3deg); } 82%, 92% { transform: none; opacity: 1; } 100% { transform: translate(30px, -50px) rotate(25deg); opacity: 0; } }
+
+.cuisine-vide--marmite .cv-vapeur { animation: cvVapeur 6s ease-out infinite; }
+
+.cuisine-vide--marmite .cv-vapeur:nth-of-type(2) { animation-delay: 0.4s; }
+
+@keyframes cvVapeur { 0%, 52% { opacity: 0; transform: translateY(6px); } 62% { opacity: 0.7; } 92%, 100% { opacity: 0; transform: translateY(-16px); } }
+
+.cuisine-vide--couvercle .cv-couvercle { transform-box: fill-box; transform-origin: 50% 100%; animation: cvDanse 1.6s ease-in-out infinite; }
+
+@keyframes cvDanse { 0%, 40%, 100% { transform: none; } 48% { transform: translateY(-5px) rotate(-4deg); } 56% { transform: translateY(-1px) rotate(2deg); } 64% { transform: translateY(-4px) rotate(3deg); } 72% { transform: none; } }
+
+.cuisine-vide--couvercle .cv-vapeur { animation: cvVapeurCourte 1.6s ease-out infinite; }
+
+.cuisine-vide--couvercle .cv-vapeur:nth-of-type(2) { animation-delay: 0.5s; }
+
+.cuisine-vide--couvercle .cv-vapeur:nth-of-type(3) { animation-delay: 1s; }
+
+@keyframes cvVapeurCourte { 0% { opacity: 0; transform: translateY(4px); } 30% { opacity: 0.7; } 100% { opacity: 0; transform: translateY(-18px); } }
+
+.cuisine-vide--couvercle .cv-bulle { animation: cvBulle 1.6s ease-in infinite; }
+
+.cuisine-vide--couvercle .cv-bulle:nth-of-type(2) { animation-delay: 0.4s; }
+
+.cuisine-vide--couvercle .cv-bulle:nth-of-type(3) { animation-delay: 0.9s; }
+
+@keyframes cvBulle { 0% { opacity: 0; transform: translateY(0) scale(0.5); } 30% { opacity: 0.9; } 100% { opacity: 0; transform: translateY(-10px) scale(1); } }
+
+.cuisine-vide--poele .cv-poele { transform-box: fill-box; transform-origin: 85% 50%; animation: cvPoele 2.4s ease-in-out infinite; }
+
+@keyframes cvPoele { 0%, 30%, 100% { transform: none; } 38% { transform: rotate(-6deg) translateY(2px); } 46% { transform: rotate(3deg); } 54% { transform: none; } }
+
+.cuisine-vide--poele .cv-l { animation: cvSaut 2.4s cubic-bezier(0.3, 0, 0.5, 1) infinite; }
+
+.cuisine-vide--poele .cv-l2 { animation-delay: 0.05s; }
+
+.cuisine-vide--poele .cv-l3 { animation-delay: 0.1s; }
+
+@keyframes cvSaut { 0%, 34% { transform: none; } 52% { transform: translate(-6px, -46px) rotate(180deg); } 70% { transform: translate(-2px, 2px) rotate(340deg); } 76%, 100% { transform: rotate(360deg); } }
+
+.cuisine-vide--poele .cv-flamme { transform-box: fill-box; transform-origin: 50% 100%; animation: cvFlamme 0.5s ease-in-out infinite alternate; }
+
+.cuisine-vide--poele .cv-flamme:nth-of-type(2) { animation-delay: 0.15s; }
+
+.cuisine-vide--poele .cv-flamme:nth-of-type(3) { animation-delay: 0.3s; }
+
+@keyframes cvFlamme { from { transform: scaleY(0.75); } to { transform: scaleY(1.1); } }
+
+.cuisine-vide--recette .cv-l { opacity: 0; animation: cvTombeLent 8s cubic-bezier(0.5, 0, 0.75, 0) infinite; }
+
+.cuisine-vide--recette .cv-l2 { animation-delay: 0.3s; }
+
+.cuisine-vide--recette .cv-l3 { animation-delay: 0.6s; }
+
+@keyframes cvTombeLent { 0% { opacity: 0; transform: translateY(-70px) rotate(-30deg); } 3% { opacity: 1; } 13% { opacity: 1; transform: rotate(20deg); } 16%, 100% { opacity: 0; transform: translateY(12px); } }
+
+.cuisine-vide--recette .cv-cuillere { opacity: 0; transform-origin: 100px 92px; animation: cvCuillere 8s ease-in-out infinite; }
+
+@keyframes cvCuillere { 0%, 22% { opacity: 0; transform: rotate(0); } 26% { opacity: 1; } 30% { transform: rotate(-18deg); } 36% { transform: rotate(18deg); } 42% { transform: rotate(-18deg); } 48% { opacity: 1; transform: rotate(10deg); } 52%, 100% { opacity: 0; transform: none; } }
+
+.cuisine-vide--recette .cv-couvercle { transform-box: fill-box; transform-origin: 50% 100%; animation: cvCouvercleLent 8s cubic-bezier(0.3, 1.3, 0.5, 1) infinite; }
+
+@keyframes cvCouvercleLent { 0%, 52% { opacity: 0; transform: translate(30px, -50px) rotate(25deg); } 55% { opacity: 1; } 64% { transform: none; } 70%, 73% { transform: translateY(-3px) rotate(-3deg); } 77% { transform: none; } 81%, 84% { transform: translateY(-3px) rotate(3deg); } 88%, 94% { transform: none; opacity: 1; } 100% { opacity: 0; transform: translate(30px, -50px) rotate(25deg); } }
+
+.cuisine-vide--recette .cv-vapeur { animation: cvVapeurLente 8s ease-out infinite; }
+
+.cuisine-vide--recette .cv-vapeur:nth-of-type(2) { animation-delay: 0.4s; }
+
+@keyframes cvVapeurLente { 0%, 66% { opacity: 0; transform: translateY(6px); } 74% { opacity: 0.7; } 94%, 100% { opacity: 0; transform: translateY(-16px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cuisine-vide * {
+      animation: none !important;
+    }
+
+  .cuisine-vide--marmite .cv-l,
+    .cuisine-vide--recette .cv-l,
+    .cuisine-vide--recette .cv-cuillere,
+    .cuisine-vide--marmite .cv-eclabousse {
+      opacity: 0 !important;
+    }
+
+}

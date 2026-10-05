@@ -72,7 +72,7 @@ test("ajout en tri par catégorie : l'article va sous son propre en-tête (corre
   expect(document.getElementById("badgeNbCourses")).toHaveClass("badge-pop");
 });
 
-test("panneau : texte inconnu → « Ajouter » visible ; Entrée = article libre ; doublon par aliment → toast", async () => {
+test("panneau : texte inconnu → pastille New et + dans le champ ; Entrée = article libre ; doublon par aliment → toast", async () => {
   const toasts = [];
   const desabonner = abonnerToast((m) => m && toasts.push(m));
   ouvrirCourses();
@@ -81,8 +81,13 @@ test("panneau : texte inconnu → « Ajouter » visible ; Entrée = article libr
   expect(document.getElementById("panneauAjoutCourse")).toHaveClass("ouvert");
   const champ = document.getElementById("rechercheAlimentCourses");
   fireEvent.change(champ, { target: { value: "Fromage frais" } });
-  expect(document.getElementById("btnAjouterCourse")).not.toHaveClass("hidden");
-  expect(champ).toHaveClass("recherche-invalide");
+  const enveloppe = champ.closest(".champ-recherche-wrapper");
+  expect(enveloppe).toHaveClass("nouveau");
+  expect(within(enveloppe).getByText("New")).toBeInTheDocument();
+  expect(document.getElementById("listeAlimentsCourses")).not.toBeVisible();
+  fireEvent.change(champ, { target: { value: "lai" } });
+  expect(enveloppe).not.toHaveClass("nouveau");
+  fireEvent.change(champ, { target: { value: "Fromage frais" } });
   await act(async () => fireEvent.keyDown(champ, { key: "Enter" }));
   expect(requetes).toEqual([{ chemin: "/courses/ajouter", corps: { idAliment: null, rechercheAliment: "Fromage frais" } }]);
   expect(document.getElementById("panneauAjoutCourse")).not.toHaveClass("ouvert");
@@ -370,4 +375,13 @@ test("liste vide : le caddie animé à la place du texte", async () => {
   expect(document.querySelector(".courses-vide")).not.toBeNull();
   expect(document.getElementById("noResultsCourses")).toBeNull();
   expect(screen.queryByText("Aucun article dans la liste de courses.")).toBeNull();
+});
+
+test("panneau : le + rond du champ ajoute l'article inconnu", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  fireEvent.click(document.getElementById("btnToggleAjoutCourse"));
+  fireEvent.change(document.getElementById("rechercheAlimentCourses"), { target: { value: "Puck géant" } });
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Ajouter comme nouvel article" })));
+  expect(requetes).toEqual([{ chemin: "/courses/ajouter", corps: { idAliment: null, rechercheAliment: "Puck géant" } }]);
 });

@@ -7,10 +7,11 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // CSS livré tel qu'écrit : le minifieur réécrit certaines valeurs (ex. background: none) sous une autre forme.
+    build: { cssMinify: false },
     server: {
       proxy: {
         "/api": express,
-        "/css": express,
         "/images": express,
       },
     },

@@ -4,12 +4,12 @@ import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Protege from "./components/Protege.jsx";
 import Shell from "./components/Shell.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
-import Accueil from "./pages/Accueil.jsx";
-import AlimentDetail from "./pages/AlimentDetail.jsx";
-import Aliments from "./pages/Aliments.jsx";
+import Accueil from "./pages/accueil/Accueil.jsx";
+import AlimentDetail from "./pages/aliments/AlimentDetail.jsx";
+import Aliments from "./pages/aliments/Aliments.jsx";
 import CaloriesPage from "./pages/calories/CaloriesPage.jsx";
 import CoursesPage from "./pages/courses/CoursesPage.jsx";
-import Login from "./pages/Login.jsx";
+import Login from "./pages/login/Login.jsx";
 import StockPage from "./pages/stock/StockPage.jsx";
 
 const privee = (page) => (

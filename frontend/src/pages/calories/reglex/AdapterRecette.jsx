@@ -1,11 +1,12 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
-import { api } from "../../api.js";
-import BoutonOutil from "../../components/BoutonOutil.jsx";
-import CustomSelect from "../../components/CustomSelect.jsx";
-import { useMinuteurs } from "../../hooks/useMinuteurs.js";
-import { lancerVers, MARMITE, relancerClasse } from "../../utils/animation.js";
-import { lireRecette, normaliser, noteIngredient, trouverAliment } from "../../utils/recetteCollee.js";
-import { convertirAffichage, estLiquide, grammesParUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
+import { api } from "../../../api.js";
+import BoutonOutil from "../../../components/BoutonOutil.jsx";
+import CustomSelect from "../../../components/CustomSelect.jsx";
+import { useMinuteurs } from "../../../hooks/useMinuteurs.js";
+import { lancerVers, MARMITE, relancerClasse } from "../../../utils/animation.js";
+import { lireRecette, normaliser, noteIngredient, trouverAliment } from "../../../utils/recetteCollee.js";
+import { convertirAffichage, estLiquide, grammesParUnite, optionsUnite, poidsPieceDe } from "../../../utils/unites.js";
+import "./AdapterRecette.css";
 
 const RACCOURCIS = [
   { facteur: 0.5, label: "½" },

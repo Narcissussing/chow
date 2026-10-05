@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useLocalStorage } from "../../hooks/useLocalStorage.js";
+import { useLocalStorage } from "../../../hooks/useLocalStorage.js";
+import "./Recettes.css";
 
 export const CATEGORIES_RECETTE = [
   { valeur: "plat", label: "Plats" },

@@ -1,0 +1,206 @@
+.detail-section {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 50px 40px 80px;
+}
+
+.btn-retour {
+  display: inline-block;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin-bottom: 30px;
+  transition: color 0.2s ease;
+}
+
+.btn-retour:hover {
+  color: var(--accent);
+}
+
+.detail-carte {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1fr 1.3fr;
+}
+
+.detail-image {
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8rem;
+  min-height: 400px;
+  overflow: hidden;
+}
+
+.detail-image__photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.detail-infos {
+  padding: 40px 45px;
+}
+
+.detail-categorie {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+.detail-origine {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-bottom: 20px;
+}
+
+.detail-description {
+  font-size: 1rem;
+  color: var(--text);
+  line-height: 1.7;
+  margin-bottom: 35px;
+}
+
+.detail-macros {
+  display: grid;
+  grid-template-columns: repeat(
+    4,
+    1fr
+  );
+  gap: 12px;
+}
+
+.not-found {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  padding: 80px 0;
+}
+
+.detail-equivalences {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1.5px solid var(--border);
+}
+
+.detail-equivalences__titre {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.detail-equivalences__aide {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.detail-equivalences__champs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+}
+
+.detail-equivalences__champs label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.detail-equivalences__champs input {
+  width: 70px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  color: var(--text);
+  text-align: center;
+}
+
+.detail-equivalences__champs input:focus {
+  outline: none;
+  border-color: #d77a4291;
+}
+
+.detail-equivalences__statut {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 10px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.icone-reussi {
+  display: block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  background-color: currentColor;
+  -webkit-mask-image: url("/images/svg/reussi.svg");
+  mask-image: url("/images/svg/reussi.svg");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+@media (max-width: 768px) {
+  .detail-section {
+      padding: 30px 20px 60px;
+    }
+
+  .detail-carte {
+      grid-template-columns: 1fr;
+    }
+
+  .detail-image {
+      min-height: 220px;
+      font-size: 5rem;
+    }
+
+  .detail-infos {
+      padding: 30px 25px;
+    }
+
+  .detail-macros {
+      grid-template-columns: repeat(
+        2,
+        1fr
+      );
+    }
+
+}
+
+.detail-equivalences__champs input {
+  box-sizing: border-box;
+  height: 38px;
+  font-size: 0.9rem;
+  line-height: normal;
+}
+
+.detail-equivalences__champs input {
+  width: 80px;
+  padding: 0 8px;
+  border-radius: 999px;
+  text-align: center;
+}

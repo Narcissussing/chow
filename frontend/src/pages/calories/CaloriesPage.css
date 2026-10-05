@@ -1,0 +1,661 @@
+@media (max-width: 768px) {
+  .journal-section h1 {
+      font-size: 2rem;
+    }
+
+}
+
+.journal-section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 50px 40px 80px;
+}
+
+.journal-section h1 {
+  font-family: var(--font-display);
+  font-size: 2.6rem;
+  font-weight: 900;
+  line-height: 1.1;
+  color: var(--text);
+}
+
+.journal-section h1 span {
+  color: var(--accent);
+}
+
+.journal-totaux {
+  display: grid;
+  grid-template-columns: repeat(
+    4,
+    1fr
+  );
+  gap: 12px;
+  margin-bottom: 30px;
+}
+
+.calories-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  padding-bottom: 14px;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.calories-tab-btn {
+  flex: 1;
+  text-align: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 900;
+  cursor: pointer;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.calories-tab-btn:hover {
+  color: var(--accent);
+}
+
+.calories-tab-btn.actif {
+  color: var(--text);
+}
+
+.calories-tab-btn.actif::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -14px;
+  height: 3px;
+  background: var(--accent);
+  border-radius: 999px;
+}
+
+.calories-tab-panel {
+  display: none;
+}
+
+.calories-tab-panel.actif {
+  display: block;
+}
+
+.btn-x-rond {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: transparent;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.12s ease;
+}
+
+.btn-x-rond::before {
+  content: "";
+  display: block;
+  width: 14px;
+  height: 14px;
+  background-color: currentColor;
+  -webkit-mask-image: url("/images/svg/tout-supprimer.svg");
+  mask-image: url("/images/svg/tout-supprimer.svg");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.btn-x-rond:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.btn-x-rond:active {
+  transform: scale(0.9);
+}
+
+.recette-groupe-titre .icone-categorie-recette {
+  width: 20px;
+  height: 20px;
+}
+
+.recette-groupe-titre .icone-categorie-recette--fraicheur {
+  width: 19px;
+  height: 19px;
+}
+
+.cat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.cat-pill:hover {
+  border-color: #d77a4291;
+  color: var(--accent);
+}
+
+.icone-categorie-recette {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+}
+
+.icone-categorie-recette--plat {
+  background-image: url("/images/svg/recettes.svg");
+}
+
+.icone-categorie-recette--fraicheur {
+  width: 15px;
+  height: 15px;
+  background-image: url("/images/svg/glacon.svg");
+}
+
+.cat-pill.actif {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(100vh - var(--header-h, 65px));
+  margin: 0 auto;
+  max-width: 560px;
+  background: var(--surface);
+  border-top-left-radius: 22px;
+  border-top-right-radius: 22px;
+  box-shadow: 0 -16px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(100%);
+  transition: transform 0.25s ease;
+  z-index: 201;
+  overflow-y: auto;
+  padding: 10px 24px 28px;
+  display: flex;
+  flex-direction: column;
+}
+
+.sheet.ouvert {
+  transform: translateY(0);
+}
+
+@media (max-width: 768px) {
+  .journal-section {
+      padding: 30px 20px 60px;
+    }
+
+  .calories-tabs {
+      gap: 20px;
+    }
+
+  .calories-tab-btn {
+      font-size: 1.1rem;
+    }
+
+  .journal-totaux {
+      grid-template-columns: minmax(0, 1.15fr) minmax(120px, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      column-gap: 8px;
+      row-gap: 0;
+      position: sticky;
+      top: var(--header-h, 57px);
+      z-index: 90;
+      margin: 0 -20px 20px;
+      padding: 6px 20px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 8px 14px rgba(0, 0, 0, 0.05);
+      transition: padding 0.24s ease;
+    }
+
+  .journal-totaux .macro-card {
+      min-width: 0;
+      padding: 2px 6px;
+      gap: 3px;
+      line-height: 1.15;
+      border: 0;
+    }
+
+  .journal-totaux .macro-calories {
+      grid-row: 1 / -1;
+      padding: 6px 8px;
+      justify-content: center;
+      border-radius: 9px;
+      transition:
+        width 0.24s ease,
+        padding 0.24s ease,
+        background-color 0.2s ease,
+        color 0.2s ease;
+    }
+
+  .journal-totaux .macro-calories .macro-valeur {
+      font-size: 1.4rem;
+    }
+
+  .journal-totaux .macro-card:not(.macro-calories) {
+      display: grid;
+      grid-template-columns: 40px minmax(0, 1fr);
+      align-items: center;
+      column-gap: 8px;
+      padding: 4px 6px;
+      background: transparent;
+      border-bottom: 1px solid var(--border);
+      border-radius: 0;
+      max-height: 34px;
+      overflow: hidden;
+      transition:
+        max-height 0.2s ease,
+        padding 0.2s ease,
+        opacity 0.16s ease,
+        transform 0.2s ease;
+    }
+
+  .journal-totaux .macro-card:last-child {
+      border-bottom: 0;
+    }
+
+  .journal-totaux.compacte {
+      padding-top: 4px;
+      padding-bottom: 4px;
+      border-top: 0;
+      border-bottom: 2px solid var(--accent);
+      box-shadow: none;
+    }
+
+  .journal-totaux.compacte .macro-card:not(.macro-calories) {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      border-bottom: 0;
+      opacity: 0;
+      transform: translateX(-8px);
+    }
+
+  .journal-totaux.compacte .macro-calories {
+      grid-column: 1 / -1;
+      grid-row: 1 / -1;
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      flex-direction: row;
+      align-items: baseline;
+      justify-content: flex-start;
+      gap: 5px;
+      background: transparent;
+      color: var(--accent);
+      border-radius: 0;
+    }
+
+  .journal-totaux.compacte .macro-calories .macro-valeur {
+      font-size: 1.15rem;
+    }
+
+  .journal-totaux.compacte .macro-calories .macro-label {
+      font-size: 0.58rem;
+      color: var(--text-muted);
+    }
+
+  .journal-totaux .macro-card:not(.macro-calories) .macro-valeur {
+      font-size: 0.78rem;
+      line-height: 1;
+      text-align: right;
+    }
+
+  .journal-totaux .macro-card:not(.macro-calories) .macro-label {
+      font-size: 0.5rem;
+      letter-spacing: 0.1px;
+      line-height: 1;
+      text-align: left;
+      white-space: nowrap;
+    }
+
+  .journal-totaux .macro-label {
+      font-size: 0.52rem;
+      letter-spacing: 0.2px;
+    }
+
+}
+
+.journal-section {
+  padding-top: 28px;
+}
+
+.journal-section .titre-page {
+  margin-bottom: 20px;
+}
+
+.journal-section .titre-page h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .journal-section {
+      padding-top: 16px;
+    }
+
+  .journal-section .titre-page h1 {
+      font-size: 1.6rem;
+    }
+
+}
+
+.adapter {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .calories-tab-btn {
+      font-size: 1.1rem;
+    }
+
+}
+
+.sheet {
+  overscroll-behavior: contain;
+}
+
+.sheet {
+  height: calc(100dvh - var(--header-h, 65px));
+  padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
+}
+
+.journal-item.ajoute {
+  opacity: 0.55;
+  transition: opacity 0.25s ease 0.3s;
+}
+
+.badge-compteur--cuisine.recoit {
+  animation: marmitePlouf 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.badge-compteur--cuisine.recoit::after {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: -4px;
+  height: 14px;
+  background:
+    radial-gradient(circle, var(--accent-2) 45%, transparent 50%) 0 100% / 7px 7px no-repeat,
+    radial-gradient(circle, var(--accent) 45%, transparent 50%) 50% 0 / 8px 8px no-repeat,
+    radial-gradient(circle, var(--accent-2) 45%, transparent 50%) 100% 100% / 7px 7px no-repeat;
+  animation: marmiteGouttes 0.55s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes marmitePlouf {
+  0% {
+    transform: none;
+  }
+  30% {
+    transform: scale(1.25, 0.8);
+  }
+  60% {
+    transform: scale(0.92, 1.12) rotate(-4deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes marmiteGouttes {
+  0% {
+    transform: translateY(8px) scale(0.4);
+    opacity: 0;
+  }
+  35% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-16px) scaleX(1.6);
+    opacity: 0;
+  }
+}
+
+.journal-item.arrivee {
+  animation: cuisineTombe 0.55s cubic-bezier(0.3, 1.4, 0.5, 1) backwards;
+  animation-delay: calc(var(--rang, 0) * 70ms);
+}
+
+@keyframes cuisineTombe {
+  0% {
+    transform: translateY(-40px) scale(0.85) rotate(-3deg);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(4px) scale(1.03, 0.94) rotate(1deg);
+    opacity: 1;
+  }
+  78% {
+    transform: translateY(-3px) scale(0.99, 1.02);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.journal-item.saut {
+  animation: cuisineSaut 0.6s cubic-bezier(0.3, 1.3, 0.5, 1);
+}
+
+.journal-item.saut::after {
+  content: "";
+  position: absolute;
+  left: 30px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow:
+    0 -22px 0 var(--accent-2),
+    18px -14px 0 var(--accent),
+    24px 4px 0 var(--accent-2),
+    -18px -14px 0 var(--accent),
+    -22px 6px 0 var(--accent-2),
+    10px 18px 0 var(--accent),
+    -10px 18px 0 var(--accent-2);
+  animation: cuisineEtincelles 0.55s ease-out forwards;
+}
+
+@keyframes cuisineSaut {
+  0% {
+    transform: none;
+  }
+  20% {
+    transform: translateY(2px) scale(1.03, 0.94);
+  }
+  45% {
+    transform: translateY(-12px) scale(0.98, 1.04) rotate(-1.5deg);
+  }
+  72% {
+    transform: translateY(1px) scale(1.02, 0.97);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes cuisineEtincelles {
+  0% {
+    transform: translateY(-50%) scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-50%) scale(1.5);
+    opacity: 0;
+  }
+}
+
+.calories-tab-panel .journal-item.disparait.chute {
+  animation: cuisineChute 0.42s cubic-bezier(0.5, 0, 0.9, 0.5) both;
+  animation-delay: calc(var(--rang, 0) * 50ms);
+  --sens: 1;
+}
+
+.calories-tab-panel .journal-item.disparait.chute:nth-child(even) {
+  --sens: -1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-compteur--cuisine.recoit,
+    .badge-compteur--cuisine.recoit::after,
+    .journal-item.arrivee,
+    .journal-item.saut,
+    .journal-item.saut::after {
+      animation: none;
+    }
+
+  .calories-tab-panel .journal-item.disparait.chute {
+      animation: cuisineFondu 0.2s ease forwards;
+    }
+
+}
+
+.calories-tab-btn.recoit {
+  animation: ongletRecoit 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ongletRecoit {
+  0% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(3px) scale(1.12, 0.88);
+    color: var(--accent);
+  }
+  70% {
+    transform: translateY(-3px) scale(0.96, 1.06);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.btn-x-rond.btn-x-rond--tourne {
+  animation: croixTourne 0.45s cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+
+@keyframes croixTourne {
+  0% {
+    transform: none;
+  }
+  40% {
+    transform: rotate(-200deg) scale(1.2);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calories-tab-btn.recoit,
+    .btn-x-rond.btn-x-rond--tourne {
+      animation: none;
+    }
+
+}
+
+.badge-compteur.bascule:not(.badge-pop):not(.recoit) {
+  animation: badgeBascule 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes badgeBascule {
+  0% {
+    transform: rotateY(90deg) scale(0.7);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.badge-compteur--regle.recoit {
+  animation: balancePese 0.7s cubic-bezier(0.3, 1.2, 0.5, 1);
+  transform-origin: 50% 100%;
+}
+
+@keyframes balancePese {
+  0% {
+    transform: none;
+  }
+  25% {
+    transform: scale(1.12, 0.86);
+  }
+  50% {
+    transform: rotate(-7deg);
+  }
+  70% {
+    transform: rotate(4deg);
+  }
+  85% {
+    transform: rotate(-2deg);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-compteur.bascule:not(.badge-pop):not(.recoit),
+    .badge-compteur--regle.recoit {
+      animation: none;
+    }
+
+}
+
+@media (max-width: 768px) {
+  .journal-totaux.compacte {
+      align-items: end;
+    }
+
+  .journal-totaux.compacte .macro-calories {
+      grid-column: 1 / 2;
+      align-self: end;
+    }
+
+  .journal-totaux.compacte .macro-calories .macro-valeur {
+      font-size: 1.6rem;
+      line-height: 1;
+    }
+
+  .journal-totaux.compacte .macro-calories .macro-label {
+      font-size: 0.68rem;
+    }
+
+}

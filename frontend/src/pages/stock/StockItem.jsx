@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import CustomSelect from "../../components/CustomSelect.jsx";
 import { OPTIONS_CL, classeNiveauCL, estQuantiteBasse, texteEmplacement, texteJours } from "../../utils/stock.js";
+import "./StockItem.css";
 
 function AffichageStatique({ item }) {
   const fondu = item.effets.fondu ? " anim-fondu" : "";

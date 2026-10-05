@@ -1,5 +1,5 @@
 import { act, fireEvent, screen, within } from "@testing-library/react";
-import { rendreApp, simulerApi } from "../testUtils.jsx";
+import { rendreApp, simulerApi } from "../../testUtils.jsx";
 
 const ALIMENTS = [
   { id: "cafe", nom: "Café", categorie: "Boissons", calories: "2.00", proteines: "0.30", emoji: "☕" },

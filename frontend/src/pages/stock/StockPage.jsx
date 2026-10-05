@@ -13,6 +13,7 @@ import StockSuggestions, { BoutonRacheter } from "./StockSuggestions.jsx";
 import BadgeCompteur from "../../components/BadgeCompteur.jsx";
 import { normaliserTexte } from "../../utils/texte.js";
 import StockItem, { boutonCoursesVisible } from "./StockItem.jsx";
+import "./StockPage.css";
 
 const FILTRES = [
   { emplacement: "tous", texte: "Tous" },

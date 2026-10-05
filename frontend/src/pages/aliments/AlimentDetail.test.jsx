@@ -1,5 +1,5 @@
 import { act, fireEvent, screen } from "@testing-library/react";
-import { rendreApp, simulerApi } from "../testUtils.jsx";
+import { rendreApp, simulerApi } from "../../testUtils.jsx";
 
 const ALIMENT = { id: "huile", nom: "Huile d'olive", categorie: "Lipides", calories: "884.00", glucides: "0.00", proteines: "0.00", lipides: "100.00", emoji: "🫒", grammes_par_cuil_a_cafe: null, grammes_par_cuil_a_soupe: "13.5" };
 

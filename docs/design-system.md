@@ -1,8 +1,10 @@
 # Design system
 
 Source de vérité pour l’identité visuelle, les états, les animations et les
-composants partagés. Les valeurs réellement appliquées restent définies dans
-`public/css/style.css`.
+composants partagés. Les valeurs réellement appliquées sont dans
+`frontend/src/styles/base.css` (couleurs, polices) et dans le `.css` de chaque
+composant. L’ordre de chargement, qui décide quelle règle gagne, est fixé par
+les imports de `frontend/src/main.jsx` : un nouveau fichier CSS s’y ajoute.
 
 ## Palette
 

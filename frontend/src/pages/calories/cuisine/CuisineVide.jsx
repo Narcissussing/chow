@@ -1,4 +1,5 @@
 import { useState } from "react";
+import "./CuisineVide.css";
 
 const carotte = (x, y, cls) => `<g class="cv-l ${cls}"><path class="cv-carotte" d="M${x - 4} ${y - 12}l8 0-4 24z"/><path class="cv-fane" d="M${x} ${y - 12}l-3-6M${x} ${y - 12}l3-6"/></g>`;
 const tomate = (x, y, cls) => `<g class="cv-l ${cls}"><circle class="cv-tomate" cx="${x}" cy="${y}" r="8"/><path class="cv-queue" d="M${x - 4} ${y - 8}l4 2 4-2-4 3z"/></g>`;

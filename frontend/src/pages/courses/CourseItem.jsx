@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { relancerClasse } from "../../utils/animation.js";
 import { classeNiveauCL } from "../../utils/stock.js";
+import "./CourseItem.css";
 
 export function jouerPopPanier(bouton) {
   if (!bouton) return;

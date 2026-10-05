@@ -1,0 +1,101 @@
+.courses-vide-zone {
+  position: relative;
+  z-index: 91;
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding-top: 24px;
+  overflow-x: clip;
+}
+
+.courses-vide {
+  display: block;
+  width: 220px;
+  height: 150px;
+  margin: 0 auto;
+  overflow: visible;
+  animation: kvTraverse 6s cubic-bezier(0.25, 0.7, 0.35, 1) infinite;
+}
+
+.courses-vide g {
+  transform-box: fill-box;
+}
+
+.courses-vide .kv-t { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+.courses-vide .kv-tf { fill: var(--surface); stroke: var(--accent); stroke-width: 2.4; }
+
+.courses-vide .kv-fin { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; }
+
+.courses-vide .kv-carotte { fill: #e07a3a; }
+
+.courses-vide .kv-fane { fill: none; stroke: #6b8e4e; stroke-width: 2; stroke-linecap: round; }
+
+.courses-vide .kv-tomate { fill: var(--accent); }
+
+.courses-vide .kv-queue { fill: #6b8e4e; }
+
+.courses-vide .kv-pain { fill: var(--accent-2); }
+
+.courses-vide .kv-entaille { fill: none; stroke: #b07a28; stroke-width: 1.6; stroke-linecap: round; }
+
+.courses-vide .kv-caddie {
+  transform-origin: 50% 100%;
+  animation: kvCaddie 6s cubic-bezier(0.25, 0.7, 0.35, 1) infinite;
+}
+
+.courses-vide .kv-roue {
+  transform-origin: center;
+  animation: kvRoue 6s linear infinite;
+}
+
+.courses-vide .kv-aliment {
+  transform-origin: center;
+  opacity: 0;
+  animation: kvAliment 6s ease-in-out infinite;
+}
+
+.courses-vide .kv-a2 { animation-delay: 0.2s; }
+
+.courses-vide .kv-a3 { animation-delay: 0.4s; }
+
+@keyframes kvTraverse {
+  0% { transform: translateX(calc(-50vw - 130px)); }
+  22% { transform: translateX(6px); }
+  30%, 74% { transform: none; }
+  92%, 100% { transform: translateX(calc(50vw + 130px)); }
+}
+
+@keyframes kvCaddie {
+  0%, 22% { transform: none; }
+  26% { transform: rotate(-4deg); }
+  30% { transform: none; }
+  36% { transform: scale(1.02, 0.96); }
+  40%, 100% { transform: none; }
+}
+
+@keyframes kvRoue {
+  0% { transform: rotate(0); }
+  24%, 74% { transform: rotate(700deg); }
+  92%, 100% { transform: rotate(1400deg); }
+}
+
+@keyframes kvAliment {
+  0%, 27% { opacity: 0; transform: translate(var(--kv-x, 0px), var(--kv-y, -90px)) scale(0.4); }
+  28% { opacity: 1; transform: translate(var(--kv-x, 0px), var(--kv-y, -90px)) scale(0.7); }
+  31% { opacity: 1; transform: translate(calc(var(--kv-x, 0px) * 0.55), calc(var(--kv-y, -90px) * 0.55 - 24px)) rotate(140deg) scale(1); }
+  35% { opacity: 1; transform: none; }
+  38% { transform: translateY(-6px); }
+  41%, 74% { opacity: 1; transform: none; }
+  77% { opacity: 1; transform: translate(-3px, -4px) rotate(-8deg); }
+  81%, 100% { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .courses-vide,
+  .courses-vide .kv-caddie,
+    .courses-vide .kv-roue,
+    .courses-vide .kv-aliment {
+      animation: none;
+    }
+
+}

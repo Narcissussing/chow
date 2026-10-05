@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from "react";
+import "./BoutonMagasin.css";
 
 const TRAITS = [
   { dehors: "M6 7L42 7L42 15L6 15Z", dedans: "M5 12L10.5 12L10.5 12L5 12Z" },

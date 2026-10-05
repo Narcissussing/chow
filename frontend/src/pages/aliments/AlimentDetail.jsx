@@ -1,10 +1,11 @@
 import { useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import Page from "../components/Page.jsx";
-import { api } from "../api.js";
-import { useChangeNatif } from "../hooks/useChangeNatif.js";
-import { useMinuteurs } from "../hooks/useMinuteurs.js";
-import { usePageData } from "../hooks/usePageData.js";
+import Page from "../../components/Page.jsx";
+import { api } from "../../api.js";
+import { useChangeNatif } from "../../hooks/useChangeNatif.js";
+import { useMinuteurs } from "../../hooks/useMinuteurs.js";
+import { usePageData } from "../../hooks/usePageData.js";
+import "./AlimentDetail.css";
 
 function Equivalences({ aliment }) {
   const champCafe = useRef(null);

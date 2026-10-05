@@ -133,7 +133,7 @@ Les nouvelles routes `/api/*` sont **ajoutées à côté**, en partageant les m�
 fonctions (`chercherStock`, etc.). EJS, `views/` et `public/js/` ne sont
 supprimés qu'en phase 15, après la validation de parité.
 
-**D3 — `public/css/style.css` est servi tel quel.** Le fichier n'est ni importé
+**D3 (remplacée le 5 octobre 2026 : CSS découpé par composant, ordre fixé dans `main.jsx`) — `public/css/style.css` est servi tel quel.** Le fichier n'est ni importé
 par Vite, ni découpé, ni réécrit. `frontend/index.html` le charge avec le même
 `<link rel="stylesheet" href="/css/style.css">` qu'aujourd'hui. Raisons :
 cascade identique, URLs absolues `url("/images/svg/…")` non réécrites,

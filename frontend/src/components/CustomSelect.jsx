@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import "./CustomSelect.css";
 
 const fermeturesInstantanees = new Set();
 let ecouteursGlobaux = 0;

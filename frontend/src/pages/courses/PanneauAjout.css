@@ -1,0 +1,185 @@
+#listeCourses > *:not(.panneau-ajout) {
+  margin-bottom: 8px;
+}
+
+#listeCourses > *:not(.panneau-ajout):last-child {
+  margin-bottom: 0;
+}
+
+#formAjouterCourse {
+  width: 100%;
+}
+
+#autocompleteCourses {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+}
+
+.panneau-ajout {
+  display: grid;
+  grid-template-rows: 0fr;
+  margin-bottom: 0;
+  transition:
+    grid-template-rows 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    margin-bottom 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 60;
+}
+
+.panneau-ajout.ouvert {
+  grid-template-rows: 1fr;
+  margin-bottom: 20px;
+}
+
+.panneau-ajout__piege {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.panneau-ajout.ouvert.pret .panneau-ajout__piege {
+  overflow: visible;
+}
+
+.panneau-ajout__interieur {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+
+body.mode-magasin .panneau-ajout__interieur {
+  padding-block: 20px;
+}
+
+@media (max-width: 768px) {
+  #rechercheAlimentCourses {
+      padding-right: 34px;
+    }
+
+
+}
+
+#rechercheAlimentCourses {
+  width: 100%;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+#rechercheAlimentCourses {
+  line-height: normal;
+}
+
+#rechercheAlimentCourses:focus {
+  outline: none;
+  border-color: #d77a4291;
+}
+
+#listeAlimentsCourses {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  list-style: none;
+  z-index: 50;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  max-height: 215px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#listeAlimentsCourses li {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#listeAlimentsCourses li:hover {
+  background: var(--bg);
+}
+
+.panneau-ajout__new,
+.panneau-ajout__plus {
+  position: absolute;
+  top: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.panneau-ajout__new {
+  right: 42px;
+  transform: translateY(-50%) scale(0.6);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-radius: 999px;
+  padding: 3px 8px;
+  transition: opacity 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.panneau-ajout__plus {
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  transform: translateY(-50%) scale(0);
+  border: none;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  font-weight: 700;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  padding: 0 0 2px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.panneau-ajout__plus:active {
+  transform: translateY(-50%) scale(0.88);
+}
+
+.nouveau .panneau-ajout__new,
+.nouveau .panneau-ajout__plus {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nouveau .panneau-ajout__new {
+  transform: translateY(-50%) scale(1);
+}
+
+.nouveau .panneau-ajout__plus {
+  transform: translateY(-50%) scale(1);
+}
+
+.nouveau .btn-effacer-recherche {
+  display: none;
+}
+
+.nouveau #rechercheAlimentCourses {
+  padding-right: 100px;
+}
+
+#rechercheAlimentCourses {
+  box-sizing: border-box;
+  height: 38px;
+  font-size: 0.9rem;
+  line-height: normal;
+}

@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import CustomSelect from "../../components/CustomSelect.jsx";
-import { useTriable } from "../../components/Triable.jsx";
-import { useChangeNatif } from "../../hooks/useChangeNatif.js";
-import { relancerClasse } from "../../utils/animation.js";
-import { convertirAffichage, estLiquide, grammesParUnite, minimumPourUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
+import CustomSelect from "../../../components/CustomSelect.jsx";
+import { useTriable } from "../../../components/Triable.jsx";
+import { useChangeNatif } from "../../../hooks/useChangeNatif.js";
+import { relancerClasse } from "../../../utils/animation.js";
+import { convertirAffichage, estLiquide, grammesParUnite, minimumPourUnite, optionsUnite, poidsPieceDe } from "../../../utils/unites.js";
+import "./CuisineItem.css";
 
 export function equivalencesEntree(entree) {
   return {

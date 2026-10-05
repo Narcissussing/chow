@@ -1,15 +1,16 @@
 import { useEffect, useImperativeHandle, useRef, useState } from "react";
-import { api } from "../../api.js";
+import { api } from "../../../api.js";
 import { arrayMove } from "@dnd-kit/sortable";
-import BoutonOutil from "../../components/BoutonOutil.jsx";
-import { BALANCE, lancerVers, MARMITE } from "../../utils/animation.js";
-import BoutonEffacer from "../../components/BoutonEffacer.jsx";
-import { ListeTriable } from "../../components/Triable.jsx";
-import { useMinuteurs } from "../../hooks/useMinuteurs.js";
-import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
-import { estLiquide, grammesParUnite, optionsUnite, poidsPieceDe } from "../../utils/unites.js";
-import { normaliserTexte } from "../../utils/texte.js";
+import BoutonOutil from "../../../components/BoutonOutil.jsx";
+import { BALANCE, lancerVers, MARMITE } from "../../../utils/animation.js";
+import BoutonEffacer from "../../../components/BoutonEffacer.jsx";
+import { ListeTriable } from "../../../components/Triable.jsx";
+import { useMinuteurs } from "../../../hooks/useMinuteurs.js";
+import { useVerrouDefilement } from "../../../hooks/useVerrouDefilement.js";
+import { estLiquide, grammesParUnite, optionsUnite, poidsPieceDe } from "../../../utils/unites.js";
+import { normaliserTexte } from "../../../utils/texte.js";
 import IngredientLigne, { changerUniteLigne } from "./IngredientLigne.jsx";
+import "./RecetteSheet.css";
 
 const CATEGORIES = [
   { valeur: "plat", label: "Plat" },

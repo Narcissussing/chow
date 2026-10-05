@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { OPTIONS_CL } from "../../utils/stock.js";
+import "./StockSuggestions.css";
 
 const PREMIERS = 5;
 

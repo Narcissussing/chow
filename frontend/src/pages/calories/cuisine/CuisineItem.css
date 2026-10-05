@@ -1,0 +1,192 @@
+.journal-item.disparait {
+  animation: slideOutLeft 0.3s ease forwards;
+  border-color: var(--accent) !important;
+  overflow: hidden;
+}
+
+.journal-grammes-input {
+  width: 72px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 8px;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--text);
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.journal-grammes-input::-webkit-outer-spin-button,
+.journal-grammes-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.journal-grammes-input:focus {
+  outline: none;
+  border-color: #d77a4291;
+}
+
+.journal-quantite-groupe {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.journal-quantite-groupe .custom-select {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.journal-quantite-groupe .custom-select__button {
+  width: 62px;
+  padding: 6px 24px 6px 8px;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.journal-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding-left: 22px;
+  padding-right: 16px;
+}
+
+.journal-nom-groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.journal-nom {
+  font-family: var(--font-body);
+  font-size: 1.05rem;
+  font-weight: 400;
+  color: var(--text);
+}
+
+.journal-categorie {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  opacity: 0.75;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.journal-valeurs {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.journal-kcal {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--accent);
+  font-family: var(--font-display);
+  text-align: right;
+}
+
+.form-supprimer-journal {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+}
+
+.journal-grammes-input {
+  box-sizing: border-box;
+  height: 38px;
+  font-size: 0.9rem;
+  line-height: normal;
+}
+
+.journal-grammes-input {
+  width: 80px;
+  padding: 0 8px;
+  border-radius: 999px;
+  text-align: center;
+}
+
+.journal-item {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.journal-item input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+.journal-item.ajoute .journal-nom {
+  text-decoration: line-through;
+}
+
+.journal-coche {
+  color: var(--accent);
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-block;
+  animation: cochePop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes cochePop {
+  0% {
+    transform: scale(0.2) rotate(-120deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.6) rotate(15deg);
+    opacity: 1;
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journal-coche {
+      animation: none;
+    }
+
+}
+
+.calories-tab-panel .journal-item.disparait {
+  animation: cuisineJete 0.3s cubic-bezier(0.5, 0, 0.75, 0) forwards;
+}
+
+@keyframes cuisineJete {
+  0% {
+    transform: none;
+  }
+  25% {
+    transform: translateX(10px) rotate(3deg);
+  }
+  100% {
+    transform: translate(-120%, -24px) rotate(-20deg) scale(0.75);
+    opacity: 0;
+  }
+}
+
+.journal-kcal.kcal-saut {
+  display: inline-block;
+  animation: kcalSaut 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .journal-kcal.kcal-saut {
+      animation: none;
+    }
+
+  .calories-tab-panel .journal-item.disparait {
+      animation: cuisineFondu 0.2s ease forwards;
+    }
+
+}

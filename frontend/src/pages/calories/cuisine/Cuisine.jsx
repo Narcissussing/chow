@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from "react";
-import { api } from "../../api.js";
+import { api } from "../../../api.js";
 import { arrayMove } from "@dnd-kit/sortable";
-import BoutonEffacer from "../../components/BoutonEffacer.jsx";
-import BoutonOutil from "../../components/BoutonOutil.jsx";
-import CustomSelect from "../../components/CustomSelect.jsx";
-import { ListeTriable } from "../../components/Triable.jsx";
-import { useClicExterieur } from "../../hooks/useClicExterieur.js";
-import { useMinuteurs } from "../../hooks/useMinuteurs.js";
-import { afficherToast } from "../../toast.js";
-import { BALANCE, lancerDansLaMarmite, lancerVers, relancerClasse } from "../../utils/animation.js";
-import { normaliserTexte } from "../../utils/texte.js";
+import BoutonEffacer from "../../../components/BoutonEffacer.jsx";
+import BoutonOutil from "../../../components/BoutonOutil.jsx";
+import CustomSelect from "../../../components/CustomSelect.jsx";
+import { ListeTriable } from "../../../components/Triable.jsx";
+import { useClicExterieur } from "../../../hooks/useClicExterieur.js";
+import { useMinuteurs } from "../../../hooks/useMinuteurs.js";
+import { afficherToast } from "../../../toast.js";
+import { BALANCE, lancerDansLaMarmite, lancerVers, relancerClasse } from "../../../utils/animation.js";
+import { normaliserTexte } from "../../../utils/texte.js";
 import CuisineItem, { equivalencesEntree } from "./CuisineItem.jsx";
 import CuisineVide from "./CuisineVide.jsx";
+import "./Cuisine.css";
 
 const SELECTS = [
   { categorie: "plat", id: "selectRecettePlat", ariaLabel: "Remplacer la cuisine du jour par une recette", vide: "Aucune recette de plat", titre: "Aucune recette de plat pour le moment" },

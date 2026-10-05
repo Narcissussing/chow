@@ -1,0 +1,64 @@
+.titre-page h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+@media (max-width: 768px) {
+  .page-header.titre-page {
+      padding-top: 16px;
+      padding-bottom: 4px;
+    }
+
+  .titre-page h1 {
+      font-size: 1.6rem;
+    }
+
+}
+
+#champQuantite,
+#searchInput,
+#rechercheAliment {
+  box-sizing: border-box;
+  height: 38px;
+  font-size: 0.9rem;
+  line-height: normal;
+}
+
+.emoji-volant {
+  position: fixed;
+  z-index: 1000;
+  font-size: 1.7rem;
+  line-height: 1;
+  pointer-events: none;
+  will-change: transform;
+}
+
+@keyframes cuisineChute {
+  0% {
+    transform: none;
+  }
+  25% {
+    transform: translateY(-8px) rotate(calc(var(--sens) * -3deg));
+  }
+  100% {
+    transform: translateY(140px) rotate(calc(var(--sens) * 16deg));
+    opacity: 0;
+  }
+}
+
+@keyframes kcalSaut {
+  40% {
+    transform: scale(1.35);
+    color: var(--accent);
+  }
+}
+
+@keyframes cuisineFondu {
+  to {
+    opacity: 0;
+  }
+}
+
+.emoji-volant {
+  z-index: 10000;
+}

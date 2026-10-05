@@ -24,8 +24,8 @@ concentration est une dette technique suivie dans Jira.
 |---|---|
 | `index.js` | Serveur, SQL, migrations, authentification et routes |
 | `frontend/` | App React (Vite) : pages, composants, hooks, tests Jest |
-| `public/css/style.css` | Styles globaux |
-| `public/css/etats.css` | Styles propres à React (états, animations) |
+| `frontend/src/styles/` | Styles partagés : `base.css`, `communs.css`, `fin.css` |
+| `*.css` à côté de chaque composant | Styles du composant (ex. `pages/stock/StockItem.css`) |
 | `public/images/` | Photos et icônes SVG |
 | `scripts/` | Administration ponctuelle, notamment les comptes |
 

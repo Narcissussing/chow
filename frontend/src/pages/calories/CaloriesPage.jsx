@@ -2,11 +2,12 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Page from "../../components/Page.jsx";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
-import Cuisine from "./Cuisine.jsx";
-import Recettes from "./Recettes.jsx";
+import Cuisine from "./cuisine/Cuisine.jsx";
+import Recettes from "./recettes/Recettes.jsx";
 import BadgeCompteur from "../../components/BadgeCompteur.jsx";
-import AdapterRecette from "./AdapterRecette.jsx";
-import RecetteSheet from "./RecetteSheet.jsx";
+import AdapterRecette from "./reglex/AdapterRecette.jsx";
+import RecetteSheet from "./recettes/RecetteSheet.jsx";
+import "./CaloriesPage.css";
 
 let compteurCles = 0;
 const avecCle = (recette) => ({ ...recette, cle: `${recette.id}-${++compteurCles}` });

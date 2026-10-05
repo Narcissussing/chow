@@ -1,0 +1,82 @@
+.ligne-ingredient-recette.entree {
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.ligne-ingredient-recette.disparait {
+  animation: slideOutLeft 0.3s ease forwards;
+  border-color: var(--accent) !important;
+  overflow: hidden;
+}
+
+.ligne-ingredient-recette {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0 9px 22px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+.ingredient-nom-recette {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.ingredient-quantite-recette {
+  width: 68px;
+  background: var(--bg);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 8px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  color: var(--text);
+  text-align: center;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.ingredient-quantite-recette::-webkit-outer-spin-button,
+.ingredient-quantite-recette::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.ingredient-quantite-recette:focus {
+  outline: none;
+  border-color: #d77a4291;
+}
+
+.ligne-ingredient-recette .custom-select {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+
+.ligne-ingredient-recette .custom-select__button {
+  width: 62px;
+  padding: 6px 24px 6px 8px;
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ingredient-x-recette {
+  flex-shrink: 0;
+}
+
+.ingredient-quantite-recette {
+  box-sizing: border-box;
+  height: 38px;
+  font-size: 0.9rem;
+  line-height: normal;
+}
+
+.ingredient-quantite-recette {
+  width: 80px;
+  padding: 0 8px;
+  border-radius: 999px;
+  text-align: center;
+}

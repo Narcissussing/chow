@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import "./Header.css";
 
 const LIENS = [
   { chemin: "/aliments", texte: "Aliments" },

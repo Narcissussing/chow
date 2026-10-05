@@ -1,4 +1,5 @@
 import { relancerClasse } from "../utils/animation.js";
+import "./BoutonOutil.css";
 
 const LABELS = {
   cuisiner: "Ajouter à la Cuisine",

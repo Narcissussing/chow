@@ -1,6 +1,7 @@
-import CustomSelect from "../../components/CustomSelect.jsx";
-import { convertirAffichage, grammesParUnite, minimumPourUnite, optionsUnite } from "../../utils/unites.js";
-import { useTriable } from "../../components/Triable.jsx";
+import CustomSelect from "../../../components/CustomSelect.jsx";
+import { convertirAffichage, grammesParUnite, minimumPourUnite, optionsUnite } from "../../../utils/unites.js";
+import { useTriable } from "../../../components/Triable.jsx";
+import "./IngredientLigne.css";
 
 export function changerSaisieLigne(ligne, saisie) {
   return { ...ligne, saisie, grammes: Number(saisie) * grammesParUnite(ligne, ligne.unite) };

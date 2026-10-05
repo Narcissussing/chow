@@ -1,0 +1,299 @@
+.recette-card.disparait {
+  animation: slideOutLeft 0.3s ease forwards;
+  border-color: var(--accent) !important;
+  overflow: hidden;
+}
+
+.recette-groupe {
+  margin-bottom: 32px;
+}
+
+.recette-groupe:last-child {
+  margin-bottom: 0;
+}
+
+.recette-groupe-titre {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.1rem;
+  color: var(--text);
+  margin: 0 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid var(--border);
+}
+
+.recette-groupe-nom {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  justify-self: center;
+  white-space: nowrap;
+}
+
+.recette-tri-icones {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: start;
+}
+
+.recette-vue-icones {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-self: end;
+}
+
+.recette-vue-icone {
+  width: 26px;
+  height: 26px;
+  padding: 5px;
+  border: none;
+  background: none;
+  border-radius: 999px;
+  cursor: pointer;
+  opacity: 0.35;
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease;
+}
+
+.recette-vue-icone::before {
+  content: "";
+  display: block;
+  width: 100%;
+  height: 100%;
+  background-color: currentColor;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.recette-vue-icone[data-vue="grille"]::before {
+  -webkit-mask-image: url("/images/svg/grille-verticale.svg");
+  mask-image: url("/images/svg/grille-verticale.svg");
+}
+
+.recette-vue-icone[data-vue="liste"]::before {
+  -webkit-mask-image: url("/images/svg/liste.svg");
+  mask-image: url("/images/svg/liste.svg");
+}
+
+.recette-vue-icone:hover {
+  opacity: 0.6;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.recette-vue-icone.active {
+  opacity: 1;
+  color: var(--accent);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.recette-tri-icone {
+  width: 26px;
+  height: 26px;
+  padding: 4px;
+  border: none;
+  background: none;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0.35;
+  transition:
+    opacity 0.2s ease,
+    background 0.2s ease;
+}
+
+.recette-tri-icone img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.recette-tri-icone:hover {
+  opacity: 0.6;
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.recette-tri-icone.actif {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.recette-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.recette-card {
+  position: relative;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.recette-card:hover {
+  border-color: var(--accent-2);
+  transform: translateY(-2px);
+}
+
+.recette-emoji {
+  display: block;
+  font-size: 1.7rem;
+  margin-bottom: 8px;
+}
+
+.recette-nom {
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 400;
+  color: var(--text);
+  margin: 0 0 6px;
+  line-height: 1.3;
+}
+
+.recette-sub {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.recette-kcal {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.recette-grid.vue-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vue-liste .recette-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 68px;
+  grid-template-areas:
+    "nom   kcal"
+    "emoji kcal";
+  align-items: center;
+  column-gap: 14px;
+  padding: 10px;
+}
+
+.vue-liste .recette-corps,
+.vue-liste .recette-sub {
+  display: contents;
+}
+
+.vue-liste .recette-emoji {
+  grid-area: emoji;
+  width: auto;
+  justify-content: flex-start;
+  background: none;
+  border-radius: 0;
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+.vue-liste .recette-nom {
+  grid-area: nom;
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vue-liste .recette-ingr {
+  display: none;
+}
+
+.vue-liste .recette-kcal {
+  grid-area: kcal;
+  justify-self: end;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.vue-liste .recette-new-card {
+  flex-direction: row;
+  min-height: 64px;
+  gap: 10px;
+}
+
+.recette-new-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 108px;
+  border: 1.5px dashed var(--border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.recette-new-card:hover {
+  border-color: #d77a4291;
+  color: var(--accent);
+}
+
+.recette-new-plus {
+  display: block;
+  width: 22px;
+  height: 22px;
+  background-color: currentColor;
+  -webkit-mask-image: url("/images/svg/ajouter.svg");
+  mask-image: url("/images/svg/ajouter.svg");
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+}
+
+.recette-card.recette-card--nouvelle {
+  animation: recetteNouvelle 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+@keyframes recetteNouvelle {
+  0% {
+    transform: scale(0.3) rotate(-12deg);
+    opacity: 0;
+    box-shadow: 0 0 0 0 rgba(232, 168, 56, 0.6);
+  }
+  60% {
+    transform: scale(1.06) rotate(2deg);
+    opacity: 1;
+    box-shadow: 0 0 0 12px rgba(232, 168, 56, 0);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .recette-card.recette-card--nouvelle {
+      animation: none;
+    }
+
+}

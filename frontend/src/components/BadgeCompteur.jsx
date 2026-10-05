@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { relancerClasse } from "../utils/animation.js";
+import "./BadgeCompteur.css";
 
 export default function BadgeCompteur({ icone, nombre, label, filtre = false, className = "", ref }) {
   const chiffre = useRef(null);

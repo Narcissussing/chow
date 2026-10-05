@@ -1,10 +1,11 @@
 import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import BoutonEffacer from "../components/BoutonEffacer.jsx";
-import CustomSelect from "../components/CustomSelect.jsx";
-import Page from "../components/Page.jsx";
-import { usePageData } from "../hooks/usePageData.js";
-import { normaliserTexte } from "../utils/texte.js";
+import BoutonEffacer from "../../components/BoutonEffacer.jsx";
+import CustomSelect from "../../components/CustomSelect.jsx";
+import Page from "../../components/Page.jsx";
+import { usePageData } from "../../hooks/usePageData.js";
+import { normaliserTexte } from "../../utils/texte.js";
+import "./Aliments.css";
 
 const OPTIONS_TRI = [
   { value: "nom-asc", label: "Nom ↗" },

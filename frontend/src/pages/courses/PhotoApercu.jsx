@@ -1,4 +1,5 @@
 import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
+import "./PhotoApercu.css";
 
 export default function PhotoApercu({ ouvert, src, fermeture, vers, refApercu, onFermer, onSupprimer }) {
   useVerrouDefilement(ouvert, null);

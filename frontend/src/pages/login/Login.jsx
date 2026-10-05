@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import Page from "../components/Page.jsx";
-import { useAuth } from "../context/AuthContext.jsx";
+import Page from "../../components/Page.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
+import "./Login.css";
 
 function cheminRetour(valeur) {
   return valeur && valeur.startsWith("/") && !valeur.startsWith("//") ? valeur : "/";

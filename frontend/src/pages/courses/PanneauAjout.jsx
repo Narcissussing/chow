@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { normaliserTexte } from "../../utils/texte.js";
+import "./PanneauAjout.css";
 
 export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliments, onChoisir, onAjouterTexte }) {
   const zone = useRef(null);
@@ -19,6 +20,7 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
   const termes = normaliserTexte(texte.toLowerCase());
   const suggestions = aliments.map((a) => ({ ...a, visible: normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes) }));
   const aUneCorrespondance = suggestions.some((s) => s.visible);
+  const nouveau = termes !== "" && !aUneCorrespondance;
 
   function tenterAjout() {
     const libre = texte.trim();
@@ -40,7 +42,7 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
           <form id="formAjouterCourse" onSubmit={(e) => e.preventDefault()}>
 
             <div id="autocompleteCourses" ref={zone}>
-              <div className="champ-recherche-wrapper">
+              <div className={"champ-recherche-wrapper" + (nouveau ? " nouveau" : "")}>
                 <input
                   ref={champ}
                   type="text"
@@ -48,7 +50,6 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
                   name="rechercheAliment"
                   placeholder="Recherche un article..."
                   autoComplete="off"
-                  className={termes !== "" && !aUneCorrespondance ? "recherche-invalide" : undefined}
                   value={texte}
                   onChange={(e) => {
                     setTexte(e.target.value);
@@ -69,8 +70,14 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
                   }}
                   champ={champ}
                 />
+                <span className="panneau-ajout__new" aria-hidden="true">
+                  New
+                </span>
+                <button type="button" id="btnAjouterCourse" className="panneau-ajout__plus" aria-label="Ajouter comme nouvel article" tabIndex={nouveau ? 0 : -1} onClick={tenterAjout}>
+                  +
+                </button>
               </div>
-              <ul id="listeAlimentsCourses" hidden={!listeVisible}>
+              <ul id="listeAlimentsCourses" hidden={!listeVisible || nouveau}>
                 {suggestions.map((s) => (
                   <li key={s.id} hidden={!s.visible} onClick={() => onChoisir(s)}>
                     {s.emoji} {s.nom}
@@ -78,9 +85,6 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
                 ))}
               </ul>
             </div>
-            <button type="button" id="btnAjouterCourse" className={termes === "" || aUneCorrespondance ? "hidden" : undefined} onClick={tenterAjout}>
-              Ajouter
-            </button>
           </form>
         </div>
       </div>

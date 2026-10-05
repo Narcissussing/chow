@@ -1,0 +1,79 @@
+.login-carte {
+  max-width: 380px;
+  margin: 0 auto;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px 24px;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.login-form label {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-top: 12px;
+}
+
+.login-form input {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.login-form input:focus {
+  outline: none;
+  border-color: #d77a4291;
+}
+
+.btn-connexion {
+  margin-top: 22px;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--accent);
+  color: white;
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.btn-connexion:hover {
+  opacity: 0.9;
+}
+
+.btn-connexion:active {
+  transform: scale(0.98);
+}
+
+.page-header__description {
+  margin-top: 8px;
+  font-size: 1.05rem;
+  color: var(--text-muted);
+  max-width: 500px;
+  font-weight: 300;
+}
+
+.journal-section .page-header__description {
+  margin-bottom: 30px;
+}
+
+#email,
+#password {
+  box-sizing: border-box;
+  height: 38px;
+  font-size: 0.9rem;
+  line-height: normal;
+}

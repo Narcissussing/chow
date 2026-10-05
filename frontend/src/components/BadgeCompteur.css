@@ -1,0 +1,70 @@
+.titre-page .badge-compteur {
+  width: 52px;
+  height: 52px;
+  padding-bottom: 7px;
+}
+
+.badge-compteur span {
+  font-size: 1.15rem;
+}
+
+.badge-compteur--stock::before {
+  -webkit-mask-image: url("/images/svg/rangement.svg");
+  mask-image: url("/images/svg/rangement.svg");
+}
+
+.badge-compteur--stock {
+  padding-bottom: 9px;
+}
+
+.badge-compteur--filtre::before {
+  background-color: var(--accent-2);
+  transition: background-color 0.2s ease;
+}
+
+.badge-compteur--regle::before {
+  -webkit-mask-image: url("/images/svg/scale.svg");
+  mask-image: url("/images/svg/scale.svg");
+}
+
+.titre-page .badge-compteur--regle {
+  padding-bottom: 6px;
+}
+
+.badge-compteur--cuisine::before {
+  -webkit-mask-image: url("/images/svg/marmite.svg");
+  mask-image: url("/images/svg/marmite.svg");
+}
+
+.badge-compteur--cuisine {
+  padding-bottom: 9px;
+}
+
+.journal-totaux .badge-compteur--cuisine,
+.journal-totaux .badge-compteur--regle {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1 / -1;
+  justify-self: end;
+  align-self: end;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding-bottom: 4px;
+}
+
+.journal-totaux .badge-compteur--regle {
+  padding-bottom: 3px;
+}
+
+.journal-totaux .badge-compteur--cuisine span,
+.journal-totaux .badge-compteur--regle span {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.titre-page .badge-compteur--cuisine span,
+.titre-page .badge-compteur--regle span {
+  font-size: 1.45rem;
+  line-height: 1;
+}

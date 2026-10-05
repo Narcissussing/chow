@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import Page from "../components/Page.jsx";
+import Page from "../../components/Page.jsx";
+import "./Accueil.css";
 
 const ICONES = {
   aliments: (

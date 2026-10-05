@@ -1,3 +1,5 @@
+import "./BoutonEffacer.css";
+
 export default function BoutonEffacer({ cible, valeur, onEffacer, champ }) {
   return (
     <button

@@ -22,6 +22,7 @@ import {
 } from "./photos.js";
 import CoursesVide from "./CoursesVide.jsx";
 import { fetchAvecRetry, gererErreurReseau } from "./reseau.js";
+import "./CoursesPage.css";
 
 const OPTIONS_TRI = [
   { value: "nom", label: "Nom" },

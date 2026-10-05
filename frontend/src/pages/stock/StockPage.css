@@ -1,0 +1,225 @@
+.form-supprimer-stock {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+}
+
+.search-ajout-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  position: relative;
+  z-index: 65;
+}
+
+.ajout-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  z-index: 55;
+}
+
+.ajout-backdrop.ouvert {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.vue-toggle {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.stock-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 30px 40px 80px;
+}
+
+#listeStock {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 28px;
+}
+
+.stock-item {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.stock-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  border-color: var(--accent-2);
+}
+
+.stock-item:active {
+  transform: scale(0.98);
+}
+
+#listeStock.vue-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vue-liste .stock-item {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.stock-quantite {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  font-family: var(--font-display);
+}
+
+.stock-quantite-edit,
+.stock-cl-edit {
+  background: var(--bg);
+  border: 1.5px solid #d77a4291;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.stock-quantite-edit {
+  width: 95px;
+  text-align: center;
+}
+
+.stock-quantite-edit:focus,
+.stock-cl-edit:focus {
+  outline: none;
+}
+
+.stock-item .form-supprimer-stock {
+  display: none;
+}
+
+.stock-item.en-edition .form-supprimer-stock {
+  display: block;
+}
+
+#autocomplete {
+  position: relative;
+  flex: 0 1 320px;
+  min-width: 220px;
+}
+
+.search-ajout-row #autocomplete {
+  flex: 1;
+  min-width: 220px;
+}
+
+.search-ajout-row #autocomplete input {
+  height: 30px;
+  box-sizing: border-box;
+  padding: 8px 18px;
+}
+
+.stock-item.entree {
+  animation: popIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.stock-item.disparait {
+  animation: slideOutLeft 0.3s ease forwards;
+  border-color: var(--accent) !important;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  .vue-toggle {
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+  .vue-toggle .filter-btn {
+      padding: 0 12px;
+    }
+
+  #listeStock {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 16px;
+    }
+
+  .stock-quantite {
+      font-size: 1.2rem;
+    }
+
+  .stock-section {
+      padding: 20px 20px 60px;
+    }
+
+  #autocomplete {
+      width: 100%;
+      flex-basis: auto;
+    }
+
+}
+
+@media (max-width: 420px) {
+  .stock-quantite {
+      font-size: 1.1rem;
+    }
+
+}
+
+#listeAliments {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  list-style: none;
+  z-index: 50;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+  max-height: 215px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+#listeAliments li {
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#listeAliments li:hover {
+  background: var(--bg);
+}
+
+.stock-quantite-edit {
+  box-sizing: border-box;
+  height: 38px;
+  font-size: 0.9rem;
+  line-height: normal;
+}
+
+.stock-quantite-edit {
+  width: 80px;
+  padding: 0 8px;
+  border-radius: 999px;
+  text-align: center;
+}
+
+.stock-suggestions__ligne.envoye {
+  opacity: 0.4;
+}

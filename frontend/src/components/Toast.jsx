@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { abonnerToast } from "../toast.js";
+import "./Toast.css";
 
 export default function Toast() {
   const [message, setMessage] = useState(null);

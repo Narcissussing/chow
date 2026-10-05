@@ -1,3 +1,5 @@
+import "./Chargement.css";
+
 export default function Chargement() {
   return (
     <main className="etat-chargement" aria-busy="true">
