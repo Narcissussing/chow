@@ -385,3 +385,14 @@ test("panneau : le + rond du champ ajoute l'article inconnu", async () => {
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Ajouter comme nouvel article" })));
   expect(requetes).toEqual([{ chemin: "/courses/ajouter", corps: { idAliment: null, rechercheAliment: "Puck géant" } }]);
 });
+
+test("liste vide : le caddie s'efface quand on ouvre le panneau, et une suggestion s'ajoute", async () => {
+  ouvrirCourses({}, { courses: [] });
+  await attendrePage();
+  expect(document.querySelector(".courses-vide")).not.toBeNull();
+  fireEvent.click(document.getElementById("btnToggleAjoutCourse"));
+  expect(document.querySelector(".courses-vide")).toBeNull();
+  fireEvent.change(document.getElementById("rechercheAlimentCourses"), { target: { value: "pom" } });
+  await act(async () => fireEvent.click(within(document.getElementById("listeAlimentsCourses")).getByText(/Pomme/)));
+  expect(requetes).toContainEqual({ chemin: "/courses/ajouter", corps: { idAliment: "pomme", rechercheAliment: null } });
+});

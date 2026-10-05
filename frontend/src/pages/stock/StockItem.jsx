@@ -106,6 +106,7 @@ export default function StockItem({ item, visible, edition, setValeurEdition, on
     <div
       ref={ref}
       className={classes.join(" ")}
+      data-id={item.id}
       onClick={onCarteClic}
       onAnimationEnd={(e) => {
         if (e.target === e.currentTarget && effets.entree) onFinEntree();

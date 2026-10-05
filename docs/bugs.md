@@ -17,6 +17,26 @@ l’exécute et renseigne son résultat.
 ---
 
 <!--
+### CHOW-? — Suggestion d'ajout impossible à toucher quand les Courses sont vides
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/courses/CoursesPage.jsx`, `frontend/src/pages/courses/CoursesVide.css`
+- **Date de signalement** : 2026-10-05
+- **Date de correction** : 2026-10-05
+
+**Étapes de reproduction** :
+
+1. Vider la liste de Courses (par exemple en achetant les derniers articles).
+2. Toucher « + », taper un aliment connu.
+3. Toucher la suggestion.
+
+**Résultat attendu** : l'aliment s'ajoute à la liste.
+
+**Résultat obtenu** : le caddie de la liste vide reste affiché par-dessus la liste de suggestions ; le toucher arrive sur le caddie et rien n'est ajouté.
+
+**Correction** : le caddie disparaît dès que le panneau d'ajout s'ouvre et ne capte plus aucun toucher (`pointer-events: none`). Test ajouté.
+
 ### CHOW-XXX — <titre>
 - **Niveau**: Critique / Majeure / Mineure
 - **Statut**: Ouvert

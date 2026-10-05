@@ -7,7 +7,7 @@ import { useLocalStorage } from "../../hooks/useLocalStorage.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
-import { relancerClasse } from "../../utils/animation.js";
+import { rangerAuStock, relancerClasse } from "../../utils/animation.js";
 import BoutonMagasin from "./BoutonMagasin.jsx";
 import CourseItem, { jouerPopPanier } from "./CourseItem.jsx";
 import PanneauAjout from "./PanneauAjout.jsx";
@@ -85,6 +85,8 @@ function Courses({ donnees }) {
   const boutonsPhoto = useRef({});
   const idPhotoActuelle = useRef(null);
   const ajoutEnCours = useRef(false);
+  // Ajout en route : le caddie de la liste vide reste caché jusqu'à l'arrivée de l'article (pas de reflet entre les deux).
+  const [ajoutEnAttente, setAjoutEnAttente] = useState(false);
   const typeAnimationBadge = useRef("achat");
   const nombrePrecedent = useRef(null);
   const badgeEnBarreActuel = useRef(false);
@@ -340,6 +342,7 @@ function Courses({ donnees }) {
   function ajouterArticle(idAliment, texteLibre) {
     if (ajoutEnCours.current) return;
     ajoutEnCours.current = true;
+    setAjoutEnAttente(true);
     const numero = ++sequence.current;
     fetchAvecRetry("/courses/ajouter", { body: { idAliment, rechercheAliment: texteLibre } })
       .then((reponse) => {
@@ -354,6 +357,7 @@ function Courses({ donnees }) {
       .catch(gererErreurReseau)
       .finally(() => {
         ajoutEnCours.current = false;
+        setAjoutEnAttente(false);
       });
   }
 
@@ -409,7 +413,9 @@ function Courses({ donnees }) {
       return false;
     }
     supprimerPhotoLocale(item.id);
-    majEffets(item.id, { sortie: type === "achat" ? "disparait-achete" : "disparait-supprimer" });
+    // Acheté : la carte devient son aliment, qui file dans le lien Stock changé en boîte ; l'originale se replie aussitôt.
+    const envolee = type === "achat" && rangerAuStock(document.querySelector(`.course-item[data-id="${item.id}"]`), item.emoji);
+    majEffets(item.id, { sortie: type === "achat" ? (envolee ? "disparait-achete envolee" : "disparait-achete") : "disparait-supprimer" });
     if (reponse.courses) appliquerListe(reponse.courses, numero, [item.id]);
     planifier(() => {
       typeAnimationBadge.current = type;
@@ -624,7 +630,7 @@ function Courses({ donnees }) {
           />
         </div>
 
-        {items.length === 0 && <CoursesVide />}
+        {items.length === 0 && !panneauEtat.ouvert && !ajoutEnAttente && <CoursesVide />}
 
         <input type="file" id="inputPhotoCourse" accept="image/*" hidden ref={inputPhoto} onChange={photoChoisie} />
 

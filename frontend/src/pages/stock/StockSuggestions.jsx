@@ -28,7 +28,7 @@ export default function StockSuggestions({ suggestions, onAjouter }) {
       <section id="stockSuggestions" className="stock-suggestions" aria-label="À racheter">
         <ul className="stock-suggestions__liste">
           {visibles.map((s) => (
-            <li key={s.food_id} className={"stock-suggestions__ligne" + (s.envoye ? " envoye" : "")}>
+            <li key={s.food_id} className={"stock-suggestions__ligne" + (s.envoye ? " envoye" : "")} data-food={s.food_id}>
               <span className="stock-suggestions__nom">
                 {s.emoji} {s.nom}
               </span>

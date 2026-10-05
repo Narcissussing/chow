@@ -13,6 +13,7 @@ import StockSuggestions, { BoutonRacheter } from "./StockSuggestions.jsx";
 import BadgeCompteur from "../../components/BadgeCompteur.jsx";
 import { normaliserTexte } from "../../utils/texte.js";
 import StockItem, { boutonCoursesVisible } from "./StockItem.jsx";
+import { jeterAuxCourses } from "../../utils/animation.js";
 import "./StockPage.css";
 
 const FILTRES = [
@@ -149,8 +150,16 @@ function Stock({ donnees }) {
     fermerEtSauvegarder(item.id, String(Number(item.quantite) - valeur));
   }
 
+  // Point de départ de l'aliment, mesuré au toucher (la ligne ou le bouton peut disparaître avant la réponse).
+  function depart(element) {
+    const r = element?.getBoundingClientRect();
+    return r ? { getBoundingClientRect: () => r } : null;
+  }
+
   function ajouterAuxCourses(item) {
     majEffets(item.id, { coursesEnvoi: true });
+    const carte = document.querySelector(`.stock-item[data-id="${item.id}"]`);
+    const origine = depart(carte?.querySelector(".stock-item__emoji, .stock-item__img") || carte);
     api("/courses/ajouter", { method: "POST", body: { idAliment: item.food_id } })
       .then(({ donnees: reponse }) => {
         if (reponse?.erreur) {
@@ -158,6 +167,7 @@ function Stock({ donnees }) {
           majEffets(item.id, { coursesEnvoi: false });
           return;
         }
+        jeterAuxCourses(origine, item.emoji);
         majItem(item.id, (i) => ({ ...i, dejaEnCourses: true, effets: { ...i.effets, coursesSortant: true } }));
         planifier(() => majEffets(item.id, { coursesVisible: false }), 200);
       })
@@ -167,6 +177,8 @@ function Stock({ donnees }) {
   function ajouterSuggestion(suggestion) {
     const marquer = (envoye) => setARacheter((liste) => liste.map((s) => (s.food_id === suggestion.food_id ? { ...s, envoye } : s)));
     marquer(true);
+    const ligne = document.querySelector(`.stock-suggestions__ligne[data-food="${suggestion.food_id}"]`);
+    const origine = depart(ligne?.querySelector(".stock-suggestions__nom") || ligne);
     api("/courses/ajouter", { method: "POST", body: { idAliment: suggestion.food_id } })
       .then(({ donnees: reponse }) => {
         if (reponse?.erreur) {
@@ -174,6 +186,7 @@ function Stock({ donnees }) {
           marquer(false);
           return;
         }
+        jeterAuxCourses(origine, suggestion.emoji);
         setItems((liste) => liste.map((i) => (i.food_id === suggestion.food_id ? { ...i, dejaEnCourses: true } : i)));
         planifier(() => setARacheter((liste) => liste.filter((s) => s.food_id !== suggestion.food_id)), 300);
       })

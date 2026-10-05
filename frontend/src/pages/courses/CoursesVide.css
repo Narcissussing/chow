@@ -1,6 +1,7 @@
 .courses-vide-zone {
   position: relative;
   z-index: 91;
+  pointer-events: none;
   width: 100vw;
   margin-left: calc(50% - 50vw);
   padding-top: 24px;

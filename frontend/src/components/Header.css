@@ -61,3 +61,75 @@
     }
 
 }
+
+/* Un aliment envoyé vers une page : son lien devient une icône (boîte, caddie) le temps de le recevoir. */
+.nav__link.devient-icone {
+  position: relative;
+  color: transparent !important;
+}
+
+.nav__link.devient-icone::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28px;
+  height: 28px;
+  margin: -14px 0 0 -14px;
+  background-color: var(--accent);
+  -webkit-mask: var(--icone-nav, url("/images/svg/rangement.svg")) center / contain no-repeat;
+  mask: var(--icone-nav, url("/images/svg/rangement.svg")) center / contain no-repeat;
+  animation: rangementApparait 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nav__link.devient-icone.icone-recoit::before {
+  animation: rangementRecoit 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.nav__link.redevient-texte {
+  animation: texteRevient 0.3s ease both;
+}
+
+@keyframes rangementApparait {
+  from {
+    transform: scale(0) rotate(-20deg);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes rangementRecoit {
+  0% {
+    transform: none;
+  }
+  30% {
+    transform: translateY(3px) scale(1.25, 0.75);
+  }
+  60% {
+    transform: translateY(-3px) scale(0.92, 1.12);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+@keyframes texteRevient {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav__link.devient-icone::before,
+  .nav__link.redevient-texte {
+    animation: none;
+  }
+}
