@@ -53,6 +53,43 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-? — Compteur des Courses bloqué dans la barre après remontée
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/courses/CoursesPage.jsx`
+- **Date de signalement** : 2026-10-13
+- **Date de correction** : 2026-10-13
+
+**Étapes de reproduction** :
+
+1. iPhone, Courses : faire défiler vers le bas, le compteur rejoint la barre (tri, magasin, +).
+2. Remonter tout en haut.
+
+**Résultat attendu** : le compteur revient à côté du titre « Courses ».
+
+**Résultat obtenu** : le compteur reste dans la barre.
+
+**Correction** : sans le compteur, le titre devenait plus bas que la barre collante (≈ 51 px contre ≈ 62 px) et n'était plus jamais détecté comme visible. Une réserve invisible garde au titre la taille du compteur.
+
+### CHOW-? — Liste d'unités coupée en bas de l'écran
+
+- **Niveau** : Mineure
+- **Statut** : Ouvert
+- **Fichiers concernés** : `frontend/src/components/CustomSelect.jsx`, `frontend/src/components/CustomSelect.css`
+- **Date de signalement** : 2026-10-08
+- **Date de correction** : —
+- **Notion** : https://app.notion.com/p/3f33344c68fa81e2bb1fdbc8d312f61d
+
+**Étapes de reproduction** :
+
+1. iPhone, Calories : ajouter assez d'aliments pour que le dernier soit en bas de l'écran.
+2. Ouvrir la liste d'unités du dernier aliment (ex. Huile d'Olive).
+
+**Résultat attendu** : toutes les unités sont visibles et sélectionnables.
+
+**Résultat obtenu** : la liste est coupée par le bas de l'écran ; les dernières unités sont inaccessibles. Faire défiler la page ferme la liste.
+
 ### CHOW-? — Le panneau recette ne défile plus
 
 - **Niveau** : Majeure

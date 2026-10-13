@@ -549,7 +549,7 @@ function Courses({ donnees }) {
     <main>
       <section className="page-header titre-page" id="heroCourses" ref={hero}>
         <h1>Courses</h1>
-        {!badgeEnBarre && badgeCourses}
+        {badgeEnBarre ? <div className="hero__badge hero__badge--courses" style={{ visibility: "hidden" }} aria-hidden="true" /> : badgeCourses}
       </section>
 
       <div className="courses-section">

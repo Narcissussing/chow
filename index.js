@@ -50,6 +50,13 @@ await db.query(
     `UPDATE foods SET calories = 167, lipides = 9.6, graisses_saturees = 3.1, glucides = 11.9, sucres = 0.7, proteines = 8.4, sel = 2.1
      WHERE id = 'mortadelle' AND calories = 288`
 );
+await db.query(
+    `INSERT INTO foods (id, nom, categorie, emoji, unite, poids_unite_g, calories, lipides, graisses_saturees, glucides, sucres,
+       fibres, proteines, sel, emplacement, tracking_type, image)
+     VALUES ('soupe-deshydratee', 'Soupe Déshydratée', 'Épicerie', '🥣', 'g', 0, 327, 2, 0.2, 66, 15, 5.4, 9.1, 8.8, 'st', 'unite',
+             'images/foods/soupe-deshydratee.webp')
+     ON CONFLICT (id) DO UPDATE SET image = EXCLUDED.image WHERE foods.image IS NULL`
+);
 const yaourtEnNiveau = await db.query("SELECT 1 FROM foods WHERE id = 'yaourt' AND tracking_type = 'cl'");
 if (yaourtEnNiveau.rows.length) {
     await db.query("BEGIN");
