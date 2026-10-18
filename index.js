@@ -11,8 +11,9 @@ const app = express();
 
 const port = process.env.PORT || 3000;
 
-const db = new pg.Client(
-    process.env.DATABASE_URL
+// Connexions fermées après 10 s sans requête : Neon peut se mettre en veille quand personne n'utilise Chow.
+const db = new pg.Pool({
+    ...(process.env.DATABASE_URL
         ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
         : {
             user: process.env.DB_USER,
@@ -20,10 +21,25 @@ const db = new pg.Client(
             database: process.env.DB_NAME,
             password: process.env.DB_PASSWORD,
             port: process.env.DB_PORT,
-        }
-);
+        }),
+    idleTimeoutMillis: 10000,
+});
+db.on("error", (err) => console.log("ERREUR connexion:", err.message));
 
-await db.connect();
+async function enTransaction(travail) {
+    const client = await db.connect();
+    try {
+        await client.query("BEGIN");
+        const resultat = await travail(client);
+        await client.query("COMMIT");
+        return resultat;
+    } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+    } finally {
+        client.release();
+    }
+}
 
 await db.query("ALTER TABLE recettes ADD COLUMN IF NOT EXISTS categorie TEXT NOT NULL DEFAULT 'plat'");
 await db.query("ALTER TABLE recettes ADD COLUMN IF NOT EXISTS etapes TEXT NOT NULL DEFAULT ''");
@@ -59,14 +75,14 @@ await db.query(
 );
 const yaourtEnNiveau = await db.query("SELECT 1 FROM foods WHERE id = 'yaourt' AND tracking_type = 'cl'");
 if (yaourtEnNiveau.rows.length) {
-    await db.query("BEGIN");
-    await db.query(
-        `UPDATE stock SET unite = 'unités', quantite = CASE quantite
-            WHEN 'plein' THEN '16' WHEN 'à moitié' THEN '8' WHEN 'presque vide' THEN '3' ELSE '0' END
-         WHERE food_id = 'yaourt'`
-    );
-    await db.query("UPDATE foods SET tracking_type = 'unite' WHERE id = 'yaourt'");
-    await db.query("COMMIT");
+    await enTransaction(async (client) => {
+        await client.query(
+            `UPDATE stock SET unite = 'unités', quantite = CASE quantite
+                WHEN 'plein' THEN '16' WHEN 'à moitié' THEN '8' WHEN 'presque vide' THEN '3' ELSE '0' END
+             WHERE food_id = 'yaourt'`
+        );
+        await client.query("UPDATE foods SET tracking_type = 'unite' WHERE id = 'yaourt'");
+    });
 }
 await db.query("ALTER TABLE courses ALTER COLUMN date_ajout SET DEFAULT CURRENT_DATE");
 await db.query(`
@@ -105,19 +121,16 @@ const PgSession = connectPgSimple(session);
 // Fly termine le HTTPS devant l'app : sans ça, le cookie "secure" ne serait jamais envoyé.
 app.set("trust proxy", 1);
 
+// Nettoyage des sessions expirées au démarrage seulement : toutes les 15 min, il réveillait Neon jour et nuit.
+const sessionStore = new PgSession({
+    pool: db,
+    createTableIfMissing: true,
+    pruneSessionInterval: false,
+});
+sessionStore.pruneSessions();
+
 app.use(session({
-    store: new PgSession({
-        conObject: process.env.DATABASE_URL
-            ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }
-            : {
-                user: process.env.DB_USER,
-                host: process.env.DB_HOST,
-                database: process.env.DB_NAME,
-                password: process.env.DB_PASSWORD,
-                port: process.env.DB_PORT,
-            },
-        createTableIfMissing: true,
-    }),
+    store: sessionStore,
     secret: process.env.SECRET_KEY,
     resave: false,
     saveUninitialized: false,
@@ -593,27 +606,21 @@ app.post("/api/courses/preset-hebdo", async (req, res) => {
 });
 
 app.post("/api/courses/preset-hebdo/enregistrer", async (req, res) => {
-    let transactionStarted = false;
     try {
-        await db.query("BEGIN");
-        transactionStarted = true;
+        await enTransaction(async (client) => {
+            await client.query("DELETE FROM courses_preset");
 
-        await db.query("DELETE FROM courses_preset");
-
-        const courant = await db.query("SELECT food_id, nom_libre FROM courses WHERE achete = false");
-        for (const article of courant.rows) {
-            await db.query(
-                "INSERT INTO courses_preset (food_id, nom_libre) VALUES ($1, $2)",
-                [article.food_id, article.food_id ? null : article.nom_libre]
-            );
-        }
-
-        await db.query("COMMIT");
-        transactionStarted = false;
+            const courant = await client.query("SELECT food_id, nom_libre FROM courses WHERE achete = false");
+            for (const article of courant.rows) {
+                await client.query(
+                    "INSERT INTO courses_preset (food_id, nom_libre) VALUES ($1, $2)",
+                    [article.food_id, article.food_id ? null : article.nom_libre]
+                );
+            }
+        });
 
         res.json({ succes: true });
     } catch (err) {
-        if (transactionStarted) await db.query("ROLLBACK");
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
     }
@@ -698,7 +705,6 @@ app.post("/api/courses/supprimer", async (req, res) => {
 });
 
 app.post("/api/courses/acheter", async (req, res) => {
-    let transactionStarted = false;
     try {
         let quantiteEntiere = null;
         const idCourse = req.body.idCourse;
@@ -726,39 +732,35 @@ app.post("/api/courses/acheter", async (req, res) => {
             }
         }
 
-        await db.query("BEGIN");
-        transactionStarted = true;
+        await enTransaction(async (client) => {
+            const achatResult = await client.query(
+                "UPDATE courses SET achete = true, photo = NULL, date_achat = NOW() WHERE id = $1 AND achete = false RETURNING id",
+                [idCourse]
+            );
 
-        const achatResult = await db.query(
-            "UPDATE courses SET achete = true, photo = NULL, date_achat = NOW() WHERE id = $1 AND achete = false RETURNING id",
-            [idCourse]
-        );
-
-        if (achatResult.rows.length > 0 && foodId) {
-            if (trackingType === 'cl') {
-                await db.query(
-                    "INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, 'plein', NOW()) ON CONFLICT (food_id) DO UPDATE SET quantite = 'plein', date_maj = NOW()",
-                    [foodId]
-                );
-            } else {
-                await db.query(
-                    `INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, $2, NOW())
-                     ON CONFLICT (food_id) DO UPDATE SET
-                        quantite = (
-                            CASE WHEN stock.quantite ~ '^[0-9]+$' THEN stock.quantite::integer ELSE 0 END
-                            + $2::integer
-                        )::text,
-                        date_maj = NOW()`,
-                    [foodId, quantiteEntiere]
-                );
+            if (achatResult.rows.length > 0 && foodId) {
+                if (trackingType === 'cl') {
+                    await client.query(
+                        "INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, 'plein', NOW()) ON CONFLICT (food_id) DO UPDATE SET quantite = 'plein', date_maj = NOW()",
+                        [foodId]
+                    );
+                } else {
+                    await client.query(
+                        `INSERT INTO stock (food_id, quantite, date_maj) VALUES ($1, $2, NOW())
+                         ON CONFLICT (food_id) DO UPDATE SET
+                            quantite = (
+                                CASE WHEN stock.quantite ~ '^[0-9]+$' THEN stock.quantite::integer ELSE 0 END
+                                + $2::integer
+                            )::text,
+                            date_maj = NOW()`,
+                        [foodId, quantiteEntiere]
+                    );
+                }
             }
-        }
+        });
 
-        await db.query("COMMIT");
-        transactionStarted = false;
         res.json({ succes: true, courses: await chercherCourses() });
     } catch (err) {
-        if (transactionStarted) await db.query("ROLLBACK");
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
     }
@@ -898,20 +900,19 @@ app.post("/api/calories/vider", async (req, res) => {
 });
 
 async function remplacerCuisine(lignes) {
-    await db.query("BEGIN");
-    try {
-        await db.query("DELETE FROM journal_repas WHERE date_entree = CURRENT_DATE");
+    return enTransaction(async (client) => {
+        await client.query("DELETE FROM journal_repas WHERE date_entree = CURRENT_DATE");
         const nouvellesEntrees = [];
         let ordre = 1;
         for (const ligne of lignes) {
-            const insertResult = await db.query(
+            const insertResult = await client.query(
                 "INSERT INTO journal_repas (food_id, quantite_g, ordre, unite) VALUES ($1, $2, $3, $4) RETURNING id",
                 [ligne.food_id, ligne.quantite_g, ordre, uniteValide(ligne.unite)]
             );
             nouvellesEntrees.push(insertResult.rows[0].id);
             ordre++;
         }
-        const itemsResult = await db.query(`
+        const itemsResult = await client.query(`
             SELECT
                 journal_repas.*,
                 foods.nom,
@@ -932,12 +933,8 @@ async function remplacerCuisine(lignes) {
             WHERE journal_repas.id = ANY($1)
             ORDER BY journal_repas.ordre ASC
         `, [nouvellesEntrees]);
-        await db.query("COMMIT");
         return itemsResult.rows;
-    } catch (err) {
-        await db.query("ROLLBACK");
-        throw err;
-    }
+    });
 }
 
 app.post("/api/calories/ajouter-recette", async (req, res) => {
@@ -1071,8 +1068,6 @@ app.get("/api/recettes/:id", async (req, res) => {
 });
 
 app.post("/api/recettes/:id/modifier", async (req, res) => {
-    let transactionStarted = false;
-
     try {
         const idRecette = req.params.id;
         const nom = req.body.nom;
@@ -1084,57 +1079,41 @@ app.post("/api/recettes/:id/modifier", async (req, res) => {
             return res.status(400).json({ erreur: "Nom et au moins un ingrédient requis." });
         }
 
-        await db.query("BEGIN");
-        transactionStarted = true;
-
-        await db.query(
-            "UPDATE recettes SET nom = $1, categorie = $2, etapes = $3 WHERE id = $4",
-            [nom, categorie, etapes, idRecette]
-        );
-
-        await db.query("DELETE FROM recette_ingredients WHERE recette_id = $1", [idRecette]);
-
-        for (const ingredient of ingredients) {
-            await db.query(
-                "INSERT INTO recette_ingredients (recette_id, food_id, quantite_g, unite) VALUES ($1, $2, $3, $4)",
-                [idRecette, ingredient.food_id, ingredient.quantite_g, uniteValide(ingredient.unite)]
+        await enTransaction(async (client) => {
+            await client.query(
+                "UPDATE recettes SET nom = $1, categorie = $2, etapes = $3 WHERE id = $4",
+                [nom, categorie, etapes, idRecette]
             );
-        }
 
-        await db.query("COMMIT");
-        transactionStarted = false;
+            await client.query("DELETE FROM recette_ingredients WHERE recette_id = $1", [idRecette]);
+
+            for (const ingredient of ingredients) {
+                await client.query(
+                    "INSERT INTO recette_ingredients (recette_id, food_id, quantite_g, unite) VALUES ($1, $2, $3, $4)",
+                    [idRecette, ingredient.food_id, ingredient.quantite_g, uniteValide(ingredient.unite)]
+                );
+            }
+        });
 
         const totaux = await calculerTotauxRecette(idRecette);
         res.json({ succes: true, recette: { etapes: etapes, nb_ingredients: totaux.nb_ingredients, kcal_total: totaux.kcal_total } });
     } catch (err) {
-        if (transactionStarted) {
-            await db.query("ROLLBACK");
-        }
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
     }
 });
 
 app.post("/api/recettes/:id/supprimer", async (req, res) => {
-    let transactionStarted = false;
-
     try {
         const idRecette = req.params.id;
 
-        await db.query("BEGIN");
-        transactionStarted = true;
-
-        await db.query("DELETE FROM recette_ingredients WHERE recette_id = $1", [idRecette]);
-        await db.query("DELETE FROM recettes WHERE id = $1", [idRecette]);
-
-        await db.query("COMMIT");
-        transactionStarted = false;
+        await enTransaction(async (client) => {
+            await client.query("DELETE FROM recette_ingredients WHERE recette_id = $1", [idRecette]);
+            await client.query("DELETE FROM recettes WHERE id = $1", [idRecette]);
+        });
 
         res.json({ succes: true });
     } catch (err) {
-        if (transactionStarted) {
-            await db.query("ROLLBACK");
-        }
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
     }
