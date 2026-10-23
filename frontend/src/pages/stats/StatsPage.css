@@ -1,0 +1,1599 @@
+/* width: 100 % : dans #root (flex en colonne), margin auto seul réduirait la page à la largeur de son contenu,
+   qui changerait à chaque période. */
+.stats {
+  width: 100%;
+  max-width: 1248px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  --rouge: #c8472b;
+  --vert: #2f6f62;
+  --sable: #efe8dc;
+}
+
+.stats h1 {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.stats h2 {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.stats .carte {
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+
+.stats .discret {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.stats .vide {
+  padding: 18px 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* En-tête et filtres */
+.stats__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.stats__filtres {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.periode {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--sable);
+}
+
+.periode button {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.periode__fleche {
+  width: 26px;
+  height: 28px;
+  font-size: 1.1rem;
+}
+
+/* Flèches masquées mais gardant leur place (12 derniers mois, Tout) : le sélecteur ne change pas de largeur. */
+.periode__fleche[hidden] {
+  display: block;
+  visibility: hidden;
+}
+
+.periode__fleche:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Largeur fixe : changer de semaine ou de mois ne fait plus bouger le reste de la page. */
+.periode__choix {
+  width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #fff !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  font-weight: 500;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+.periode__menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 40;
+  min-width: 200px;
+  display: flex;
+  flex-direction: column;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.periode__menu button {
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+}
+
+.periode__menu button.actif {
+  background: var(--sable);
+  font-weight: 600;
+}
+
+.periode__menu button.separe {
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 8px 8px;
+  margin-top: 4px;
+  padding-top: 10px;
+}
+
+.periode__dates {
+  gap: 10px;
+  padding: 12px;
+}
+
+.periode__dates label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.85rem;
+}
+
+.periode__dates input {
+  font: inherit;
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.periode .periode__appliquer {
+  align-self: flex-end;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--rouge);
+  color: #fff;
+  font-weight: 600;
+}
+
+.magasins {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--sable);
+}
+
+.magasins button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.magasins button.actif {
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.magasins svg {
+  width: 17px;
+  height: 17px;
+}
+
+.magasins img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+/* KPIs : libellé à gauche, valeur à droite */
+.stats__kpis {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 12px;
+}
+
+.kpi {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.kpi > div {
+  min-width: 0;
+}
+
+/* Libellé et détail sur une ligne chacun : une tuile ne dépasse jamais deux lignes de texte. */
+.kpi__libelle,
+.kpi__detail {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kpi__libelle {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.kpi__valeur {
+  font-size: 1.9rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.kpi__detail {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.kpi__mini {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.kpi__mini span {
+  width: 8px;
+  min-height: 3px;
+  border-radius: 2px;
+  background: #e8c9bd;
+}
+
+.kpi__mini span.dernier {
+  background: var(--rouge);
+}
+
+/* Par magasin */
+.magasin-bande {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.stats .magasin-bande {
+  padding: 14px 22px;
+}
+
+.pile {
+  flex: 1;
+  display: flex;
+  gap: 2px;
+  height: 14px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.legende i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+  vertical-align: -1px;
+}
+
+.legende--liste {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  list-style: none;
+  gap: 10px;
+  font-size: 0.85rem;
+  color: var(--text);
+}
+
+.legende--liste li {
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s;
+  cursor: default;
+}
+
+.legende--liste li.survole {
+  font-weight: 600;
+}
+
+.legende--liste li.estompe {
+  opacity: 0.45;
+}
+
+.anneau__centre small {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.anneau__centre > span {
+  text-align: center;
+  line-height: 1.2;
+}
+
+.legende--liste span {
+  flex: 1;
+}
+
+.legende--liste b {
+  font-weight: 500;
+}
+
+/* Grille ordinateur : Inflation | Courses + Par rayon */
+.stats__grille {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 16px;
+  /* Les deux colonnes finissent à la même ligne. */
+  align-items: stretch;
+}
+
+.stats__colonne {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.inflation {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inflation .courbe svg {
+  height: 300px;
+}
+
+.courbe {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.courbe__trace {
+  position: relative;
+}
+
+.courbe svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 110px;
+}
+
+/* Zones invisibles, une par mois, qui captent le survol. */
+.courbe__zones {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.courbe__zones span {
+  flex: 1;
+}
+
+.courbe__repere {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-left: 1.5px dashed #cfc5b6;
+  pointer-events: none;
+}
+
+.courbe__point--baisse {
+  background: var(--vert) !important;
+  box-shadow: 0 0 0 5px rgba(47, 111, 98, 0.18) !important;
+}
+
+/* Bulle de survol, partagée par la courbe et les barres. */
+.bulle {
+  position: absolute;
+  z-index: 5;
+  transform: translate(-50%, calc(-100% - 12px));
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #fff;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.bulle b {
+  font-weight: 700;
+}
+
+.courbe__point {
+  pointer-events: none;
+  transition: left 0.12s, top 0.12s;
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
+  border-radius: 50%;
+  background: var(--rouge);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 5px rgba(200, 71, 43, 0.18);
+}
+
+.axe {
+  display: flex;
+  justify-content: space-between;
+  padding-top: 6px;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.axe--fort {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.axe--selection {
+  color: var(--rouge);
+  font-weight: 700;
+}
+
+.puce {
+  align-self: flex-start;
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--sable);
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.puce--hausse {
+  background: #fae3dc;
+  color: #a8381f;
+}
+
+.puce--baisse {
+  background: #dcefe6;
+  color: var(--vert);
+}
+
+/* Prochaines courses */
+.stats .courses-estimation {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: #e9f3ee;
+  border-color: #cfe4d9;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.courses-estimation__icone {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #d6ebe1;
+  font-size: 1.3rem;
+}
+
+.courses-estimation__icone b {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  border: 2px solid #e9f3ee;
+  background: var(--rouge);
+  color: #fff;
+  font-size: 0.68rem;
+  line-height: 14px;
+  text-align: center;
+}
+
+.courses-estimation__texte {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.courses-estimation__texte strong {
+  font-size: 1.35rem;
+  font-weight: 700;
+}
+
+.chevron {
+  color: var(--vert);
+  font-size: 1.5rem;
+}
+
+/* Par rayon */
+.rayons__corps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+}
+
+.rayons__corps .legende--liste {
+  width: 100%;
+}
+
+.anneau {
+  position: relative;
+  width: 150px;
+  height: 150px;
+}
+
+.anneau svg {
+  transform: rotate(-90deg) scaleY(-1);
+}
+
+.anneau__centre {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+/* Les prix */
+.prix__entete {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.prix__recherche {
+  flex: 1;
+  max-width: 420px;
+  padding: 9px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.prix__tri {
+  margin-left: auto;
+  min-width: 190px;
+}
+
+.prix__tri .custom-select__button {
+  padding: 7px 34px 7px 14px;
+  border-color: transparent;
+  background-color: var(--sable);
+  font-size: 0.85rem;
+}
+
+.periode__choix {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.periode__libelle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chevron-bas {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.prix__liste {
+  list-style: none;
+}
+
+.prix__liste li + li {
+  border-top: 1px solid #efe7dd;
+}
+
+.prix__ligne {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 2px;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.prix__ligne:hover {
+  background: #faf6f0;
+}
+
+.prix__tuile {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #f8e3dc;
+  font-size: 1.2rem;
+}
+
+.prix__nom {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.mini-courbe {
+  width: 60px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.prix__valeur {
+  min-width: 96px;
+  text-align: right;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.prix__ligne .puce {
+  min-width: 56px;
+  text-align: center;
+  align-self: center;
+}
+
+.stats .lien {
+  margin-top: 10px;
+  border: 0;
+  background: none;
+  color: var(--rouge);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+/* Dépenses */
+.depenses {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.barres__zone {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  height: 160px;
+}
+
+.barre-col {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+
+.barre-col {
+  position: relative;
+  cursor: default;
+}
+
+.bulle--barre {
+  display: none;
+  top: 0;
+  left: 50%;
+}
+
+.barre-col:hover .bulle--barre {
+  display: block;
+}
+
+.barre-col:hover .barre {
+  filter: brightness(0.92) saturate(1.2);
+  transform: scaleY(1.03);
+  transform-origin: bottom;
+}
+
+.barre {
+  transition: filter 0.15s, transform 0.15s;
+}
+
+/* Montant discret au-dessus de chaque barre ; plus marqué sur la période choisie. */
+.barre__montant {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.barre-col.barre--selection .barre__montant {
+  color: var(--rouge);
+  font-weight: 700;
+}
+
+.barre {
+  width: 100%;
+  min-height: 2px;
+  border-radius: 7px 7px 3px 3px;
+}
+
+.barre.barre--selection {
+  background: linear-gradient(#f08a5d, var(--rouge));
+}
+
+.barre.barre--en-cours {
+  background: #fdefe6;
+  outline: 1.5px dashed #e76f51;
+  outline-offset: -1.5px;
+}
+
+.barres__moyenne {
+  position: absolute;
+  left: 0;
+  right: 0;
+  border-top: 1.5px dotted #6b6257;
+  pointer-events: none;
+}
+
+.axe--barres {
+  gap: 12px;
+}
+
+.axe--barres span {
+  flex: 1;
+  text-align: center;
+}
+
+.barres__legende {
+  text-align: right;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.tirets {
+  display: inline-block;
+  width: 16px;
+  border-top: 1.5px dotted #6b6257;
+  vertical-align: middle;
+}
+
+.semaine-max {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #f6f1ea;
+  font-size: 0.88rem;
+}
+
+.semaine-max b {
+  margin-left: 6px;
+  font-size: 1rem;
+}
+
+.fleche {
+  color: var(--rouge);
+  margin-right: 6px;
+}
+
+.semaine-max__causes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Fiche produit : panneau à droite sur ordinateur */
+.fiche-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(26, 20, 15, 0.28);
+  animation: fadeIn 0.2s ease;
+}
+
+.fiche {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(520px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 28px;
+  overflow-y: auto;
+  background: var(--surface);
+  border-radius: 20px 0 0 20px;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.16);
+}
+
+.fiche__poignee {
+  display: none;
+}
+
+.fiche__vide {
+  color: var(--text-muted);
+}
+
+.fiche__entete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.fiche__entete div {
+  flex: 1;
+}
+
+.fiche__entete h2 {
+  font-size: 1.3rem;
+}
+
+.fiche__entete p {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.fiche__tuile {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: #f8e3dc;
+  font-size: 1.5rem;
+}
+
+.fiche__fermer {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sable);
+  cursor: pointer;
+}
+
+.fiche__prix {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fiche__prix strong {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.fiche__prix .puce {
+  margin-left: auto;
+  align-self: center;
+}
+
+.fiche .courbe svg {
+  height: 150px;
+}
+
+.fiche__colonnes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.fiche h3 {
+  margin-bottom: 8px;
+  font-size: 0.9rem;
+}
+
+.fiche__ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 0.88rem;
+}
+
+.fiche__ligne img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.fiche__ligne span:not(.fiche__date) {
+  flex: 1;
+}
+
+.fiche__date {
+  width: 56px;
+  font-weight: 500;
+}
+
+.fiche__ligne strong {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.moins-cher {
+  color: var(--vert);
+  font-weight: 700 !important;
+}
+
+.fiche__ajouter {
+  margin-top: auto;
+  padding: 13px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--rouge);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.fiche__ajouter:disabled {
+  background: var(--vert);
+}
+
+/* Téléphone */
+@media (max-width: 860px) {
+  .stats {
+    padding: 20px 16px 32px;
+    gap: 12px;
+  }
+
+  .stats h1 {
+    font-size: 1.7rem;
+  }
+
+  .stats__filtres {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .stats__kpis {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .kpi--large {
+    grid-column: 1 / -1;
+  }
+
+  .stats .kpi {
+    padding: 14px;
+  }
+
+  .kpi:not(.kpi--large) .kpi__valeur {
+    font-size: 1.4rem;
+  }
+
+  .stats__grille {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+
+  .magasin-bande {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .magasin-bande .pile {
+    flex: none;
+  }
+
+  .rayons__corps {
+    flex-direction: row;
+    gap: 16px;
+  }
+
+  .anneau {
+    width: 120px;
+    height: 120px;
+    flex-shrink: 0;
+  }
+
+  .prix__entete {
+    flex-wrap: wrap;
+  }
+
+  .prix__recherche {
+    order: 3;
+    max-width: none;
+    flex-basis: 100%;
+  }
+
+  .mini-courbe {
+    display: none;
+  }
+
+  .prix__valeur {
+    min-width: 0;
+  }
+
+  .barres__zone {
+    gap: 4px;
+    height: 140px;
+  }
+
+  .barre__montant {
+    font-size: 0.55rem;
+  }
+
+  .axe--barres {
+    gap: 6px;
+  }
+
+  /* Fiche : feuille qui monte du bas */
+  .fiche {
+    top: auto;
+    left: 0;
+    width: 100%;
+    max-height: 88vh;
+    padding: 10px 20px 24px;
+    border-radius: 22px 22px 0 0;
+    animation: monter 0.25s ease;
+  }
+
+  .fiche__poignee {
+    display: block;
+    align-self: center;
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+  }
+
+  .fiche__colonnes {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}
+
+@keyframes monter {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+.kpi__valeur.hausse {
+  color: var(--rouge);
+}
+
+.kpi__valeur.baisse {
+  color: var(--vert);
+}
+
+/* Fiche produit : habitudes d'achat */
+.habitudes__tuiles {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.habitudes__tuiles p {
+  display: flex;
+  flex-direction: column;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f6f1ea;
+}
+
+.habitudes__tuiles b {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.habitudes__tuiles span {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.habitudes__rappel {
+  margin-top: 8px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.habitudes__rappel b {
+  color: var(--text);
+}
+
+@media (max-width: 860px) {
+  .habitudes__tuiles {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.semaine-max__causes {
+  align-items: center;
+}
+
+.kpi__detail.hausse {
+  color: #b8452c;
+}
+
+.kpi__detail.baisse {
+  color: var(--vert);
+}
+
+/* Mini-courbes des petites tuiles KPI (cachées sur téléphone, faute de place) */
+.kpi .kpi__courbe {
+  flex: 1;
+  min-width: 40px;
+  max-width: 90px;
+  height: 28px;
+}
+
+@media (max-width: 860px) {
+  .kpi .kpi__courbe {
+    display: none;
+  }
+}
+
+.semaine-max__icone {
+  width: 18px;
+  height: 18px;
+  color: var(--rouge);
+}
+
+/* Graduations de la courbe d'inflation, à gauche */
+.courbe--graduee .courbe__trace {
+  margin-left: 46px;
+}
+
+.courbe--graduee .axe {
+  margin-left: 46px;
+}
+
+.courbe__graduation {
+  position: absolute;
+  left: -46px;
+  width: 40px;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  text-align: right;
+  font-size: 0.68rem;
+  color: var(--text-muted);
+}
+
+.inflation__legende {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.puce--france {
+  background: #e3ecf6;
+  color: #2f5d8a;
+}
+
+.trait {
+  display: inline-block;
+  width: 14px;
+  vertical-align: middle;
+  border-top: 2.5px solid currentColor;
+  margin-right: 4px;
+}
+
+.trait--pointille {
+  border-top: 2px dashed #3e7cb1;
+}
+
+.inflation .courbe {
+  user-select: none;
+}
+
+button.puce {
+  border: 0;
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.info-ancre {
+  position: relative;
+}
+
+/* Bulle d'explication flottante, au-dessus du badge */
+.info-popup {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 0;
+  z-index: 30;
+  width: 270px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text);
+  animation: fadeIn 0.15s ease;
+}
+
+.info-popup::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 24px;
+  border: 7px solid transparent;
+  border-top-color: #fff;
+}
+
+/* Icône du KPI en filigrane, derrière le contenu */
+.kpi {
+  position: relative;
+}
+
+.kpi > *:not(.kpi__fond) {
+  position: relative;
+}
+
+/* Calque découpé aux bords de la tuile : le filigrane ne dépasse pas, les bulles d'info si. */
+.kpi__fond {
+  position: absolute !important;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.kpi__filigrane {
+  position: absolute;
+  right: -14px;
+  bottom: -18px;
+  width: 96px;
+  height: 96px;
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.kpi__filigrane--depense {
+  color: var(--rouge);
+  right: auto;
+  left: 38%;
+}
+
+.kpi__filigrane--semaine {
+  color: #8a6418;
+}
+
+.kpi__filigrane--inflation {
+  color: var(--rouge);
+}
+
+/* Titre + bouton ⓘ */
+.titre-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-bouton {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sable);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.titre-info .info-popup {
+  top: calc(100% + 10px);
+  bottom: auto;
+  left: -12px;
+  width: 320px;
+}
+
+.titre-info .info-popup::after {
+  top: auto;
+  bottom: 100%;
+  border-top-color: transparent;
+  border-bottom-color: #fff;
+}
+
+/* Produits qui ont le plus monté / baissé (dans une bulle) */
+.mouvements {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mouvements__groupe {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mouvement {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  font-size: 0.8rem;
+}
+
+.mouvement .discret {
+  grid-column: 1;
+  font-size: 0.72rem;
+}
+
+.mouvement > b {
+  grid-row: 1 / 3;
+  grid-column: 2;
+}
+
+.mouvement--hausse {
+  background: #fae3dc;
+  color: #a8381f;
+}
+
+.mouvement--baisse {
+  background: #dcefe6;
+  color: var(--vert);
+}
+
+.kpi__bouton {
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.kpi .info-popup {
+  top: calc(100% + 10px);
+  bottom: auto;
+  right: 0;
+  left: auto;
+  width: 300px;
+}
+
+.kpi .info-popup::after {
+  display: none;
+}
+
+.inflation__legende .info-popup {
+  width: 300px;
+}
+
+@media (max-width: 860px) {
+  .kpi:not(.kpi--large) .kpi__filigrane {
+    width: 70px;
+    height: 70px;
+  }
+}
+
+.comparaison {
+  display: flex;
+  gap: 16px;
+  font-size: 0.85rem;
+}
+
+.comparaison .hausse {
+  color: var(--rouge);
+}
+
+.comparaison .baisse {
+  color: var(--vert);
+}
+
+/* ——— Animations (désactivées si le système demande moins de mouvement) ——— */
+.barre {
+  transition: height 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.15s, transform 0.15s;
+}
+
+.anneau circle {
+  transition: stroke-dasharray 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), stroke-dashoffset 0.55s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s, stroke-width 0.15s !important;
+}
+
+.pile span,
+.kpi__mini span {
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.inflation .courbe {
+  animation: apparaitre 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.prix__entree {
+  animation: apparaitre 0.3s ease both;
+}
+
+.semaine-max,
+.puce,
+.mouvement {
+  animation: apparaitre 0.35s ease both;
+}
+
+@keyframes apparaitre {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats *,
+  .stats *::before,
+  .stats *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Contexte des puces « semaine la plus chère » au survol */
+.cause {
+  position: relative;
+  cursor: default;
+}
+
+.bulle--cause {
+  display: none;
+  top: 0;
+  left: 50%;
+  white-space: normal;
+  width: max-content;
+  max-width: 260px;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.cause:hover .bulle--cause,
+.cause:focus .bulle--cause {
+  display: block;
+}
+
+.bulle--cause {
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cause:hover .bulle--cause,
+.cause:focus .bulle--cause {
+  display: flex;
+}
+
+.bulle__detail {
+  opacity: 0.75;
+  font-size: 0.7rem;
+}
+
+/* Bulle des puces plus compacte */
+.bulle.bulle--cause {
+  padding: 5px 9px;
+  max-width: 210px;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  border-radius: 7px;
+}
+
+.bulle--cause .bulle__detail {
+  font-size: 0.62rem;
+}
+
+/* Bascule de la ligne France : alimentation / tout */
+.bascule-france {
+  display: inline-flex;
+  margin-left: auto;
+  padding: 2px;
+  border-radius: 999px;
+  background: #e3ecf6;
+}
+
+.bascule-france button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  font: inherit;
+  font-size: 0.72rem;
+  color: #2f5d8a;
+  cursor: pointer;
+}
+
+.bascule-france button.actif {
+  background: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.inflation__legende {
+  align-items: center;
+}
+
+.bascule-france svg {
+  width: 16px;
+  height: 16px;
+}
+
+.titre-info .bascule-france {
+  margin-left: auto;
+}
+
+/* Bas alignés : Par rayon remplit la colonne de droite, la courbe d'inflation l'espace libre à gauche. */
+.stats__colonne .rayons {
+  flex: 1;
+}
+
+.stats__grille .inflation .courbe {
+  flex: 1;
+  min-height: 300px;
+}
+
+.stats__grille .inflation .courbe__trace {
+  flex: 1;
+  display: flex;
+}
+
+.stats__grille .inflation .courbe svg {
+  height: auto;
+  min-height: 280px;
+}
+
+@media (max-width: 860px) {
+  .stats__grille .inflation .courbe,
+  .stats__grille .inflation .courbe svg {
+    min-height: 200px;
+  }
+}

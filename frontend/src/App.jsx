@@ -11,6 +11,7 @@ import CaloriesPage from "./pages/calories/CaloriesPage.jsx";
 import CoursesPage from "./pages/courses/CoursesPage.jsx";
 import Login from "./pages/login/Login.jsx";
 import Parametres from "./pages/parametres/Parametres.jsx";
+import StatsPage from "./pages/stats/StatsPage.jsx";
 import StockPage from "./pages/stock/StockPage.jsx";
 
 const privee = (page, admin = false) => (
@@ -38,6 +39,7 @@ export default function App() {
             <Route path="/parametres/aliments/:idAliment" element={privee(<AlimentDetail />, true)} />
             <Route path="/aliments" element={<Navigate to="/parametres/aliments" replace />} />
             <Route path="/aliments/:idAliment" element={<AncienAliment />} />
+            <Route path="/stats" element={privee(<StatsPage />)} />
             <Route path="/stock" element={privee(<StockPage />)} />
             <Route path="/courses" element={privee(<CoursesPage />)} />
             <Route path="/calories" element={privee(<CaloriesPage />)} />

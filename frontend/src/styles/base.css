@@ -7,8 +7,9 @@
   --accent-2: #e8a838;
   --border: #e0d8cc;
   --radius: 14px;
+  /* Titres en DM Sans gras : Playfair jugé trop fin (2026-10-23). */
   --font-display:
-    "Playfair Display", Georgia, serif;
+    "DM Sans", sans-serif;
   --font-body:
     "DM Sans", sans-serif;
 }
@@ -90,7 +91,8 @@ body {
 .hero__text h1 {
   font-family: var(--font-display);
   font-size: 2.6rem;
-  font-weight: 900;
+  font-weight: 800;
+  letter-spacing: -0.02em;
   line-height: 1.1;
   color: var(--text);
   margin-bottom: 20px;

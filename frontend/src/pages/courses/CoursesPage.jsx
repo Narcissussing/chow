@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { api } from "../../api.js";
 import CustomSelect from "../../components/CustomSelect.jsx";
 import Page from "../../components/Page.jsx";
 import { useBodyClass } from "../../hooks/useBodyClass.js";
@@ -98,6 +99,22 @@ function Courses({ donnees }) {
   const [actives, setActives] = useState(() => new Set(donnees.courses.map(categorieDe)));
   const [armeId, setArmeId] = useState(null);
   const [panneauEtat, setPanneauEtat] = useState({ ouvert: false, pret: false });
+  const [estimation, setEstimation] = useState(null);
+  const listeIds = items.map((i) => i.id).sort().join(",");
+
+  // Fourchette de prix recalculée par le serveur à chaque ajout, achat ou retrait (habitudes × dernier prix).
+  useEffect(() => {
+    const controleur = new AbortController();
+    const minuteur = setTimeout(() => {
+      api("/courses/estimation", { signal: controleur.signal })
+        .then(({ donnees: e }) => setEstimation(e))
+        .catch(() => {});
+    }, 400);
+    return () => {
+      clearTimeout(minuteur);
+      controleur.abort();
+    };
+  }, [listeIds]);
   const [preset, setPreset] = useState(donnees.presetHebdo);
   const [presetConfirme, setPresetConfirme] = useState(false);
   const [badgeEnBarre, setBadgeEnBarre] = useState(false);
@@ -548,7 +565,14 @@ function Courses({ donnees }) {
   return (
     <main>
       <section className="page-header titre-page" id="heroCourses" ref={hero}>
-        <h1>Courses</h1>
+        <div className="courses-titre">
+          <h1>Courses</h1>
+          {estimation && items.length > 0 && estimation.haut > 0 && (
+            <span className="courses-fourchette" title="Estimation d’après les habitudes du foyer et les derniers prix payés">
+              {estimation.bas} € – {estimation.haut} €
+            </span>
+          )}
+        </div>
         {badgeEnBarre ? <div className="hero__badge hero__badge--courses" style={{ visibility: "hidden" }} aria-hidden="true" /> : badgeCourses}
       </section>
 

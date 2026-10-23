@@ -6,6 +6,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
+import { calculerStats, ficheProduit, jourIso } from "./stats.js";
 
 const app = express();
 
@@ -138,6 +139,9 @@ await db.query(`
     )
 `);
 
+// Indices INSEE par série (« alimentation », « ensemble ») ; remplace l'ancienne table à une seule série.
+await db.query("CREATE TABLE IF NOT EXISTS indices_france (serie TEXT NOT NULL, mois TEXT NOT NULL, valeur NUMERIC NOT NULL, PRIMARY KEY (serie, mois))");
+await db.query("DROP TABLE IF EXISTS indices_insee");
 await db.query("CREATE TABLE IF NOT EXISTS ip_bloquees (ip TEXT PRIMARY KEY, jusqua TIMESTAMPTZ NOT NULL)");
 
 // Les Paramètres (aliments, équivalences, prix) sont réservés à l'administrateur du foyer.
@@ -164,7 +168,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.use(express.static("frontend/dist", { index: false }));
-app.get(["/login", "/", "/aliments", "/aliments/:idAliment", "/parametres", "/parametres/aliments", "/parametres/aliments/:idAliment",
+app.get(["/login", "/", "/stats", "/aliments", "/aliments/:idAliment", "/parametres", "/parametres/aliments", "/parametres/aliments/:idAliment",
     "/stock", "/courses", "/calories"], function (req, res) {
     res.sendFile("index.html", { root: "frontend/dist" });
 });
@@ -569,6 +573,72 @@ app.get("/api/aliments/:idAliment", lectureApi(async (req) => {
 app.get("/api/stock", lectureApi(chargerPageStock));
 app.get("/api/courses", lectureApi(chargerPageCourses));
 app.get("/api/courses/estimation", lectureApi(estimerCourses));
+// Indices nationaux des prix (INSEE, IPC base 2025, ensemble des ménages, France) : alimentation (Coicop 01,
+// produits alimentaires et boissons non alcoolisées) et ensemble (tous les produits). Récupérés au démarrage puis
+// au plus une fois par jour ; l'INSEE publie avec environ un mois de décalage. En cas de panne réseau, les valeurs
+// déjà en base restent utilisées.
+const SERIES_INSEE = { alimentation: "011814667", ensemble: "011814630" };
+let derniereMajInsee = 0;
+
+async function majIndicesInsee() {
+    if (Date.now() - derniereMajInsee < 24 * 60 * 60 * 1000) return;
+    derniereMajInsee = Date.now();
+    for (const [serie, idbank] of Object.entries(SERIES_INSEE)) {
+        try {
+            const reponse = await fetch(`https://bdm.insee.fr/series/sdmx/data/SERIES_BDM/${idbank}?startPeriod=2023-01`, {
+                signal: AbortSignal.timeout(15000),
+            });
+            if (!reponse.ok) throw new Error("INSEE " + reponse.status);
+            const xml = await reponse.text();
+            const valeurs = [...xml.matchAll(/TIME_PERIOD="(\d{4}-\d{2})" OBS_VALUE="([\d.]+)"/g)];
+            for (const [, mois, valeur] of valeurs) {
+                await db.query(
+                    `INSERT INTO indices_france (serie, mois, valeur) VALUES ($1, $2, $3)
+                     ON CONFLICT (serie, mois) DO UPDATE SET valeur = EXCLUDED.valeur`,
+                    [serie, mois, valeur]
+                );
+            }
+            console.log(`Indices INSEE (${serie}) à jour :`, valeurs.length, "mois");
+        } catch (err) {
+            console.log(`ERREUR indices INSEE (${serie}):`, err.message);
+        }
+    }
+}
+majIndicesInsee();
+
+async function indicesNationaux() {
+    majIndicesInsee();
+    const result = await db.query("SELECT serie, mois, valeur::float FROM indices_france");
+    const series = { alimentation: new Map(), ensemble: new Map() };
+    for (const r of result.rows) series[r.serie]?.set(r.mois, r.valeur);
+    return series;
+}
+
+// Toutes les lignes de tickets (quelques milliers) : la page Stats calcule ses agrégats en mémoire.
+async function lignesTickets(foodId) {
+    const result = await db.query(
+        `SELECT to_char(t.date, 'YYYY-MM-DD') AS jour, t.id AS ticket_id, t.enseigne,
+                a.libelle, a.total::float, a.quantite::float, a.poids::float, a.contenance::float, a.prix_ref::float, a.unite,
+                l.statut, l.food_id, f.nom, f.emoji, f.categorie
+         FROM achats a
+         JOIN tickets t ON t.id = a.ticket_id
+         LEFT JOIN libelles l ON l.libelle = a.libelle
+         LEFT JOIN foods f ON f.id = l.food_id
+         WHERE $1::text IS NULL OR l.food_id = $1`,
+        [foodId ?? null]
+    );
+    return result.rows;
+}
+
+app.get("/api/stats", lectureApi(async (req) => {
+    const { periode, ref, debut, fin, enseigne } = req.query;
+    return calculerStats(await lignesTickets(), { periode, ref, debut, fin, enseigne }, jourIso(new Date()), await indicesNationaux());
+}));
+app.get("/api/stats/produit/:idAliment", lectureApi(async (req) => {
+    const fiche = ficheProduit((await lignesTickets(req.params.idAliment)).filter((l) => l.jour), jourIso(new Date()));
+    return fiche ? { produit: fiche } : null;
+}));
+
 // Un aliment encore présent : niveau autre que « vide », ou nombre supérieur à 0.
 const STOCK_NON_VIDE = "quantite IS NOT NULL AND quantite NOT IN ('vide', '0')";
 app.get("/api/accueil", lectureApi(async () => {
@@ -581,7 +651,19 @@ app.get("/api/accueil", lectureApi(async () => {
                 (SELECT COALESCE(SUM(total), 0)::float FROM tickets
                  WHERE date >= date_trunc('month', CURRENT_DATE) - INTERVAL '1 month' AND date < date_trunc('month', CURRENT_DATE)) AS depense_mois_dernier`
     );
-    return { ...resume.rows[0], estimation: await estimerCourses() };
+    const semaines = await db.query(
+        `SELECT to_char(s.debut, 'YYYY-MM-DD') AS debut, COALESCE(SUM(t.total), 0)::float AS total
+         FROM generate_series(date_trunc('week', CURRENT_DATE) - INTERVAL '7 weeks', date_trunc('week', CURRENT_DATE), INTERVAL '1 week') AS s(debut)
+         LEFT JOIN tickets t ON t.date >= s.debut AND t.date < s.debut + INTERVAL '1 week'
+         GROUP BY s.debut ORDER BY s.debut`
+    );
+    const aVerifier = await db.query(
+        `SELECT stock.id, foods.nom, foods.emoji, (CURRENT_DATE - stock.date_maj)::int AS jours
+         FROM stock JOIN foods ON foods.id = stock.food_id
+         WHERE ${STOCK_NON_VIDE.replaceAll("quantite", "stock.quantite")} AND stock.date_maj < CURRENT_DATE - 21
+         ORDER BY stock.date_maj LIMIT 5`
+    );
+    return { ...resume.rows[0], semaines: semaines.rows, aVerifier: aVerifier.rows, estimation: await estimerCourses() };
 }));
 app.get("/api/calories", lectureApi(chargerPageCalories));
 
@@ -698,8 +780,27 @@ app.post("/api/stock/modifier", async (req, res) => {
             return res.status(400).json({ erreur: "Champs requis." });
         }
 
-        await db.query("UPDATE stock SET quantite = $1 WHERE id = $2", [nouvelleQuantite, idStock]);
+        // Toute modification compte comme une vérification : la date repart d'aujourd'hui.
+        await db.query("UPDATE stock SET quantite = $1, date_maj = CURRENT_DATE WHERE id = $2", [nouvelleQuantite, idStock]);
         res.json({ succes: true, quantite: nouvelleQuantite });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
+
+// Vérification rapide depuis l'accueil : « toujours là » garde la quantité, « fini » vide l'article.
+app.post("/api/stock/verifier", async (req, res) => {
+    try {
+        const result = await db.query(
+            `UPDATE stock SET date_maj = CURRENT_DATE,
+                    quantite = CASE WHEN $2 THEN (CASE WHEN foods.tracking_type = 'cl' THEN 'vide' ELSE '0' END) ELSE stock.quantite END
+             FROM foods WHERE foods.id = stock.food_id AND stock.id = $1
+             RETURNING stock.quantite`,
+            [req.body.idStock, req.body.fini === true]
+        );
+        if (!result.rows.length) return res.status(404).json({ erreur: "Article introuvable." });
+        res.json({ succes: true, quantite: result.rows[0].quantite });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });

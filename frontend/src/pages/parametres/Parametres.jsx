@@ -19,7 +19,7 @@ export default function Parametres() {
             <span className="parametres__chevron" aria-hidden="true">›</span>
           </Link>
         </nav>
-        <p className="parametres__note">Visible seulement pour ton compte.</p>
+        <p className="parametres__note">Visible seulement par l’administrateur.</p>
       </main>
     </Page>
   );

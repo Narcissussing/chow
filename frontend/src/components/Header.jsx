@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router-dom";
 import "./Header.css";
 
 const LIENS = [
+  { chemin: "/stats", texte: "Stats" },
   { chemin: "/stock", texte: "Stock" },
   { chemin: "/courses", texte: "Courses" },
   { chemin: "/calories", texte: "Calories" },

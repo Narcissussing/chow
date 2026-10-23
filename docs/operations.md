@@ -5,7 +5,7 @@
 | Environnement | Base | Configuration |
 |---|---|---|
 | Local | Neon, branche `family-hub-dev` (`ep-spring-river-aslzwhz5`) | `DATABASE_URL` dans `.env` |
-| Production | Neon, branche `production` (`ep-steep-glade-as56jlgu`) | `DATABASE_URL` en secret Fly |
+| Production | Neon (`ep-aged-flower-b9sgwq8t`) | `DATABASE_URL` en secret Fly, copie locale dans `.env.production` |
 
 Variables requises :
 
@@ -69,6 +69,29 @@ démarrage. Par conséquent :
 3. considérer `fly deploy` comme une opération de migration ;
 4. contrôler les logs de démarrage après déploiement.
 
+## Tickets de caisse
+
+Les tickets bruts et leurs CSV restent dans `tickets/` (ignoré par Git, sans
+sauvegarde ailleurs). `node tickets/extraire.cjs` puis
+`node tickets/correspondances.cjs` régénèrent `achats.csv` et
+`correspondances.csv`. Import initial, une seule fois par base (refusé si des
+tickets existent) :
+
+```bash
+DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/importer-tickets.js
+```
+
+Vérifier la première ligne affichée (`Base : ep-…`) avant de laisser
+continuer.
+
+## Adresse IP bloquée
+
+Une IP bloquée après trop d’échecs de connexion se débloque en base :
+
+```sql
+DELETE FROM ip_bloquees WHERE ip = '<adresse>';
+```
+
 ## Vérification
 
 - routes et calculs : vérifier en lançant l’application et en appelant le
@@ -76,8 +99,9 @@ démarrage. Par conséquent :
 - interface : cet environnement ne dispose pas de navigateur headless ;
   la vérification reste au niveau du code et des captures fournies ;
 - appareil réel : Olumide effectue la validation finale ;
-- `npm test` est actuellement un script factice et ne constitue pas une
-  vérification.
+- `node scripts/verifier-api.js` (branche dev uniquement) appelle toutes les
+  routes avec un compte de test, puis nettoie ;
+- `npx jest` dans `frontend/` lance les tests de l’interface.
 
 ## Limites opérationnelles
 

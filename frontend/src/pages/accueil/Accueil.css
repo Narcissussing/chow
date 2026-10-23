@@ -203,3 +203,155 @@ div.home-link-card:hover {
   font-size: 0.72rem;
   color: var(--text-muted);
 }
+
+/* Moins de vide sous « Bonjour » */
+main:has(.home-links) .hero {
+  padding: 40px 40px 8px;
+}
+
+.accueil-blocs {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.accueil-bloc {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 24px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+  text-decoration: none;
+}
+
+.accueil-bloc__titre {
+  font-weight: 600;
+}
+
+.accueil-semaines {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  min-height: 150px;
+}
+
+.accueil-semaine {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 4px;
+}
+
+.accueil-semaine__montant {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.accueil-semaine__barre {
+  width: 100%;
+  min-height: 3px;
+  max-height: 110px;
+  border-radius: 6px 6px 3px 3px;
+  background: linear-gradient(#f4b79a, #f6c9a88c);
+}
+
+.accueil-semaine__barre.actuelle {
+  background: linear-gradient(#f08a5d, var(--accent));
+}
+
+.accueil-semaine__date {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.accueil-verifier {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.accueil-verifier li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.accueil-verifier__nom {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.accueil-verifier button {
+  border: 0;
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.accueil-verifier__oui {
+  width: 32px;
+  height: 30px;
+  background: #dcefe6;
+  color: #2f6f62;
+}
+
+.accueil-verifier__fini {
+  padding: 0 12px;
+  height: 30px;
+  background: #efe8dc;
+  color: var(--text-muted);
+}
+
+.accueil-bloc__lien {
+  margin-top: auto;
+  font-size: 0.85rem;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.accueil-verifier__jours {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f6ead0;
+  color: #8a6418;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+@media (max-width: 900px) {
+  main:has(.home-links) .hero {
+    padding: 24px 16px 4px;
+  }
+
+  .accueil-blocs {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .accueil-bloc {
+    padding: 16px 18px;
+  }
+
+  .accueil-semaines {
+    gap: 6px;
+    min-height: 120px;
+  }
+
+  .accueil-semaine__montant {
+    font-size: 0.6rem;
+  }
+}

@@ -6,6 +6,12 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 
 ## 2026-10
 
+- Tickets de caisse importés (`tickets`, `achats`, `libelles`) et estimation
+  des Courses sans quantité (habitudes × dernier prix).
+- Paramètres réservés à l’administrateur ; Aliments retirés de la navigation.
+- Accueil chiffré (Stats, Stock, Courses) et pied de page rouge.
+- Filtre Stock « À vérifier ».
+- Connexion limitée : IP bloquée 30 jours après 5 échecs.
 - Fin de la migration React : pages EJS, partials, scripts `public/js/` et
   dépendance `ejs` retirés ; le serveur ne sert plus que l’app React et l’API.
 

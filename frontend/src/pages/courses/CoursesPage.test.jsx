@@ -22,6 +22,7 @@ function ouvrirCourses(surcharges = {}, { courses = COURSES, preset = [] } = {})
   const reponses = {
     "/session": [200, { utilisateur: { id: 1 } }],
     "/courses": [200, { courses, aliments: ALIMENTS, stock: [], presetHebdo: preset }],
+    "/courses/estimation": [200, { estimation: 19, bas: 14, haut: 24, articles: 3, sansPrix: 0 }],
     "/courses/acheter": noter("/courses/acheter", [200, { succes: true }]),
     "/courses/supprimer": noter("/courses/supprimer", [200, { succes: true }]),
     "/courses/commentaire": noter("/courses/commentaire", [200, { succes: true }]),
@@ -50,6 +51,12 @@ function choisirTri(libelle) {
 afterEach(() => {
   jest.useRealTimers();
   localStorage.clear();
+});
+
+test("fourchette de prix estimée au bord du titre", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  expect(await screen.findByText("14 € – 24 €")).toBeInTheDocument();
 });
 
 test("tri par nom au chargement, panneau d'ajout toujours dernier ; tri par catégorie avec en-têtes", async () => {

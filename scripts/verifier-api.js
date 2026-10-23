@@ -137,6 +137,12 @@ try {
     verifier("POST /api/stock/ajouter", r.statut === 200 && idStock);
     r = await appel("POST", "/api/stock/modifier", { idStock, nouvelleQuantite: "2" });
     verifier("POST /api/stock/modifier", r.donnees?.quantite === "2");
+    await db.query("UPDATE stock SET date_maj = CURRENT_DATE - 30 WHERE id = $1", [idStock]);
+    r = await appel("POST", "/api/stock/verifier", { idStock, fini: false });
+    let dateMaj = await db.query("SELECT quantite, date_maj = CURRENT_DATE AS jour FROM stock WHERE id = $1", [idStock]);
+    verifier("vérifier « toujours là » : même quantité, date du jour", r.donnees?.succes && dateMaj.rows[0].quantite === "2" && dateMaj.rows[0].jour);
+    r = await appel("POST", "/api/stock/verifier", { idStock, fini: true });
+    verifier("vérifier « fini » : article vidé", ["0", "vide"].includes(r.donnees?.quantite));
     r = await appel("POST", "/api/stock/supprimer", { idStock });
     verifier("POST /api/stock/supprimer", r.donnees?.succes === true);
 
@@ -152,8 +158,22 @@ try {
     r = await appel("POST", "/api/calories/supprimer", { idEntree });
     verifier("POST /api/calories/supprimer", r.donnees?.succes === true);
 
+    r = await appel("GET", "/api/stats?periode=annee&ref=2026-01-01&enseigne=tous");
+    const st = r.donnees;
+    verifier("GET /api/stats (année)", r.statut === 200 && st.barres?.pas === "annee" && typeof st.kpi?.depense === "number" && Array.isArray(st.produits));
+    verifier("inflation nationale INSEE jointe", st.inflation.some((m) => m.national !== null) && typeof st.inflationNationale?.variation === "number");
+    const barreAnnee = st.barres.seaux.find((x) => x.debut === st.barres.selection);
+    verifier("barre de l'année choisie = total dépensé", Math.abs(barreAnnee.total - st.kpi.depense) < 0.05, `${barreAnnee.total} / ${st.kpi.depense}`);
+    r = await appel("GET", "/api/stats?periode=semaine&ref=2026-10-14&enseigne=Leclerc");
+    verifier("GET /api/stats (semaine, un magasin) : 12 semaines", r.statut === 200 && r.donnees.barres.seaux.length === 12 && r.donnees.barres.selection === "2026-10-12" && r.donnees.parMagasin.every((m) => m.nom === "Leclerc"));
+    r = await appel("GET", "/api/stats?periode=mois&ref=2026-10-01&enseigne=tous");
+    verifier("GET /api/stats (mois) : 12 mois", r.statut === 200 && r.donnees.barres.pas === "mois" && r.donnees.barres.seaux.length === 12);
+    r = await appel("GET", "/api/stats/produit/tomate");
+    verifier("GET /api/stats/produit/:id", r.statut === 200 && r.donnees.produit?.courbe.length > 0);
+    r = await appel("GET", "/api/stats/produit/inconnu");
+    verifier("produit sans achat → 404", r.statut === 404);
     r = await appel("GET", "/api/accueil");
-    verifier("GET /api/accueil", r.statut === 200 && ["stock", "stock_a_verifier", "courses", "depense_mois", "depense_semaine", "depense_mois_dernier"].every((k) => typeof r.donnees?.[k] === "number"));
+    verifier("GET /api/accueil", r.statut === 200 && ["stock", "stock_a_verifier", "courses", "depense_mois", "depense_semaine", "depense_mois_dernier"].every((k) => typeof r.donnees?.[k] === "number") && r.donnees.semaines.length === 8 && Array.isArray(r.donnees.aVerifier));
 
     const avecEquiv = aliments[0];
     const equivalences = {

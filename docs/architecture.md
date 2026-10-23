@@ -47,9 +47,11 @@ privée doit rester déclarée après `app.use(requireAuth)`.
 | Domaine | Routes principales |
 |---|---|
 | Accès | `POST /api/login`, `POST /api/logout`, `GET /api/session` |
-| Aliments | `GET /api/aliments`, `GET /api/aliments/:id`, créer, équivalences |
+| Accueil | `GET /api/accueil` |
+| Stats | `GET /api/stats?periode=&ref=&enseigne=`, `GET /api/stats/produit/:id` (calculs dans `stats.js`) |
+| Aliments | `GET /api/aliments`, `GET /api/aliments/:id`, créer, équivalences (admin) |
 | Stock | `GET /api/stock`, ajouter, modifier, supprimer |
-| Courses | `GET /api/courses`, ajouter, acheter, supprimer, notes, photos, preset |
+| Courses | `GET /api/courses`, `GET /api/courses/estimation`, ajouter, acheter, supprimer, notes, photos, preset |
 | Calories | `GET /api/calories`, ajouter, modifier, supprimer, réordonner, vider |
 | Recettes | créer, consulter, modifier, supprimer, appliquer à la Cuisine |
 
@@ -74,6 +76,10 @@ Passport Local recherche l’utilisateur par email et compare le mot de passe
 avec bcrypt. Seul l’identifiant est sérialisé ; l’utilisateur est rechargé
 depuis PostgreSQL à chaque requête. Les sessions sont stockées en base afin
 de survivre aux arrêts automatiques de Fly.io.
+
+`exigerAdmin` protège les routes des Paramètres ; côté client, `Protege
+admin` renvoie les autres comptes vers l’accueil. `POST /api/login` compte
+les échecs (en mémoire) et bloque une IP 30 jours dans `ip_bloquees`.
 
 ## Limites connues
 

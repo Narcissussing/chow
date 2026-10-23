@@ -570,3 +570,20 @@ body.mode-magasin .course-item__quantite-groupe {
     border-width: 0;
   }
 }
+
+/* Fourchette estimée collée au titre */
+.courses-titre {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.courses-fourchette {
+  padding: 4px 12px;
+  border-radius: 999px;
+  background: #e9f3ee;
+  color: #2f6f62;
+  font-size: 0.95rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

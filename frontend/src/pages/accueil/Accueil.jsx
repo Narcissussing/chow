@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
+import { api } from "../../api.js";
 import Page from "../../components/Page.jsx";
+import { afficherToast } from "../../toast.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import "./Accueil.css";
 
@@ -31,10 +33,10 @@ const ICONES = {
 
 const euros = (n) => Math.round(n).toLocaleString("fr-FR") + " €";
 
-// Stats n'a pas encore de page : sa carte affiche le chiffre sans lien.
 function cartes(r) {
   return [
     {
+      chemin: "/stats",
       icone: "stats",
       titre: "Stats",
       valeur: euros(r.depense_mois),
@@ -59,7 +61,22 @@ function cartes(r) {
 }
 
 export default function Accueil() {
-  const { etat, donnees } = usePageData("/accueil");
+  const { etat, donnees, majDonnees } = usePageData("/accueil");
+
+  // « Toujours là » remet la date à aujourd'hui, « Fini » vide l'article : il sort de la liste dans les deux cas.
+  function verifier(article, fini) {
+    api("/stock/verifier", { method: "POST", body: { idStock: article.id, fini } })
+      .then(({ donnees: reponse }) => {
+        if (!reponse?.succes) return afficherToast(reponse?.erreur || "Une erreur est survenue.");
+        majDonnees((d) => ({
+          ...d,
+          aVerifier: d.aVerifier.filter((a) => a.id !== article.id),
+          stock_a_verifier: d.stock_a_verifier - 1,
+          stock: fini ? d.stock - 1 : d.stock,
+        }));
+      })
+      .catch(() => afficherToast("Une erreur est survenue."));
+  }
   return (
     <Page titre="Accueil" etat={etat}>
       <main>
@@ -97,6 +114,49 @@ export default function Accueil() {
                 );
               })}
           </div>
+
+          {donnees && (
+            <div className="accueil-blocs">
+              <Link to="/stats" className="accueil-bloc">
+                <span className="accueil-bloc__titre">8 dernières semaines</span>
+                <div className="accueil-semaines">
+                  {donnees.semaines.map((s, i) => (
+                    <span key={s.debut} className="accueil-semaine" title={euros(s.total)}>
+                      <span className="accueil-semaine__montant">{s.total ? euros(s.total) : ""}</span>
+                      <span
+                        className={"accueil-semaine__barre" + (i === donnees.semaines.length - 1 ? " actuelle" : "")}
+                        style={{ height: `${(s.total / Math.max(...donnees.semaines.map((x) => x.total), 1)) * 100}%` }}
+                      />
+                      <span className="accueil-semaine__date">{new Date(s.debut + "T00:00:00").getDate()}</span>
+                    </span>
+                  ))}
+                </div>
+              </Link>
+              {donnees.stock_a_verifier > 0 && (
+                <section className="accueil-bloc">
+                  <span className="accueil-bloc__titre">Encore à la maison ?</span>
+                  <ul className="accueil-verifier">
+                    {donnees.aVerifier.map((a) => (
+                      <li key={a.id}>
+                        <span aria-hidden="true">{a.emoji}</span>
+                        <span className="accueil-verifier__nom">
+                          {a.nom}
+                          <span className="accueil-verifier__jours">{Math.round(a.jours / 7)} sem.</span>
+                        </span>
+                        <button type="button" className="accueil-verifier__oui" aria-label={`${a.nom} : toujours là`} onClick={() => verifier(a, false)}>✓</button>
+                        <button type="button" className="accueil-verifier__fini" onClick={() => verifier(a, true)}>Fini</button>
+                      </li>
+                    ))}
+                  </ul>
+                  {donnees.stock_a_verifier > donnees.aVerifier.length && (
+                    <Link to="/stock?filtre=verifier" className="accueil-bloc__lien">
+                      {donnees.aVerifier.length ? `Les ${donnees.stock_a_verifier - donnees.aVerifier.length} autres` : `Voir les ${donnees.stock_a_verifier}`} dans Stock →
+                    </Link>
+                  )}
+                </section>
+              )}
+            </div>
+          )}
         </section>
       </main>
     </Page>

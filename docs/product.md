@@ -18,8 +18,23 @@ Référentiel des aliments connus et de leurs informations nutritionnelles.
 - équivalences propres à chaque aliment pour cuillère à café, cuillère à
   soupe et poids d’une unité.
 
-La création et la suppression des aliments ne sont pas exposées dans
-l’interface. Le référentiel est administré directement en base.
+Les Aliments ne sont plus dans la navigation : ils se trouvent dans les
+Paramètres (`/parametres/aliments`), réservés à l’administrateur. La création
+et la suppression ne sont pas exposées dans l’interface.
+
+### Accueil
+
+Trois cartes chiffrées : Stats (dépensé ce mois, cette semaine et le mois
+dernier), Stock (aliments encore présents, dont ceux à vérifier) et Courses
+(articles à acheter et estimation du montant).
+
+### Dépenses et estimation des Courses
+
+Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais) importé
+dans `tickets`, `achats` et `libelles`. L’estimation des Courses ne demande
+aucune quantité : quantité habituelle (8 derniers passages en caisse, 12
+derniers mois) × dernier prix payé, avec une fourchette ; sans historique,
+`foods.prix_habituel`. La page Stats suit la maquette Figma « Chow ».
 
 ### Stock
 
@@ -29,7 +44,9 @@ Inventaire de ce qui est disponible à la maison.
 - emplacements Frigo, Congélateur et Réserve ;
 - recherche, filtres, tris et vues grille/liste ;
 - ajout, modification, suppression et ajustements rapides ;
-- envoi vers Courses sans doublon actif.
+- envoi vers Courses sans doublon actif ;
+- filtre « À vérifier » : aliments encore présents sans mise à jour depuis 3
+  semaines.
 
 ### Courses
 
@@ -72,6 +89,10 @@ preset hebdomadaire ajoute uniquement les courses manquantes.
 - deux comptes privés ;
 - aucune inscription publique ;
 - toutes les pages, sauf la connexion, exigent une session ;
+- un administrateur (`users.admin`, le compte d’Olumide) accède seul aux
+  Paramètres ; le serveur refuse ces routes aux autres comptes (403) ;
+- connexion limitée : 5 échecs en 15 min bloquent l’adresse IP 30 jours
+  (table `ip_bloquees`), 10 échecs verrouillent l’email 15 min ;
 - les comptes sont créés ou réinitialisés avec
   `scripts/creer-utilisateur.js`.
 
@@ -80,7 +101,6 @@ preset hebdomadaire ajoute uniquement les courses manquantes.
 - administration du catalogue depuis l’interface ;
 - inscription et gestion autonome des comptes ;
 - historique nutritionnel multi-jour dans l’interface ;
-- rôles et permissions ;
 - API publique.
 
 Le travail futur est suivi dans Jira, notamment les tests automatisés, la

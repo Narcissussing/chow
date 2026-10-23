@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { api } from "../../api.js";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import CustomSelect from "../../components/CustomSelect.jsx";
@@ -52,7 +53,8 @@ function Stock({ donnees }) {
   const [racheterOuvert, setRacheterOuvert] = useState(false);
   const [aRacheter, setARacheter] = useState(() => suggestionsARacheter(donnees.suggestions || []));
   const [emplacement, setEmplacement] = useState("tous");
-  const [type, setType] = useState("tous");
+  const [params] = useSearchParams();
+  const [type, setType] = useState(params.get("filtre") === "verifier" ? "verifier" : "tous");
   const [recherche, setRecherche] = useState("");
   const [critere, setCritere] = useState("alpha");
   const [vue, setVue] = useLocalStorage("vueStock", (v) => (v === "liste" ? "liste" : "grille"));
