@@ -122,6 +122,8 @@ export default function Accueil() {
   const { etat, donnees, majDonnees } = usePageData("/accueil");
   const [enEdition, setEnEdition] = useState(null);
 
+  // L'article sort tout de suite, puis l'accueil est relu en arrière-plan : l'article suivant à vérifier
+  // remonte dans la liste et les compteurs sont ceux du serveur.
   function retirer(article, vide) {
     majDonnees((d) => ({
       ...d,
@@ -129,6 +131,11 @@ export default function Accueil() {
       stock_a_verifier: d.stock_a_verifier - 1,
       stock: vide ? d.stock - 1 : d.stock,
     }));
+    api("/accueil")
+      .then(({ statut, donnees: frais }) => {
+        if (statut === 200 && frais) majDonnees(frais);
+      })
+      .catch(() => {});
   }
 
   // Nouvelle quantité : enregistrée comme dans Stock (la date repart d'aujourd'hui), l'article sort de la liste.

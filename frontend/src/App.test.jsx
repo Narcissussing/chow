@@ -26,9 +26,30 @@ test("l'accueil connecté affiche Stats, Stock et Courses chiffrés", async () =
   expect(screen.queryByText("Paramètres")).not.toBeInTheDocument();
 });
 
+test("accueil : après une vérification, la liste est relue et l'article suivant remonte", async () => {
+  let verifie = false;
+  const accueil = ACCUEIL["/accueil"][1];
+  simulerApi({
+    ...CONNECTE,
+    "/accueil": () => [200, !verifie ? accueil : { ...accueil, stock_a_verifier: 4, aVerifier: [{ id: 8, nom: "Pâtes", emoji: "🍝", jours: 30, quantite: "1", unite: "packs", tracking_type: "pack" }] }],
+    "/stock/verifier": () => { verifie = true; return [200, { succes: true, quantite: "2" }]; },
+  });
+  rendreApp("/");
+  expect(await screen.findByText("Riz")).toBeInTheDocument();
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Riz : toujours là" })));
+  expect(await screen.findByText("Pâtes")).toBeInTheDocument();
+  expect(screen.queryByText("Riz")).not.toBeInTheDocument();
+});
+
 test("accueil : « Fini » vide un article à vérifier et le retire de la liste", async () => {
   const corps = [];
-  simulerApi({ ...CONNECTE, "/stock/verifier": (o) => { corps.push(JSON.parse(o.body)); return [200, { succes: true, quantite: "0" }]; } });
+  let fait = false;
+  const accueil = ACCUEIL["/accueil"][1];
+  simulerApi({
+    ...CONNECTE,
+    "/accueil": () => [200, fait ? { ...accueil, stock_a_verifier: 4, aVerifier: [] } : accueil],
+    "/stock/verifier": (o) => { fait = true; corps.push(JSON.parse(o.body)); return [200, { succes: true, quantite: "0" }]; },
+  });
   rendreApp("/");
   expect(await screen.findByText("Riz")).toBeInTheDocument();
   await act(async () => fireEvent.click(screen.getByRole("button", { name: "Riz : fini" })));
@@ -39,7 +60,13 @@ test("accueil : « Fini » vide un article à vérifier et le retire de la liste
 
 test("accueil : modifier la quantité restante d'un article à vérifier", async () => {
   const corps = [];
-  simulerApi({ ...CONNECTE, "/stock/modifier": (o) => { corps.push(JSON.parse(o.body)); return [200, { succes: true, quantite: "3" }]; } });
+  let fait = false;
+  const accueil = ACCUEIL["/accueil"][1];
+  simulerApi({
+    ...CONNECTE,
+    "/accueil": () => [200, fait ? { ...accueil, stock_a_verifier: 4, aVerifier: [] } : accueil],
+    "/stock/modifier": (o) => { fait = true; corps.push(JSON.parse(o.body)); return [200, { succes: true, quantite: "3" }]; },
+  });
   rendreApp("/");
   fireEvent.click(await screen.findByRole("button", { name: "Modifier la quantité de Riz" }));
   fireEvent.click(screen.getByRole("button", { name: "Plus" }));

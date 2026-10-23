@@ -31,10 +31,10 @@ function useDefilement(cible) {
   return valeur;
 }
 
-function Ligne({ d, rang, max }) {
+function Ligne({ d, rang }) {
   const prixUnite = d.unite && d.dernierPrix != null ? ` / ${d.unite === "pièce" ? "pièce" : d.unite}` : "";
   return (
-    <li className={"estimation__ligne" + (d.estimation == null ? " estimation__ligne--sans-prix" : "")} style={{ "--rang": rang, "--part": d.estimation ? d.estimation / max : 0 }}>
+    <li className={"estimation__ligne" + (d.estimation == null ? " estimation__ligne--sans-prix" : "")} style={{ "--rang": rang }}>
       <span className="estimation__emoji" aria-hidden="true">{d.emoji}</span>
       <span className="estimation__nom">
         <b>{d.nom}</b>
@@ -51,7 +51,6 @@ function Ligne({ d, rang, max }) {
         {d.source === "sans-prix" && <span className="estimation__detail">aucun prix connu</span>}
       </span>
       <span className="estimation__montant">{d.estimation != null ? euros(d.estimation) : "—"}</span>
-      <span className="estimation__part" aria-hidden="true" />
     </li>
   );
 }
@@ -120,7 +119,7 @@ export default function EstimationCourses({ estimation }) {
             <span className="estimation__jauge-bornes"><span>{estimation.bas} €</span><span>{estimation.haut} €</span></span>
           </div>
           <ul className="estimation__liste">
-            {details.map((d, i) => <Ligne key={d.nom} d={d} rang={i} max={Math.max(...details.map((x) => x.estimation || 0), 1)} />)}
+            {details.map((d, i) => <Ligne key={d.nom} d={d} rang={i} />)}
           </ul>
         </div>,
         document.body
