@@ -294,3 +294,25 @@
     animation: none;
   }
 }
+
+/* Téléphone : la bulle du calcul devient une feuille en bas de l'écran. */
+@media (max-width: 860px) {
+  .estimation__popup {
+    top: auto !important;
+    left: 12px !important;
+    right: 12px;
+    bottom: 12px;
+    width: auto;
+    max-height: 75vh;
+    box-shadow: 0 -8px 40px rgba(26, 20, 15, 0.22), 0 0 0 100vmax rgba(26, 20, 15, 0.18);
+    transform-origin: bottom center;
+    animation: estimation-feuille 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+}
+
+@keyframes estimation-feuille {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+}

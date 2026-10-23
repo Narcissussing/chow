@@ -232,7 +232,7 @@ export default function StatsPage() {
           <header className="stats__entete">
             <h1>Dépenses</h1>
             <div className="stats__filtres">
-              <SelecteurPeriode periode={periode} onChange={setPeriode} dernierAchat={d.dernierAchat} />
+              <SelecteurPeriode periode={periode} onChange={setPeriode} dernierAchat={d.dernierAchat} premierAchat={d.premierAchat} />
               <SelecteurMagasin enseigne={enseigne} onChange={setEnseigne} />
             </div>
           </header>

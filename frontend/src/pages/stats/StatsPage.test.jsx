@@ -5,6 +5,7 @@ const seau = (debut, etiquette, total) => ({ debut, etiquette, total });
 const STATS = {
   periode: { debut: "2026-01-01", fin: "2026-12-31", nature: "annee" },
   dernierAchat: "2026-10-13",
+  premierAchat: "2025-03-02",
   kpi: { depense: 3195, variation: -6, parSemaine: 61, ecartSemaine: -4, inflation: 4.1 },
   barres: { pas: "mois", seaux: [seau("2026-01-01", "J", 372), seau("2026-02-01", "F", 298), seau("2026-03-01", "M", 412)], moyenne: 320, pic: "2026-03-01", selection: "2026-03-01", enCours: "2026-03-01" },
   semaineMax: { debut: "2026-03-09", total: 142, causes: [{ nom: "Steak haché", semaine: 40, moyenne: 16, ecart: 24, semaineAvant: 10 }] },
@@ -112,6 +113,14 @@ test("période et magasin rechargent les stats ; un seul magasin masque Par maga
   await act(async () => fireEvent.click(screen.getByLabelText("Leclerc")));
   expect(requetes.at(-1)).toContain("enseigne=Leclerc");
   expect(screen.queryByText("Par magasin")).not.toBeInTheDocument();
+});
+
+test("la flèche précédente s'arrête à l'année du premier achat", async () => {
+  ouvrirStats();
+  await screen.findByText("3 195 €");
+  expect(screen.getByLabelText("Période précédente")).not.toBeDisabled();
+  await act(async () => fireEvent.click(screen.getByLabelText("Période précédente")));
+  expect(screen.getByLabelText("Période précédente")).toBeDisabled();
 });
 
 test("Semaine s'ouvre sur la dernière semaine avec des achats", async () => {

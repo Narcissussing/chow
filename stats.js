@@ -44,7 +44,8 @@ export function fenetreBarres(periode, debut, fin, premierJour, aujourdhui) {
     if (periode === "mois") return { pas: "mois", debut: ajouterMois(debut, -11), fin };
     if (periode === "annee" || periode === "tout") {
         const finAnnees = periode === "annee" ? fin : ajouterMois(aujourdhui.slice(0, 4) + "-01-01", 12);
-        return { pas: "annee", debut: premierJour.slice(0, 4) + "-01-01", fin: finAnnees };
+        const debutAnnees = premierJour.slice(0, 4) + "-01-01";
+        return { pas: "annee", debut: debut < debutAnnees ? debut : debutAnnees, fin: finAnnees };
     }
     if (periode === "dates") {
         const n = ecartJours(debut, fin);
@@ -275,6 +276,8 @@ export function calculerStats(toutes, params, aujourdhui, national = { alimentat
         periode: { debut, fin: ajouterJours(fin, -1), nature: params.periode || "annee" },
         // Dernier jour d'achat (magasin choisi compris) : « Semaine » s'ouvre sur la dernière semaine avec des achats.
         dernierAchat: datees.filter((l) => !enseigne || l.enseigne === enseigne).reduce((m, l) => (l.jour > m ? l.jour : m), ""),
+        // Premier jour d'achat : la flèche « précédent » ne remonte pas avant.
+        premierAchat: premierJour,
         kpi: {
             depense: arrondi(depense),
             variation: depenseAvant ? arrondi(((depense - depenseAvant) / depenseAvant) * 100, 0) : null,

@@ -41,7 +41,16 @@ export function decaler(p, sens) {
   return { ...p, ref: iso(d) };
 }
 
-export function SelecteurPeriode({ periode, onChange, dernierAchat }) {
+// Dernier jour de la période (semaine, mois ou année) qui contient `ref`.
+function finDePeriode(p) {
+  const d = date(p.ref);
+  if (p.periode === "semaine") d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 6);
+  if (p.periode === "mois") d.setMonth(d.getMonth() + 1, 0);
+  if (p.periode === "annee") d.setMonth(11, 31);
+  return iso(d);
+}
+
+export function SelecteurPeriode({ periode, onChange, dernierAchat, premierAchat }) {
   const [ouvert, setOuvert] = useState(false);
   const [dates, setDates] = useState(null);
   const zone = useRef(null);
@@ -53,6 +62,7 @@ export function SelecteurPeriode({ periode, onChange, dernierAchat }) {
   const avecFleches = ["semaine", "mois", "annee"].includes(periode.periode);
   const aujourdhui = iso(new Date());
   const suivantImpossible = avecFleches && decaler(periode, 1).ref > aujourdhui;
+  const precedentImpossible = avecFleches && !!premierAchat && finDePeriode(decaler(periode, -1)) < premierAchat;
 
   function choisir(valeur) {
     setOuvert(false);
@@ -61,7 +71,7 @@ export function SelecteurPeriode({ periode, onChange, dernierAchat }) {
 
   return (
     <div className="periode" ref={zone}>
-      <button type="button" className="periode__fleche" aria-label="Période précédente" hidden={!avecFleches} onClick={() => onChange(decaler(periode, -1))}>‹</button>
+      <button type="button" className="periode__fleche" aria-label="Période précédente" hidden={!avecFleches} disabled={precedentImpossible} onClick={() => onChange(decaler(periode, -1))}>‹</button>
       <button type="button" className="periode__choix" aria-haspopup="menu" aria-expanded={ouvert} onClick={() => setOuvert((o) => !o)}>
         <span className="periode__libelle">{libellePeriode(periode)}</span>
         <svg className="chevron-bas" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

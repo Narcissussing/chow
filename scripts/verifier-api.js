@@ -215,6 +215,8 @@ try {
     console.error("ERREUR inattendue :", err.message);
 } finally {
     for (const nettoyer of nettoyages) await nettoyer();
+    // Le test de blocage vise localhost : toujours débloqué, même si le script s'arrête en route.
+    await db.query("DELETE FROM ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
     const u = await db.query("DELETE FROM users WHERE email = $1 RETURNING id", [EMAIL]);
     if (u.rows[0]) await db.query("DELETE FROM session WHERE (sess->'passport'->>'user')::int = $1", [u.rows[0].id]);
     await db.end();
