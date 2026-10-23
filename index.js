@@ -102,6 +102,60 @@ await db.query(`
     )
 `);
 
+await db.query(`
+    CREATE TABLE IF NOT EXISTS tickets (
+        id SERIAL PRIMARY KEY,
+        date DATE,
+        magasin TEXT NOT NULL,
+        enseigne TEXT NOT NULL,
+        total NUMERIC(10, 2) NOT NULL,
+        UNIQUE (date, magasin)
+    )
+`);
+await db.query(`
+    CREATE TABLE IF NOT EXISTS achats (
+        id SERIAL PRIMARY KEY,
+        ticket_id INTEGER NOT NULL REFERENCES tickets(id) ON DELETE CASCADE,
+        rayon TEXT,
+        libelle TEXT NOT NULL,
+        quantite NUMERIC,
+        poids NUMERIC,
+        prix_unitaire NUMERIC(10, 2),
+        total NUMERIC(10, 2) NOT NULL,
+        contenance NUMERIC,
+        unite TEXT,
+        prix_ref NUMERIC(10, 2)
+    )
+`);
+await db.query("CREATE INDEX IF NOT EXISTS achats_ticket_id ON achats (ticket_id)");
+await db.query("CREATE INDEX IF NOT EXISTS achats_libelle ON achats (libelle)");
+// Un libellé de ticket est associé une seule fois ; les achats suivants réutilisent l'association.
+await db.query(`
+    CREATE TABLE IF NOT EXISTS libelles (
+        libelle TEXT PRIMARY KEY,
+        food_id TEXT REFERENCES foods(id),
+        statut TEXT NOT NULL CHECK (statut IN ('chow', 'hors-chow', 'non-alimentaire', 'non-detaille', 'a-classer'))
+    )
+`);
+
+await db.query("CREATE TABLE IF NOT EXISTS ip_bloquees (ip TEXT PRIMARY KEY, jusqua TIMESTAMPTZ NOT NULL)");
+
+// Les Paramètres (aliments, équivalences, prix) sont réservés à l'administrateur du foyer.
+await db.query("ALTER TABLE users ADD COLUMN IF NOT EXISTS admin BOOLEAN NOT NULL DEFAULT false");
+await db.query(
+    "UPDATE users SET admin = true WHERE email = 'oyinloye.mide@gmail.com' AND NOT EXISTS (SELECT 1 FROM users WHERE admin)"
+);
+
+// Coût d'un achat habituel, pour les aliments sans historique de tickets (prix moyens de supermarché, sauf le niébé).
+await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS prix_habituel NUMERIC(10, 2)");
+await db.query(
+    `UPDATE foods SET prix_habituel = v.prix
+     FROM (VALUES ('haricots-niebe', 3.20), ('lentilles-vertes', 2.00), ('mortadelle', 2.50), ('sucre-morceaux', 1.60),
+                  ('piment-poudre', 1.60), ('zeste-citron', 0.60), ('bouillon-boeuf', 1.50), ('panga', 4.50),
+                  ('herbes-provence', 1.50), ('piment-marocain', 1.50), ('garri', 4.00)) AS v(id, prix)
+     WHERE foods.id = v.id AND foods.prix_habituel IS NULL`
+);
+
 await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS quantite");
 await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS unite");
 await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS magasin");
@@ -110,7 +164,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.use(express.static("frontend/dist", { index: false }));
-app.get(["/login", "/", "/aliments", "/aliments/:idAliment", "/stock", "/courses", "/calories"], function (req, res) {
+app.get(["/login", "/", "/aliments", "/aliments/:idAliment", "/parametres", "/parametres/aliments", "/parametres/aliments/:idAliment",
+    "/stock", "/courses", "/calories"], function (req, res) {
     res.sendFile("index.html", { root: "frontend/dist" });
 });
 
@@ -199,15 +254,68 @@ app.use("/api", function (req, res, next) {
 
 // Jamais l'objet "users" complet : il contient le hash du mot de passe.
 function utilisateurPublic(utilisateur) {
-    return { id: utilisateur.id, email: utilisateur.email };
+    return { id: utilisateur.id, email: utilisateur.email, admin: utilisateur.admin === true };
 }
 
-app.post("/api/login", function (req, res, next) {
-    passport.authenticate("local", function (err, utilisateur) {
+// Limite des échecs de connexion. Les échecs se comptent en mémoire ; une adresse IP qui atteint la limite est
+// bloquée 30 jours en base (survit aux redémarrages). Un email n'est verrouillé que 15 min, pour ne jamais
+// bloquer un compte du foyer un mois. Débloquer : DELETE FROM ip_bloquees WHERE ip = '…'.
+const BLOCAGE_IP = "30 days";
+const FENETRE_ECHECS_MS = 15 * 60 * 1000;
+const MAX_ECHECS = { ip: 5, email: 10 };
+const echecsConnexion = new Map();
+
+function cleEchecs(type, valeur) {
+    return type + ":" + String(valeur || "").toLowerCase();
+}
+
+async function ipBloquee(ip) {
+    const r = await db.query("SELECT 1 FROM ip_bloquees WHERE ip = $1 AND jusqua > NOW()", [ip]);
+    return r.rows.length > 0;
+}
+
+function connexionBloquee(cles) {
+    const maintenant = Date.now();
+    return cles.some(([type, cle]) => {
+        const e = echecsConnexion.get(cle);
+        return e && maintenant - e.debut < FENETRE_ECHECS_MS && e.nombre >= MAX_ECHECS[type];
+    });
+}
+
+function noterEchec(cles) {
+    const maintenant = Date.now();
+    for (const [, cle] of cles) {
+        const e = echecsConnexion.get(cle);
+        if (!e || maintenant - e.debut >= FENETRE_ECHECS_MS) echecsConnexion.set(cle, { nombre: 1, debut: maintenant });
+        else e.nombre++;
+    }
+}
+
+app.post("/api/login", async function (req, res, next) {
+    const cles = [["ip", cleEchecs("ip", req.ip)], ["email", cleEchecs("email", req.body.email)]];
+    try {
+        if ((await ipBloquee(req.ip)) || connexionBloquee(cles)) {
+            console.log("Connexion bloquée :", req.ip, req.body.email);
+            return res.status(429).json({ erreur: "Trop d'essais. Connexion bloquée." });
+        }
+    } catch (err) {
+        return next(err);
+    }
+    passport.authenticate("local", async function (err, utilisateur) {
         if (err) return next(err);
         if (!utilisateur) {
+            noterEchec(cles);
+            if (connexionBloquee(cles.slice(0, 1))) {
+                await db.query(
+                    `INSERT INTO ip_bloquees (ip, jusqua) VALUES ($1, NOW() + INTERVAL '${BLOCAGE_IP}')
+                     ON CONFLICT (ip) DO UPDATE SET jusqua = EXCLUDED.jusqua`,
+                    [req.ip]
+                ).catch((e) => console.log("ERREUR blocage IP:", e.message));
+                console.log("IP bloquée 30 jours :", req.ip);
+            }
             return res.status(401).json({ erreur: "Email ou mot de passe incorrect." });
         }
+        for (const [, cle] of cles) echecsConnexion.delete(cle);
         req.logIn(utilisateur, function (errLogin) {
             if (errLogin) return next(errLogin);
             res.json({ succes: true, utilisateur: utilisateurPublic(utilisateur) });
@@ -231,6 +339,11 @@ app.get("/api/session", function (req, res) {
 
 // Tout ce qui est déclaré APRÈS cette ligne exige d'être connecté.
 app.use(requireAuth);
+
+function exigerAdmin(req, res, next) {
+    if (req.user.admin) return next();
+    res.status(403).json({ erreur: "Réservé à l'administrateur." });
+}
 
 const uniteParType = { unite: 'unités', pack: 'packs', cl: 'cl' };
 
@@ -361,6 +474,76 @@ async function chargerPageCourses() {
     return { courses, aliments, stock, presetHebdo: presetHebdo.rows };
 }
 
+function quantile(valeurs, q) {
+    const tri = [...valeurs].sort((a, b) => a - b);
+    const position = (tri.length - 1) * q;
+    const bas = Math.floor(position);
+    return tri[bas] + (tri[Math.ceil(position)] - tri[bas]) * (position - bas);
+}
+
+// Estimation des Courses sans saisir de quantité : quantité habituelle × dernier prix payé.
+// Habitude = coût payé lors des 8 derniers passages en caisse où l'aliment a été acheté (12 derniers mois) :
+// médiane = estimation, 1er et 3e quartiles = fourchette. Ces coûts sont ramenés au dernier prix au kg, au litre
+// ou à l'unité (dernier prix / prix médian des mêmes passages).
+async function estimerCourses() {
+    const articles = await db.query(
+        `SELECT DISTINCT c.food_id, f.nom, f.prix_habituel
+         FROM courses c JOIN foods f ON f.id = c.food_id
+         WHERE c.achete = false`
+    );
+    const libres = await db.query("SELECT count(*)::int AS n FROM courses WHERE achete = false AND food_id IS NULL");
+    // Quantité d'un passage dans l'unité de prix : kg ou litre si la contenance est connue, sinon nombre d'articles.
+    const historique = await db.query(
+        `SELECT l.food_id, SUM(a.total)::float AS cout,
+                SUM(COALESCE(a.poids, COALESCE(a.quantite, 1) * a.contenance))::float AS quantite_ref,
+                SUM(COALESCE(a.quantite, 1))::float AS nombre,
+                bool_and(a.contenance IS NOT NULL) AS au_poids
+         FROM achats a
+         JOIN libelles l ON l.libelle = a.libelle
+         JOIN tickets t ON t.id = a.ticket_id
+         WHERE l.food_id = ANY($1) AND t.date >= CURRENT_DATE - INTERVAL '12 months'
+         GROUP BY l.food_id, t.id, t.date
+         ORDER BY t.date DESC`,
+        [articles.rows.map((a) => a.food_id)]
+    );
+    const passagesParAliment = new Map();
+    for (const ligne of historique.rows) {
+        const passages = passagesParAliment.get(ligne.food_id) || [];
+        if (passages.length < 8) passages.push(ligne);
+        passagesParAliment.set(ligne.food_id, passages);
+    }
+
+    let estimation = 0, bas = 0, haut = 0;
+    const sansPrix = [];
+    for (const article of articles.rows) {
+        const passages = passagesParAliment.get(article.food_id);
+        if (passages) {
+            const couts = passages.map((p) => p.cout);
+            // Dernier prix seulement si tous les passages se comparent dans la même unité (kg/l ou pièce).
+            const memeUnite = passages.every((p) => p.au_poids === passages[0].au_poids);
+            const prix = passages.map((p) => p.cout / (p.au_poids ? p.quantite_ref : p.nombre));
+            const ajustement = memeUnite ? prix[0] / quantile(prix, 0.5) : 1;
+            estimation += quantile(couts, 0.5) * ajustement;
+            bas += quantile(couts, 0.25) * ajustement;
+            haut += quantile(couts, 0.75) * ajustement;
+        } else if (article.prix_habituel !== null) {
+            const prix = Number(article.prix_habituel);
+            estimation += prix;
+            bas += prix * 0.8;
+            haut += prix * 1.2;
+        } else {
+            sansPrix.push(article.nom);
+        }
+    }
+    return {
+        estimation: Math.round(estimation),
+        bas: Math.floor(bas),
+        haut: Math.ceil(haut),
+        articles: articles.rows.length + libres.rows[0].n,
+        sansPrix: sansPrix.length + libres.rows[0].n,
+    };
+}
+
 async function chargerPageCalories() {
     return { journal: await chercherJournalDuJour(), aliments: await chercherAliments(), recettes: await chercherRecettes() };
 }
@@ -385,6 +568,21 @@ app.get("/api/aliments/:idAliment", lectureApi(async (req) => {
 }));
 app.get("/api/stock", lectureApi(chargerPageStock));
 app.get("/api/courses", lectureApi(chargerPageCourses));
+app.get("/api/courses/estimation", lectureApi(estimerCourses));
+// Un aliment encore présent : niveau autre que « vide », ou nombre supérieur à 0.
+const STOCK_NON_VIDE = "quantite IS NOT NULL AND quantite NOT IN ('vide', '0')";
+app.get("/api/accueil", lectureApi(async () => {
+    const resume = await db.query(
+        `SELECT (SELECT count(*)::int FROM stock WHERE ${STOCK_NON_VIDE}) AS stock,
+                (SELECT count(*)::int FROM stock WHERE ${STOCK_NON_VIDE} AND date_maj < CURRENT_DATE - 21) AS stock_a_verifier,
+                (SELECT count(*)::int FROM courses WHERE achete = false) AS courses,
+                (SELECT COALESCE(SUM(total), 0)::float FROM tickets WHERE date >= date_trunc('month', CURRENT_DATE)) AS depense_mois,
+                (SELECT COALESCE(SUM(total), 0)::float FROM tickets WHERE date >= date_trunc('week', CURRENT_DATE)) AS depense_semaine,
+                (SELECT COALESCE(SUM(total), 0)::float FROM tickets
+                 WHERE date >= date_trunc('month', CURRENT_DATE) - INTERVAL '1 month' AND date < date_trunc('month', CURRENT_DATE)) AS depense_mois_dernier`
+    );
+    return { ...resume.rows[0], estimation: await estimerCourses() };
+}));
 app.get("/api/calories", lectureApi(chargerPageCalories));
 
 const sansAccents = (texte) => texte.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
@@ -417,7 +615,7 @@ app.post("/api/aliments", async (req, res) => {
     }
 });
 
-app.post("/api/aliments/:idAliment/equivalences", async (req, res) => {
+app.post("/api/aliments/:idAliment/equivalences", exigerAdmin, async (req, res) => {
     try {
         const idAliment = req.params.idAliment;
         const grammesCafe = req.body.grammesCafe === "" ? null : req.body.grammesCafe;

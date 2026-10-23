@@ -56,7 +56,7 @@ function ouvrir(surcharges = {}, { journal = JOURNAL, recettes = RECETTES } = {}
   return rendreApp("/calories");
 }
 
-const attendrePage = () => screen.findByText("Chow — Fait maison 🏠");
+const attendrePage = () => screen.findByText("Fait maison 🏠");
 const ligne = (nom) => [...document.querySelectorAll(".journal-item")].find((l) => l.querySelector(".journal-nom").textContent.includes(nom));
 const total = (id) => document.getElementById(id).textContent;
 const listeOuverte = () => document.querySelector(".custom-select__list");

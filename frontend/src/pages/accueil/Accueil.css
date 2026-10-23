@@ -96,3 +96,110 @@
     }
 
 }
+
+/* Cartes chiffrées : tuile et libellé à gauche, chiffre à droite avec de la place. */
+.home-links {
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.home-link-card {
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  padding: 22px 24px;
+}
+
+.home-link-tuile {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+}
+
+.home-link-tuile .home-link-icone {
+  width: 26px;
+  height: 26px;
+}
+
+.home-link-tuile--stats { background: #f8e3dc; color: var(--accent); }
+.home-link-tuile--stock { background: #f6ead0; color: #8a6418; }
+.home-link-tuile--courses { background: #dcefe6; color: #2f6f62; }
+
+.home-link-texte {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.home-link-card .home-link-title {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.home-link-valeur {
+  flex-shrink: 0;
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+}
+
+div.home-link-card:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--border);
+}
+
+@media (max-width: 900px) {
+  .home-links,
+  main:has(.home-links) .home-links {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  main:has(.home-links) .home-link-card {
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  main:has(.home-links) .home-link-card .home-link-title {
+    font-size: 0.95rem;
+  }
+
+  main:has(.home-links) .home-link-desc {
+    font-size: 0.78rem;
+  }
+
+  .home-link-valeur {
+    font-size: 1.6rem;
+  }
+
+  .home-link-tuile {
+    width: 40px;
+    height: 40px;
+  }
+
+  .home-link-tuile .home-link-icone,
+  main:has(.home-links) .home-link-tuile .home-link-icone {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+.home-link-chiffres {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.home-link-petit {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}

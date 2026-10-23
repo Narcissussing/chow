@@ -8,9 +8,9 @@ const ALIMENTS = [
 ];
 
 async function ouvrir() {
-  simulerApi({ "/session": [200, { utilisateur: { id: 1 } }], "/aliments": [200, { aliments: ALIMENTS }] });
-  rendreApp("/aliments");
-  await screen.findByText("Chow — Fait maison 🏠");
+  simulerApi({ "/session": [200, { utilisateur: { id: 1, admin: true } }], "/aliments": [200, { aliments: ALIMENTS }] });
+  rendreApp("/parametres/aliments");
+  await screen.findByText("Fait maison 🏠");
 }
 const nomsVisibles = () => [...document.querySelectorAll(".food-card:not(.hidden) .food-card__name")].map((n) => n.textContent);
 const champ = () => document.getElementById("searchInput");

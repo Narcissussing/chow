@@ -12,7 +12,8 @@ foods ──┬── stock
         ├── courses
         ├── courses_preset
         ├── journal_repas
-        └── recette_ingredients
+        ├── recette_ingredients
+        └── libelles ·· achats (par le texte du libellé) ── tickets
 
 recettes ── recette_ingredients ── foods
 users ── session (identifiant sérialisé, sans clé étrangère)
@@ -97,6 +98,28 @@ Les calories et macros calculées ne sont pas stockées :
 `quantite_g` et `unite` (unité affichée, reprise dans la Cuisine). Une
 modification remplace les lignes ; leur ordre d’insertion (`id`) est l’ordre
 de la recette.
+
+### `tickets`, `achats` et `libelles`
+
+Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais), importé
+une fois par `scripts/importer-tickets.js` depuis le dossier local `tickets/`.
+
+- `tickets` : un passage en caisse, identifié par `date` et `magasin` ;
+  `enseigne` regroupe les magasins d’une même chaîne, `total` est la somme
+  des lignes. `date` est vide pour un ticket photographié sans sa date.
+- `achats` : une ligne de ticket (`libelle`, `quantite` ou `poids`,
+  `prix_unitaire`, `total`), rattachée à `ticket_id`. `contenance`, `unite`
+  et `prix_ref` donnent le prix au kg ou au litre quand il est connu.
+- `libelles` : association d’un libellé de ticket à un aliment Chow
+  (`food_id`, statut `chow`) ou à un statut `hors-chow`, `non-alimentaire`,
+  `non-detaille` (passage connu seulement par la banque) ou `a-classer`.
+  Un nouveau libellé n’est associé qu’une fois.
+
+`GET /api/courses/estimation` estime les Courses non achetées sans quantité
+saisie : pour chaque aliment, médiane du coût payé lors des 8 derniers
+passages en caisse des 12 derniers mois (fourchette = 1er et 3e quartiles).
+Sans historique, il utilise `foods.prix_habituel` (coût d’un achat habituel,
+±20 %) ; sinon l’article est compté dans `sansPrix`.
 
 ### `session`
 

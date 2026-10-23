@@ -103,7 +103,7 @@ function GrilleAliments({ aliments }) {
 
         <div className="food-grid" id="foodGrid">
           {ordre.map((aliment) => (
-            <Link key={aliment.id} to={`/aliments/${aliment.id}`} className={"food-card" + (estVisible(aliment) ? "" : " hidden")}>
+            <Link key={aliment.id} to={`/parametres/aliments/${aliment.id}`} className={"food-card" + (estVisible(aliment) ? "" : " hidden")}>
               <div className="food-card__img-placeholder">{aliment.emoji}</div>
               <div className="food-card__body">
                 <p className="food-card__name">{aliment.nom}</p>

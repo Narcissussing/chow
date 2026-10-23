@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation, useParams } from "react-router-dom";
 import Cle from "./components/Cle.jsx";
 import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import Protege from "./components/Protege.jsx";
@@ -10,13 +10,19 @@ import Aliments from "./pages/aliments/Aliments.jsx";
 import CaloriesPage from "./pages/calories/CaloriesPage.jsx";
 import CoursesPage from "./pages/courses/CoursesPage.jsx";
 import Login from "./pages/login/Login.jsx";
+import Parametres from "./pages/parametres/Parametres.jsx";
 import StockPage from "./pages/stock/StockPage.jsx";
 
-const privee = (page) => (
-  <Protege>
+const privee = (page, admin = false) => (
+  <Protege admin={admin}>
     <Cle>{page}</Cle>
   </Protege>
 );
+
+function AncienAliment() {
+  const { idAliment } = useParams();
+  return <Navigate to={"/parametres/aliments/" + encodeURIComponent(idAliment)} replace />;
+}
 
 export default function App() {
   const { key } = useLocation();
@@ -27,8 +33,11 @@ export default function App() {
           <Routes>
             <Route path="/login" element={<Cle><Login /></Cle>} />
             <Route path="/" element={privee(<Accueil />)} />
-            <Route path="/aliments" element={privee(<Aliments />)} />
-            <Route path="/aliments/:idAliment" element={privee(<AlimentDetail />)} />
+            <Route path="/parametres" element={privee(<Parametres />, true)} />
+            <Route path="/parametres/aliments" element={privee(<Aliments />, true)} />
+            <Route path="/parametres/aliments/:idAliment" element={privee(<AlimentDetail />, true)} />
+            <Route path="/aliments" element={<Navigate to="/parametres/aliments" replace />} />
+            <Route path="/aliments/:idAliment" element={<AncienAliment />} />
             <Route path="/stock" element={privee(<StockPage />)} />
             <Route path="/courses" element={privee(<CoursesPage />)} />
             <Route path="/calories" element={privee(<CaloriesPage />)} />

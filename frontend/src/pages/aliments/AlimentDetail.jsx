@@ -63,7 +63,7 @@ function Detail({ aliment }) {
   return (
     <main>
       <div className="detail-section">
-        <Link to="/aliments" className="btn-retour">← Retour aux aliments</Link>
+        <Link to="/parametres/aliments" className="btn-retour">← Retour aux aliments</Link>
 
         {aliment ? (
           <div className="detail-carte">

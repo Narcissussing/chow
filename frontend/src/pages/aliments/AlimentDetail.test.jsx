@@ -7,14 +7,14 @@ test("équivalences : sauvegarde à la sortie du champ, champ vide envoyé vide,
   jest.useFakeTimers();
   const envois = [];
   simulerApi({
-    "/session": [200, { utilisateur: { id: 1 } }],
+    "/session": [200, { utilisateur: { id: 1, admin: true } }],
     "/aliments/huile": [200, { aliment: ALIMENT }],
     "/aliments/huile/equivalences": (options) => {
       envois.push(JSON.parse(options.body));
       return [200, { succes: true }];
     },
   });
-  rendreApp("/aliments/huile");
+  rendreApp("/parametres/aliments/huile");
   await act(async () => jest.runOnlyPendingTimers());
   await screen.findByText("Huile d'olive");
   expect(document.title).toBe("Chow — Huile d'olive");
@@ -33,8 +33,8 @@ test("équivalences : sauvegarde à la sortie du champ, champ vide envoyé vide,
 });
 
 test("aliment inconnu : message et titre « Aliment introuvable »", async () => {
-  simulerApi({ "/session": [200, { utilisateur: { id: 1 } }], "/aliments/x": [404, { erreur: "Aliment introuvable." }] });
-  rendreApp("/aliments/x");
+  simulerApi({ "/session": [200, { utilisateur: { id: 1, admin: true } }], "/aliments/x": [404, { erreur: "Aliment introuvable." }] });
+  rendreApp("/parametres/aliments/x");
   expect(await screen.findByText("Aliment introuvable.")).toBeInTheDocument();
   expect(document.title).toBe("Chow — Aliment introuvable");
 });

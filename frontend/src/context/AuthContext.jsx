@@ -5,11 +5,15 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [etat, setEtat] = useState("inconnu");
+  const [utilisateur, setUtilisateur] = useState(null);
 
   useEffect(() => {
     const controleur = new AbortController();
     api("/session", { signal: controleur.signal, ignorer401: true })
-      .then(({ statut }) => setEtat(statut === 200 ? "connecte" : statut === 401 ? "deconnecte" : "erreur"))
+      .then(({ statut, donnees }) => {
+        setUtilisateur(donnees?.utilisateur ?? null);
+        setEtat(statut === 200 ? "connecte" : statut === 401 ? "deconnecte" : "erreur");
+      })
       .catch((err) => {
         if (err.type !== "annulation") setEtat("erreur");
       });
@@ -17,12 +21,15 @@ export function AuthProvider({ children }) {
   }, []);
 
   const connecter = useCallback(async (email, password) => {
-    const { statut } = await api("/login", { method: "POST", body: { email, password }, ignorer401: true });
-    if (statut === 200) setEtat("connecte");
+    const { statut, donnees } = await api("/login", { method: "POST", body: { email, password }, ignorer401: true });
+    if (statut === 200) {
+      setUtilisateur(donnees?.utilisateur ?? null);
+      setEtat("connecte");
+    }
     return statut;
   }, []);
 
-  return <AuthContext.Provider value={{ etat, connecter }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ etat, utilisateur, connecter }}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {

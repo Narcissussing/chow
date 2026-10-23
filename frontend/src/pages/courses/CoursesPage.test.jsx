@@ -39,7 +39,7 @@ function ouvrirCourses(surcharges = {}, { courses = COURSES, preset = [] } = {})
   return rendreApp("/courses");
 }
 
-const attendrePage = () => screen.findByText("Chow — Fait maison 🏠");
+const attendrePage = () => screen.findByText("Fait maison 🏠");
 const carte = (nom) => [...document.querySelectorAll(".course-item")].find((c) => c.querySelector(".course-nom").textContent.includes(nom));
 const ordreListe = () => [...document.getElementById("listeCourses").children].map((e) => (e.classList.contains("course-categorie-entete") ? "#" + e.textContent : e.id || e.querySelector(".course-nom").textContent.trim()));
 function choisirTri(libelle) {

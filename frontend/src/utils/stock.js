@@ -21,6 +21,16 @@ export function estQuantiteBasse(valeur, trackingType) {
   return Number(valeur) < 2;
 }
 
+export function estVide(valeur, trackingType) {
+  if (trackingType === "cl") return valeur === "vide";
+  return !(Number(valeur) > 0);
+}
+
+// Encore présent mais pas mis à jour depuis 3 semaines : la quantité affichée n'est peut-être plus vraie.
+export function estAVerifier(item) {
+  return !estVide(item.quantite, item.tracking_type) && Number(item.jours_depuis) >= 21;
+}
+
 export function texteEmplacement(emplacement) {
   return emplacement === "fg" ? "Frigo" : emplacement === "fz" ? "Congélateur" : "Réserve";
 }
@@ -57,7 +67,7 @@ export function correspondFiltres(item, { emplacement, type, termes }) {
   const okEmplacement = emplacement === "tous" || item.emplacement === emplacement;
   const okType =
     type === "tous" ||
-    (type === "bas" ? estQuantiteBasse(item.quantite, item.tracking_type) : type === "cl" ? item.tracking_type === "cl" : item.tracking_type !== "cl");
+    (type === "bas" ? estQuantiteBasse(item.quantite, item.tracking_type) : type === "verifier" ? estAVerifier(item) : type === "cl" ? item.tracking_type === "cl" : item.tracking_type !== "cl");
   return okEmplacement && okType && normaliserTexte(item.nom.toLowerCase()).includes(termes);
 }
 

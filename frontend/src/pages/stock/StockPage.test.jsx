@@ -33,7 +33,7 @@ function ouvrirStock(surcharges = {}) {
 
 const carte = (nom) => screen.getByText(nom).closest(".stock-item");
 const nomsVisibles = () => [...document.querySelectorAll(".stock-item:not(.hidden) .stock-nom")].map((n) => n.textContent);
-const attendrePage = () => screen.findByText("Chow — Fait maison 🏠");
+const attendrePage = () => screen.findByText("Fait maison 🏠");
 
 test("filtres à choix unique et recherche sans accents", async () => {
   ouvrirStock();
@@ -238,4 +238,18 @@ test("filtre Bas et compteur : ambre et nombre filtré dès qu'un filtre est act
   fireEvent.click(screen.getByRole("button", { name: "Tous" }));
   expect(badge).toHaveTextContent("3");
   expect(badge).not.toHaveClass("badge-compteur--filtre");
+});
+
+test("filtre À vérifier : seulement ce qui reste à la maison sans mise à jour depuis 3 semaines", async () => {
+  ouvrirStock({
+    "/stock": [200, { stock: [
+      { ...STOCK[0], jours_depuis: 30 },
+      { ...STOCK[1], quantite: "0", jours_depuis: 40 },
+      { ...STOCK[2], jours_depuis: 21 },
+      { id: 4, food_id: "pates", nom: "Pâtes", emoji: "🍝", image: null, tracking_type: "pack", emplacement: "st", quantite: "2", jours_depuis: 5, deja_en_courses: false },
+    ], aliments: ALIMENTS }],
+  });
+  await attendrePage();
+  fireEvent.click(screen.getByRole("button", { name: "🕒 À vérifier" }));
+  expect(nomsVisibles()).toEqual(["Lait", "Riz"]);
 });

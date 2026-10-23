@@ -11,7 +11,7 @@ const DONNEES = {
   "/calories": [200, { journal: [], aliments: [], recettes: [] }],
 };
 const aller = (texte) => act(async () => fireEvent.click([...document.querySelectorAll(".nav__link")].find((l) => l.textContent === texte)));
-const attendrePage = () => screen.findByText("Chow — Fait maison 🏠");
+const attendrePage = () => screen.findByText("Fait maison 🏠");
 
 afterEach(() => localStorage.clear());
 
@@ -35,7 +35,7 @@ test("panneau recette ouvert : la page derrière est figée, et tout est libér�
   expect(document.getElementById("sheet")).toHaveClass("ouvert");
   expect(document.body.style.overflow).toBe("hidden");
   expect(document.documentElement.style.overflow).toBe("hidden");
-  await aller("Aliments");
+  await aller("Courses");
   await attendrePage();
   expect(document.body.style.overflow).toBe("");
   expect(document.documentElement.style.overflow).toBe("");
@@ -48,7 +48,7 @@ test("naviguer entre toutes les pages ne laisse aucun écouteur document en trop
   const retraits = jest.spyOn(document, "removeEventListener");
   const { unmount } = rendreApp("/stock");
   await attendrePage();
-  for (const page of ["Courses", "Calories", "Aliments", "Stock", "Courses"]) {
+  for (const page of ["Courses", "Calories", "Stock", "Courses"]) {
     await aller(page);
     await attendrePage();
   }

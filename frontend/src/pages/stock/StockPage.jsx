@@ -24,6 +24,7 @@ const FILTRES = [
   { type: "cl", texte: "🫙 Niveau" },
   { type: "autre", texte: "🔢 Pièces" },
   { type: "bas", texte: "🔻 Bas" },
+  { type: "verifier", texte: "🕒 À vérifier" },
 ];
 
 const OPTIONS_TRI = [

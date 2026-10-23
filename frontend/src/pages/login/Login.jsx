@@ -26,8 +26,8 @@ export default function Login() {
     }
     if (statut === 200) {
       navigate(retour);
-    } else if (statut === 401) {
-      navigate("/login?erreur=1" + (retour !== "/" ? "&retour=" + encodeURIComponent(retour) : ""));
+    } else if (statut === 401 || statut === 429) {
+      navigate("/login?erreur=" + (statut === 429 ? "bloque" : "1") + (retour !== "/" ? "&retour=" + encodeURIComponent(retour) : ""));
     } else {
       setPanne(true);
     }
@@ -43,6 +43,7 @@ export default function Login() {
           <p className="page-header__description">Connecte-toi pour accéder à Chow.</p>
 
           {params.get("erreur") === "1" && <p className="erreur">Email ou mot de passe incorrect.</p>}
+          {params.get("erreur") === "bloque" && <p className="erreur">Trop d'essais. Connexion bloquée.</p>}
         </div>
 
         <div className="login-carte">

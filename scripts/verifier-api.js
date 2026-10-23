@@ -42,6 +42,10 @@ async function appel(methode, chemin, corps, { json = true, redirect = "manual" 
     return { statut: reponse.status, donnees, texte, setCookie, location: reponse.headers.get("location") };
 }
 
+async function arreterServeur(s) {
+    await new Promise((r) => { s.once("exit", r); s.kill(); });
+}
+
 async function demarrerServeur() {
     const serveur = spawn(process.execPath, ["index.js"], { env: { ...process.env, PORT: String(PORT) }, stdio: "ignore" });
     for (let i = 0; i < 40; i++) {
@@ -52,7 +56,7 @@ async function demarrerServeur() {
 }
 
 await db.connect();
-const serveur = await demarrerServeur();
+let serveur = await demarrerServeur();
 
 try {
     const hash = await bcrypt.hash(MOT_DE_PASSE, 10);
@@ -69,6 +73,20 @@ try {
     verifier("login en formulaire → 415", r.statut === 415);
     r = await appel("POST", "/api/login", { email: EMAIL, password: "faux" });
     verifier("login faux → 401 + message", r.statut === 401 && r.donnees?.erreur === "Email ou mot de passe incorrect.");
+    for (let i = 0; i < 4; i++) await appel("POST", "/api/login", { email: EMAIL, password: "faux" });
+    r = await appel("POST", "/api/login", { email: EMAIL, password: "faux" });
+    verifier("6e échec de connexion → 429", r.statut === 429, String(r.statut));
+    r = await appel("POST", "/api/login", { email: EMAIL, password: MOT_DE_PASSE });
+    verifier("même le bon mot de passe est bloqué", r.statut === 429);
+    const blocage = await db.query("SELECT jusqua > NOW() + INTERVAL '29 days' AS mois FROM ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
+    verifier("IP bloquée 30 jours en base", blocage.rows[0]?.mois === true);
+    await arreterServeur(serveur);
+    serveur = await demarrerServeur();
+    r = await appel("POST", "/api/login", { email: EMAIL, password: MOT_DE_PASSE });
+    verifier("blocage IP conservé après redémarrage", r.statut === 429);
+    await db.query("DELETE FROM ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
+    await arreterServeur(serveur);
+    serveur = await demarrerServeur();
     r = await appel("POST", "/api/login", { email: EMAIL, password: MOT_DE_PASSE });
     verifier("login juste → utilisateur sans mot de passe", r.statut === 200 && r.donnees?.utilisateur?.email === EMAIL && !("password" in r.donnees.utilisateur));
     verifier("cookie HttpOnly + SameSite=Lax", /HttpOnly/.test(r.setCookie || "") && /SameSite=Lax/i.test(r.setCookie || ""), r.setCookie);
@@ -87,6 +105,10 @@ try {
     const stockActuel = r.donnees.stock;
     r = await appel("GET", "/api/courses");
     verifier("GET /api/courses", r.statut === 200 && ["courses", "aliments", "stock", "presetHebdo"].every((k) => Array.isArray(r.donnees?.[k])));
+    r = await appel("GET", "/api/courses/estimation");
+    const e = r.donnees;
+    verifier("GET /api/courses/estimation", r.statut === 200 && e.bas <= e.estimation && e.estimation <= e.haut && e.sansPrix <= e.articles, JSON.stringify(e));
+    console.log("     estimation :", JSON.stringify(e));
     r = await appel("GET", "/api/calories");
     verifier("GET /api/calories", r.statut === 200 && ["journal", "aliments", "recettes"].every((k) => Array.isArray(r.donnees?.[k])));
     const journalActuel = r.donnees.journal;
@@ -130,12 +152,22 @@ try {
     r = await appel("POST", "/api/calories/supprimer", { idEntree });
     verifier("POST /api/calories/supprimer", r.donnees?.succes === true);
 
+    r = await appel("GET", "/api/accueil");
+    verifier("GET /api/accueil", r.statut === 200 && ["stock", "stock_a_verifier", "courses", "depense_mois", "depense_semaine", "depense_mois_dernier"].every((k) => typeof r.donnees?.[k] === "number"));
+
     const avecEquiv = aliments[0];
-    r = await appel("POST", `/api/aliments/${encodeURIComponent(avecEquiv.id)}/equivalences`, {
+    const equivalences = {
         grammesCafe: avecEquiv.grammes_par_cuil_a_cafe ?? "",
         grammesSoupe: avecEquiv.grammes_par_cuil_a_soupe ?? "",
-    });
-    verifier("POST /api/aliments/:id/equivalences (valeurs inchangées)", r.donnees?.succes === true);
+    };
+    r = await appel("POST", `/api/aliments/${encodeURIComponent(avecEquiv.id)}/equivalences`, equivalences);
+    verifier("équivalences refusées à un compte non admin → 403", r.statut === 403);
+    await db.query("UPDATE users SET admin = true WHERE email = $1", [EMAIL]);
+    r = await appel("GET", "/api/session");
+    verifier("session admin", r.donnees?.utilisateur?.admin === true);
+    r = await appel("POST", `/api/aliments/${encodeURIComponent(avecEquiv.id)}/equivalences`, equivalences);
+    verifier("POST /api/aliments/:id/equivalences en admin (valeurs inchangées)", r.donnees?.succes === true);
+    await db.query("UPDATE users SET admin = false WHERE email = $1", [EMAIL]);
 
     const ingredients = aliments.slice(0, 2).map((a) => ({ food_id: a.id, quantite_g: 10 }));
     r = await appel("POST", "/api/recettes/creer", { nom: MARQUEUR, categorie: "plat", etapes: "a\nb", ingredients });

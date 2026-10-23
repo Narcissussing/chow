@@ -3,8 +3,9 @@ import { useAuth } from "../context/AuthContext.jsx";
 import Chargement from "./Chargement.jsx";
 import ErreurPage from "./ErreurPage.jsx";
 
-export default function Protege({ children }) {
-  const { etat } = useAuth();
+// admin : page des Paramètres, renvoyée vers l'accueil pour les autres comptes (le serveur refuse aussi).
+export default function Protege({ admin = false, children }) {
+  const { etat, utilisateur } = useAuth();
   const { pathname, search } = useLocation();
 
   if (etat === "inconnu") return <Chargement />;
@@ -12,5 +13,6 @@ export default function Protege({ children }) {
   if (etat === "deconnecte") {
     return <Navigate to={"/login?retour=" + encodeURIComponent(pathname + search)} replace />;
   }
+  if (admin && !utilisateur?.admin) return <Navigate to="/" replace />;
   return children;
 }
