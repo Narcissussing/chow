@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import FondModal from "../../components/FondModal.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import "./EstimationCourses.css";
 
@@ -66,9 +67,15 @@ export default function EstimationCourses({ estimation }) {
   // La bulle est rendue dans <body> (au-dessus de la barre d'outils collante) et suit le bouton.
   useLayoutEffect(() => {
     if (!ouvert) return;
+    // Sous le bouton s'il reste de la place, sinon au-dessus ; hauteur limitée à l'espace disponible.
     const placer = () => {
       const r = zone.current?.getBoundingClientRect();
-      if (r) setPosition({ top: r.bottom + 10, left: Math.min(r.left, window.innerWidth - Math.min(380, window.innerWidth - 32) - 16) });
+      if (!r) return;
+      const left = Math.max(16, Math.min(r.left, window.innerWidth - Math.min(380, window.innerWidth - 32) - 16));
+      const dessous = window.innerHeight - r.bottom - 26;
+      const dessus = r.top - 26;
+      if (dessous >= 320 || dessous >= dessus) setPosition({ top: r.bottom + 10, left, maxHeight: dessous });
+      else setPosition({ bottom: window.innerHeight - r.top + 10, left, maxHeight: dessus });
     };
     placer();
     window.addEventListener("scroll", placer, { passive: true });
@@ -94,6 +101,7 @@ export default function EstimationCourses({ estimation }) {
       <button type="button" className="courses-fourchette" aria-expanded={ouvert} title="Voir le calcul" onClick={() => setOuvert((o) => !o)}>
         {bas} € – {haut} €
       </button>
+      {ouvert && <FondModal onFermer={() => setOuvert(false)} zone={bulle} />}
       {ouvert && position && createPortal(
         <div ref={bulle} className="estimation__popup" role="dialog" aria-label="Calcul de l’estimation" style={position}>
           <div className="estimation__entete">

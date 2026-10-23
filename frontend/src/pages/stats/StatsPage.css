@@ -1632,7 +1632,7 @@ button.puce {
     padding: 16px 18px;
     border-radius: 18px;
     font-size: 0.88rem;
-    box-shadow: 0 -8px 40px rgba(26, 20, 15, 0.22), 0 0 0 100vmax rgba(26, 20, 15, 0.18);
+    box-shadow: 0 -8px 40px rgba(26, 20, 15, 0.22);
     animation: feuille-monte 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
 
@@ -1674,4 +1674,9 @@ button.puce {
     max-width: calc(100vw - 48px);
     white-space: normal;
   }
+}
+
+/* Bulle ouverte : au-dessus du fond assombri (FondModal, z-index 999) */
+.info-popup {
+  z-index: 1000;
 }

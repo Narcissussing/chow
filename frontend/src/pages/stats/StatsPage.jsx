@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import CustomSelect from "../../components/CustomSelect.jsx";
 import Page from "../../components/Page.jsx";
 import { api } from "../../api.js";
+import FondModal from "../../components/FondModal.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { normaliserTexte } from "../../utils/texte.js";
 import { Anneau, Barres, COULEURS_RAYONS, Courbe, MiniCourbe, couleurRayon } from "./graphiques.jsx";
@@ -49,6 +50,7 @@ function titreDepense(periode) {
 function InfoBulle({ bouton, classeBouton, titre, children }) {
   const [ouvert, setOuvert] = useState(false);
   const zone = useRef(null);
+  const bulleRef = useRef(null);
   const zones = useMemo(() => [zone], []);
   useClicExterieur(zones, () => setOuvert(false), ouvert);
   useEffect(() => {
@@ -62,8 +64,9 @@ function InfoBulle({ bouton, classeBouton, titre, children }) {
       <button type="button" className={classeBouton} aria-expanded={ouvert} aria-label={typeof bouton === "string" ? titre : undefined} onClick={() => setOuvert((o) => !o)}>
         {bouton}
       </button>
+      {ouvert && <FondModal onFermer={() => setOuvert(false)} zone={bulleRef} />}
       {ouvert && (
-        <span className="info-popup" role="dialog" aria-label={titre}>
+        <span ref={bulleRef} className="info-popup" role="dialog" aria-label={titre}>
           {children}
         </span>
       )}
