@@ -491,7 +491,7 @@ function quantile(valeurs, q) {
 // ou à l'unité (dernier prix / prix médian des mêmes passages).
 async function estimerCourses() {
     const articles = await db.query(
-        `SELECT DISTINCT c.food_id, f.nom, f.prix_habituel
+        `SELECT DISTINCT c.food_id, f.nom, f.emoji, f.prix_habituel
          FROM courses c JOIN foods f ON f.id = c.food_id
          WHERE c.achete = false`
     );
@@ -501,7 +501,8 @@ async function estimerCourses() {
         `SELECT l.food_id, SUM(a.total)::float AS cout,
                 SUM(COALESCE(a.poids, COALESCE(a.quantite, 1) * a.contenance))::float AS quantite_ref,
                 SUM(COALESCE(a.quantite, 1))::float AS nombre,
-                bool_and(a.contenance IS NOT NULL) AS au_poids
+                bool_and(a.contenance IS NOT NULL) AS au_poids,
+                MAX(COALESCE(a.unite, 'u')) AS unite
          FROM achats a
          JOIN libelles l ON l.libelle = a.libelle
          JOIN tickets t ON t.id = a.ticket_id
@@ -519,24 +520,38 @@ async function estimerCourses() {
 
     let estimation = 0, bas = 0, haut = 0;
     const sansPrix = [];
+    // Détail par article pour la bulle « comment c'est calculé » des Courses.
+    const details = [];
     for (const article of articles.rows) {
         const passages = passagesParAliment.get(article.food_id);
         if (passages) {
             const couts = passages.map((p) => p.cout);
-            // Dernier prix seulement si tous les passages se comparent dans la même unité (kg/l ou pièce).
-            const memeUnite = passages.every((p) => p.au_poids === passages[0].au_poids);
+            // Dernier prix seulement si tous les passages se comparent dans la même unité (kg, l ou pièce), et
+            // borné à ×1,5 / ÷1,5 : un ticket mal lu ou un produit mal associé ne fait pas exploser l'estimation.
+            const memeUnite = passages.every((p) => p.au_poids === passages[0].au_poids && p.unite === passages[0].unite);
             const prix = passages.map((p) => p.cout / (p.au_poids ? p.quantite_ref : p.nombre));
-            const ajustement = memeUnite ? prix[0] / quantile(prix, 0.5) : 1;
+            const ajustement = memeUnite ? Math.min(1.5, Math.max(1 / 1.5, prix[0] / quantile(prix, 0.5))) : 1;
             estimation += quantile(couts, 0.5) * ajustement;
             bas += quantile(couts, 0.25) * ajustement;
             haut += quantile(couts, 0.75) * ajustement;
+            const quantites = passages.map((p) => (p.au_poids ? p.quantite_ref : p.nombre));
+            details.push({
+                nom: article.nom, emoji: article.emoji, source: "habitudes", passages: passages.length,
+                estimation: Math.round(quantile(couts, 0.5) * ajustement * 100) / 100,
+                quantite: memeUnite ? Math.round(quantile(quantites, 0.5) * 100) / 100 : null,
+                unite: memeUnite ? (passages[0].au_poids ? passages[0].unite : "pièce") : null,
+                dernierPrix: memeUnite ? Math.round(prix[0] * 100) / 100 : null,
+                prixHabituel: memeUnite ? Math.round(quantile(prix, 0.5) * 100) / 100 : null,
+            });
         } else if (article.prix_habituel !== null) {
             const prix = Number(article.prix_habituel);
             estimation += prix;
             bas += prix * 0.8;
             haut += prix * 1.2;
+            details.push({ nom: article.nom, emoji: article.emoji, source: "prix-habituel", estimation: prix });
         } else {
             sansPrix.push(article.nom);
+            details.push({ nom: article.nom, emoji: article.emoji, source: "sans-prix", estimation: null });
         }
     }
     return {
@@ -545,6 +560,7 @@ async function estimerCourses() {
         haut: Math.ceil(haut),
         articles: articles.rows.length + libres.rows[0].n,
         sansPrix: sansPrix.length + libres.rows[0].n,
+        details: details.sort((a, b) => (b.estimation ?? -1) - (a.estimation ?? -1)),
     };
 }
 
@@ -658,7 +674,7 @@ app.get("/api/accueil", lectureApi(async () => {
          GROUP BY s.debut ORDER BY s.debut`
     );
     const aVerifier = await db.query(
-        `SELECT stock.id, foods.nom, foods.emoji, (CURRENT_DATE - stock.date_maj)::int AS jours
+        `SELECT stock.id, foods.nom, foods.emoji, stock.quantite, stock.unite, foods.tracking_type, (CURRENT_DATE - stock.date_maj)::int AS jours
          FROM stock JOIN foods ON foods.id = stock.food_id
          WHERE ${STOCK_NON_VIDE.replaceAll("quantite", "stock.quantite")} AND stock.date_maj < CURRENT_DATE - 21
          ORDER BY stock.date_maj LIMIT 5`

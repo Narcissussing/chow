@@ -22,7 +22,10 @@ function ouvrirCourses(surcharges = {}, { courses = COURSES, preset = [] } = {})
   const reponses = {
     "/session": [200, { utilisateur: { id: 1 } }],
     "/courses": [200, { courses, aliments: ALIMENTS, stock: [], presetHebdo: preset }],
-    "/courses/estimation": [200, { estimation: 19, bas: 14, haut: 24, articles: 3, sansPrix: 0 }],
+    "/courses/estimation": [200, { estimation: 19, bas: 14, haut: 24, articles: 3, sansPrix: 0, details: [
+      { nom: "Tomate", emoji: "🍅", source: "habitudes", passages: 8, estimation: 4.5, quantite: 1.8, unite: "kg", dernierPrix: 2.49, prixHabituel: 1.89 },
+      { nom: "Lentilles", emoji: "🫘", source: "prix-habituel", estimation: 2 },
+    ] }],
     "/courses/acheter": noter("/courses/acheter", [200, { succes: true }]),
     "/courses/supprimer": noter("/courses/supprimer", [200, { succes: true }]),
     "/courses/commentaire": noter("/courses/commentaire", [200, { succes: true }]),
@@ -56,7 +59,10 @@ afterEach(() => {
 test("fourchette de prix estimée au bord du titre", async () => {
   ouvrirCourses();
   await attendrePage();
-  expect(await screen.findByText("14 € – 24 €")).toBeInTheDocument();
+  fireEvent.click(await screen.findByText("14 € – 24 €"));
+  const calcul = screen.getByRole("dialog", { name: "Calcul de l’estimation" });
+  expect(calcul).toHaveTextContent("1,8 kg par achat · dernier prix 2,49 € / kg (d’habitude 1,89 €)");
+  expect(calcul).toHaveTextContent("jamais acheté sur un ticket");
 });
 
 test("tri par nom au chargement, panneau d'ajout toujours dernier ; tri par catégorie avec en-têtes", async () => {

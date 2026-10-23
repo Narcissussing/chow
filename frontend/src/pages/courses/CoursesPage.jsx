@@ -11,6 +11,7 @@ import { afficherToast } from "../../toast.js";
 import { rangerAuStock, relancerClasse } from "../../utils/animation.js";
 import BoutonMagasin from "./BoutonMagasin.jsx";
 import CourseItem, { jouerPopPanier } from "./CourseItem.jsx";
+import EstimationCourses from "./EstimationCourses.jsx";
 import PanneauAjout from "./PanneauAjout.jsx";
 import PhotoApercu from "./PhotoApercu.jsx";
 import {
@@ -567,11 +568,7 @@ function Courses({ donnees }) {
       <section className="page-header titre-page" id="heroCourses" ref={hero}>
         <div className="courses-titre">
           <h1>Courses</h1>
-          {estimation && items.length > 0 && estimation.haut > 0 && (
-            <span className="courses-fourchette" title="Estimation d’après les habitudes du foyer et les derniers prix payés">
-              {estimation.bas} € – {estimation.haut} €
-            </span>
-          )}
+          {estimation && items.length > 0 && estimation.haut > 0 && <EstimationCourses estimation={estimation} />}
         </div>
         {badgeEnBarre ? <div className="hero__badge hero__badge--courses" style={{ visibility: "hidden" }} aria-hidden="true" /> : badgeCourses}
       </section>

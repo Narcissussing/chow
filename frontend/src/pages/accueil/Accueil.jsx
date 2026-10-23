@@ -2,6 +2,9 @@ import { Link } from "react-router-dom";
 import { api } from "../../api.js";
 import Page from "../../components/Page.jsx";
 import { afficherToast } from "../../toast.js";
+import { OPTIONS_CL, classeNiveauCL } from "../../utils/stock.js";
+import "../stock/StockItem.css";
+import { useState } from "react";
 import { usePageData } from "../../hooks/usePageData.js";
 import "./Accueil.css";
 
@@ -60,20 +63,91 @@ function cartes(r) {
   ];
 }
 
+// Même unité que la page Stock : packs ou unités au singulier/pluriel ; niveau pour les contenants.
+const UNITES = { pack: ["pack", "packs"], unite: ["unité", "unités"] };
+const libelleUnite = (a, n) => {
+  const [un, plusieurs] = UNITES[a.tracking_type] || [a.unite || "", a.unite || ""];
+  return Number(n) > 1 ? plusieurs : un;
+};
+
+// Quantité affichée comme dans Stock ; rien tant que le serveur ne l'envoie pas (jamais « undefined »).
+function Quantite({ article }) {
+  if (article.quantite == null) return null;
+  if (article.tracking_type === "cl") {
+    return (
+      <span className="stock-barre-cl accueil-niveau" title={OPTIONS_CL.find((o) => o.value === article.quantite)?.label}>
+        <span className={"stock-barre-cl-remplissage " + classeNiveauCL(article.quantite)} />
+      </span>
+    );
+  }
+  return <span>{article.quantite} {libelleUnite(article, article.quantite)}</span>;
+}
+
+const Icone = ({ d }) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d={d} />
+  </svg>
+);
+
+// Modification rapide de la quantité restante : +/− pour un nombre, quatre niveaux pour un contenant.
+function EditeurQuantite({ article, onValider, onAnnuler }) {
+  const [valeur, setValeur] = useState(article.quantite);
+  if (article.tracking_type === "cl") {
+    return (
+      <span className="accueil-editeur" role="group" aria-label={`Niveau de ${article.nom}`}>
+        {OPTIONS_CL.map((o) => (
+          <button key={o.value} type="button" className={o.value === article.quantite ? "actif" : undefined} onClick={() => onValider(o.value)}>
+            {o.label}
+          </button>
+        ))}
+        <button type="button" className="accueil-editeur__annuler" aria-label="Annuler" onClick={onAnnuler}>✕</button>
+      </span>
+    );
+  }
+  const nombre = Math.max(0, Number(valeur) || 0);
+  return (
+    <span className="accueil-editeur" role="group" aria-label={`Quantité de ${article.nom}`}>
+      <button type="button" aria-label="Moins" onClick={() => setValeur(String(Math.max(0, nombre - 1)))}>−</button>
+      <span className="accueil-editeur__valeur">{nombre} <small>{libelleUnite(article, nombre)}</small></span>
+      <button type="button" aria-label="Plus" onClick={() => setValeur(String(nombre + 1))}>+</button>
+      <button type="button" className="accueil-verifier__oui" aria-label="Enregistrer" onClick={() => onValider(String(nombre))}>
+        <Icone d="M5 12.5l4.5 4.5L19 7.5" />
+      </button>
+      <button type="button" className="accueil-editeur__annuler" aria-label="Annuler" onClick={onAnnuler}>✕</button>
+    </span>
+  );
+}
+
 export default function Accueil() {
   const { etat, donnees, majDonnees } = usePageData("/accueil");
+  const [enEdition, setEnEdition] = useState(null);
+
+  function retirer(article, vide) {
+    majDonnees((d) => ({
+      ...d,
+      aVerifier: d.aVerifier.filter((a) => a.id !== article.id),
+      stock_a_verifier: d.stock_a_verifier - 1,
+      stock: vide ? d.stock - 1 : d.stock,
+    }));
+  }
+
+  // Nouvelle quantité : enregistrée comme dans Stock (la date repart d'aujourd'hui), l'article sort de la liste.
+  function modifierQuantite(article, nouvelleQuantite) {
+    setEnEdition(null);
+    api("/stock/modifier", { method: "POST", body: { idStock: article.id, nouvelleQuantite } })
+      .then(({ donnees: reponse }) => {
+        if (!reponse?.succes) return afficherToast(reponse?.erreur || "Une erreur est survenue.");
+        retirer(article, nouvelleQuantite === "0" || nouvelleQuantite === "vide");
+      })
+      .catch(() => afficherToast("Une erreur est survenue."));
+  }
 
   // « Toujours là » remet la date à aujourd'hui, « Fini » vide l'article : il sort de la liste dans les deux cas.
   function verifier(article, fini) {
     api("/stock/verifier", { method: "POST", body: { idStock: article.id, fini } })
       .then(({ donnees: reponse }) => {
         if (!reponse?.succes) return afficherToast(reponse?.erreur || "Une erreur est survenue.");
-        majDonnees((d) => ({
-          ...d,
-          aVerifier: d.aVerifier.filter((a) => a.id !== article.id),
-          stock_a_verifier: d.stock_a_verifier - 1,
-          stock: fini ? d.stock - 1 : d.stock,
-        }));
+        retirer(article, fini);
       })
       .catch(() => afficherToast("Une erreur est survenue."));
   }
@@ -108,9 +182,9 @@ export default function Accueil() {
                   </>
                 );
                 return chemin ? (
-                  <Link key={icone} to={chemin} className="home-link-card">{contenu}</Link>
+                  <Link key={icone} to={chemin} className={"home-link-card home-link-card--" + icone}>{contenu}</Link>
                 ) : (
-                  <div key={icone} className="home-link-card">{contenu}</div>
+                  <div key={icone} className={"home-link-card home-link-card--" + icone}>{contenu}</div>
                 );
               })}
           </div>
@@ -137,14 +211,28 @@ export default function Accueil() {
                   <span className="accueil-bloc__titre">Encore à la maison ?</span>
                   <ul className="accueil-verifier">
                     {donnees.aVerifier.map((a) => (
-                      <li key={a.id}>
-                        <span aria-hidden="true">{a.emoji}</span>
+                      <li key={a.id} className={enEdition === a.id ? "en-edition" : undefined}>
+                        <span className="accueil-verifier__emoji" aria-hidden="true">{a.emoji}</span>
                         <span className="accueil-verifier__nom">
-                          {a.nom}
-                          <span className="accueil-verifier__jours">{Math.round(a.jours / 7)} sem.</span>
+                          <b>{a.nom}</b>
+                          <span className="accueil-verifier__jours">il y a {Math.round(a.jours / 7)} sem.</span>
                         </span>
-                        <button type="button" className="accueil-verifier__oui" aria-label={`${a.nom} : toujours là`} onClick={() => verifier(a, false)}>✓</button>
-                        <button type="button" className="accueil-verifier__fini" onClick={() => verifier(a, true)}>Fini</button>
+                        {enEdition === a.id ? (
+                          <EditeurQuantite article={a} onValider={(q) => modifierQuantite(a, q)} onAnnuler={() => setEnEdition(null)} />
+                        ) : (
+                          <>
+                            <button type="button" className="accueil-verifier__quantite" aria-label={`Modifier la quantité de ${a.nom}`} title="Modifier la quantité" onClick={() => setEnEdition(a.id)}>
+                              <Quantite article={a} />
+                              <Icone d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4" />
+                            </button>
+                            <button type="button" className="accueil-verifier__oui" aria-label={`${a.nom} : toujours là`} title="Toujours là" onClick={() => verifier(a, false)}>
+                              <Icone d="M5 12.5l4.5 4.5L19 7.5" />
+                            </button>
+                            <button type="button" className="accueil-verifier__fini" aria-label={`${a.nom} : fini`} title="Fini" onClick={() => verifier(a, true)}>
+                              <Icone d="M7 7l10 10M17 7L7 17" />
+                            </button>
+                          </>
+                        )}
                       </li>
                     ))}
                   </ul>

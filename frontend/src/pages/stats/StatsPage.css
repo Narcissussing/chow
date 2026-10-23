@@ -1597,3 +1597,19 @@ button.puce {
     min-height: 200px;
   }
 }
+
+/* Fond teinté de chaque KPI, assorti à son filigrane */
+.stats .kpi[data-flip="kpi-depense"] {
+  background: linear-gradient(135deg, #fbe7df 0%, #fdf3ee 55%, var(--surface) 100%);
+  border-color: #f2d6ca;
+}
+
+.stats .kpi[data-flip="kpi-semaine"] {
+  background: linear-gradient(135deg, #f8ecd2 0%, #fcf6e9 55%, var(--surface) 100%);
+  border-color: #eedfbe;
+}
+
+.stats .kpi[data-flip="kpi-inflation"] {
+  background: linear-gradient(135deg, #f6e1e6 0%, #fbf0f2 55%, var(--surface) 100%);
+  border-color: #ecd0d7;
+}

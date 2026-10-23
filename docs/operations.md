@@ -110,3 +110,53 @@ DELETE FROM ip_bloquees WHERE ip = '<adresse>';
 - pas de pipeline CI ;
 - pas de migration versionnée avec retour arrière ;
 - pas de test de santé explicite au-delà du démarrage et des routes.
+
+## Incidents et leçons
+
+À relire avant de toucher à la base, au déploiement ou au démarrage du serveur.
+
+### 2026-10 — Base Neon à court de calcul, nouvelle base de production
+
+- **Symptôme :** Chow en panne en production ; le projet Neon `family-hub` affichait
+  102,81 CU-heures pour une limite gratuite d'environ 100 par mois.
+- **Cause :** la base de production ne se mettait jamais en veille (98 CU-h sur 17
+  jours ≈ 0,25 CU en continu). Le serveur gardait une connexion `pg.Client` ouverte en
+  permanence, et le nettoyage des sessions toutes les 15 min la réveillait.
+- **Correctif :** `pg.Pool` avec `idleTimeoutMillis` (les connexions se ferment au
+  repos) et nettoyage des sessions au démarrage seulement (commit « fix: Neon peut se
+  mettre en veille »). Nouveau projet Neon gratuit `ep-aged-flower-b9sgwq8t`, données
+  copiées par `pg_dump`/`pg_restore`, secret Fly `DATABASE_URL` mis à jour ; 12
+  articles de Courses ajoutés entre-temps recopiés à la main.
+- **À retenir :** ne jamais garder de connexion ou de minuteur qui réveille la base ;
+  surveiller les CU-heures dans la console Neon. Des mots de passe Neon sont passés
+  dans une conversation : les réinitialiser (Roles → Reset password) si ce n'est pas
+  déjà fait.
+
+### Panne DNS chez Fly
+
+- `getaddrinfo EAI_AGAIN` au démarrage : les migrations ne trouvaient pas Neon, le
+  processus sortait en erreur, Fly a relancé 10 fois puis arrêté la machine. Rien à
+  corriger côté code ; après la panne, `fly machine restart -a ch-ow` ou ouvrir l'app.
+
+### Déploiement
+
+- L'application Fly est `ch-ow` (anciennement `chow-ejs`). Aucun déploiement
+  automatique depuis GitHub : `git push` sauvegarde, `fly deploy` met en production
+  depuis le dossier local.
+- `fly deploy` rejoue les migrations du démarrage (tables `tickets`, `achats`,
+  `libelles`, `ip_bloquees`, `indices_france`, colonnes `users.admin`,
+  `foods.prix_habituel`…). L'import des tickets se lance à part, une fois.
+
+### Pièges de développement
+
+- **Redémarrer le serveur Node après chaque changement côté serveur.** Vite ne recharge
+  que l'interface : « NaN », « 0 € » ou d'anciens libellés venaient presque toujours
+  d'un serveur pas relancé.
+- Modifier une quantité de Stock ne mettait pas `date_maj` à jour : les articles
+  restaient « à vérifier » pour toujours (corrigé, toute modification compte comme
+  vérification).
+- Les tickets Leclerc n'impriment pas le poids des paquets, et plusieurs produits
+  différents tombent sous un même aliment Chow (tomates cerises / grappe, poulet en
+  barquette / sac de 2,5 kg) : c'est ce qui gonfle l'inflation du foyer. Formats connus
+  à ajouter dans `FORMATS` de `tickets/extraire.cjs` ; libellés à classer dans les
+  Paramètres.

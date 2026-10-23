@@ -1,7 +1,7 @@
 import { act, fireEvent, screen } from "@testing-library/react";
 import { rendreApp, simulerApi } from "./testUtils.jsx";
 
-const ACCUEIL = { "/accueil": [200, { stock: 42, courses: 7, depense_mois: 412.3, depense_semaine: 52, depense_mois_dernier: 545, stock_a_verifier: 5, semaines: [{ debut: "2026-10-12", total: 120 }, { debut: "2026-10-19", total: 52 }], aVerifier: [{ id: 3, nom: "Riz", emoji: "🍚", jours: 35 }], estimation: { estimation: 19 } }] };
+const ACCUEIL = { "/accueil": [200, { stock: 42, courses: 7, depense_mois: 412.3, depense_semaine: 52, depense_mois_dernier: 545, stock_a_verifier: 5, semaines: [{ debut: "2026-10-12", total: 120 }, { debut: "2026-10-19", total: 52 }], aVerifier: [{ id: 3, nom: "Riz", emoji: "🍚", jours: 35, quantite: "2", unite: "packs", tracking_type: "pack" }], estimation: { estimation: 19 } }] };
 const CONNECTE = { "/session": [200, { utilisateur: { id: 1, email: "a@b.c" } }], ...ACCUEIL };
 
 test("sans session, une page protégée renvoie vers la connexion avec le chemin de retour", async () => {
@@ -21,7 +21,7 @@ test("l'accueil connecté affiche Stats, Stock et Courses chiffrés", async () =
   expect(screen.getByText("545 € le mois dernier")).toBeInTheDocument();
   expect(screen.getByText("à la maison · 5 à vérifier")).toBeInTheDocument();
   expect(screen.getByText("Riz")).toBeInTheDocument();
-  expect(screen.getByText("5 sem.")).toBeInTheDocument();
+  expect(screen.getByText("il y a 5 sem.")).toBeInTheDocument();
   expect(document.title).toBe("Chow — Accueil");
   expect(screen.queryByText("Paramètres")).not.toBeInTheDocument();
 });
@@ -31,10 +31,21 @@ test("accueil : « Fini » vide un article à vérifier et le retire de la liste
   simulerApi({ ...CONNECTE, "/stock/verifier": (o) => { corps.push(JSON.parse(o.body)); return [200, { succes: true, quantite: "0" }]; } });
   rendreApp("/");
   expect(await screen.findByText("Riz")).toBeInTheDocument();
-  await act(async () => fireEvent.click(screen.getByText("Fini")));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Riz : fini" })));
   expect(corps).toEqual([{ idStock: 3, fini: true }]);
   expect(screen.queryByText("Riz")).not.toBeInTheDocument();
   expect(screen.getByText("à la maison · 4 à vérifier")).toBeInTheDocument();
+});
+
+test("accueil : modifier la quantité restante d'un article à vérifier", async () => {
+  const corps = [];
+  simulerApi({ ...CONNECTE, "/stock/modifier": (o) => { corps.push(JSON.parse(o.body)); return [200, { succes: true, quantite: "3" }]; } });
+  rendreApp("/");
+  fireEvent.click(await screen.findByRole("button", { name: "Modifier la quantité de Riz" }));
+  fireEvent.click(screen.getByRole("button", { name: "Plus" }));
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Enregistrer" })));
+  expect(corps).toEqual([{ idStock: 3, nouvelleQuantite: "3" }]);
+  expect(screen.queryByText("Riz")).not.toBeInTheDocument();
 });
 
 test("Paramètres : lien dans le pied de page et page ouverte pour l'admin seulement", async () => {
