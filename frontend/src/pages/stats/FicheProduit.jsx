@@ -7,7 +7,6 @@ import { ENSEIGNES } from "./Filtres.jsx";
 
 const logo = (nom) => ENSEIGNES.find((e) => e.nom === nom)?.logo;
 const rythme = (j) => (j <= 1 ? "Chaque jour" : j < 7 ? `Tous les ${j} jours` : j < 11 ? "Chaque semaine" : j < 25 ? `Toutes les ${Math.round(j / 7)} sem.` : j < 45 ? "Chaque mois" : `Tous les ${Math.round(j / 30)} mois`);
-const quantite = (q, unite) => (unite ? q.toLocaleString("fr-FR", { maximumFractionDigits: 1 }) + " " + unite : "×" + q.toLocaleString("fr-FR", { maximumFractionDigits: 1 }));
 const jour = (s) => new Date(s + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
 // Fiche d'un produit de « Tes prix » : feuille en bas sur téléphone, panneau à droite sur ordinateur.
@@ -72,17 +71,12 @@ export default function FicheProduit({ idAliment, euros, onFermer }) {
             {fiche.habitudes.achats12Mois > 0 && (
               <section className="habitudes">
                 <h3>Habitudes du foyer <span className="discret">· 12 derniers mois</span></h3>
+                {/* Ce que l'aliment coûte au foyer, plutôt que son poids : par semaine, par mois, sur 12 mois. */}
                 <div className="habitudes__tuiles">
-                  {fiche.habitudes.rythmeJours && (
-                    <p><b>{rythme(fiche.habitudes.rythmeJours)}</b><span>rythme d’achat</span></p>
-                  )}
-                  {fiche.habitudes.quantiteParAchat > 0 && (
-                    <p><b>{quantite(fiche.habitudes.quantiteParAchat, fiche.unite)}</b><span>par achat</span></p>
-                  )}
-                  {fiche.habitudes.quantiteParMois > 0 && (
-                    <p><b>≈ {quantite(fiche.habitudes.quantiteParMois, fiche.unite)}</b><span>par mois</span></p>
-                  )}
+                  <p><b>{euros(fiche.habitudes.depense12Mois / 52, 2)}</b><span>par semaine</span></p>
+                  <p><b>{euros(fiche.habitudes.depense12Mois / 12)}</b><span>par mois</span></p>
                   <p><b>{euros(fiche.habitudes.depense12Mois)}</b><span>en {fiche.habitudes.achats12Mois} achats</span></p>
+                  {fiche.habitudes.rythmeJours && <p><b>{rythme(fiche.habitudes.rythmeJours)}</b><span>rythme d’achat</span></p>}
                 </div>
                 <p className="habitudes__rappel">
                   Dernier achat {fiche.habitudes.joursDepuis === 0 ? "aujourd’hui" : `il y a ${fiche.habitudes.joursDepuis} j`}

@@ -140,8 +140,8 @@ test("fiche produit : prix par magasin, derniers achats, ajout aux Courses", asy
   expect(within(fiche).getByText("+31 % depuis 2025")).toBeInTheDocument();
   expect(within(fiche).getByText("Marché Frais · 1,846 kg")).toBeInTheDocument();
   expect(within(fiche).getByText("Chaque semaine")).toBeInTheDocument();
-  expect(within(fiche).getByText("1,2 kg")).toBeInTheDocument();
-  expect(within(fiche).getByText("≈ 4,3 kg")).toBeInTheDocument();
+  expect(within(fiche).getByText("4,05 €")).toBeInTheDocument();
+  expect(within(fiche).getByText("18 €")).toBeInTheDocument();
   expect(within(fiche).getByText("211 €")).toBeInTheDocument();
   await act(async () => fireEvent.click(within(fiche).getByText("Ajouter aux Courses")));
   expect(requetes).toContainEqual({ idAliment: "tomate" });
