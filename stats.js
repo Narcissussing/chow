@@ -390,11 +390,15 @@ export function ficheProduit(lignes, aujourdhui = jourIso(new Date())) {
         variation: arrondi(((dernier - premier) / premier) * 100, 0),
         depuis: comparables[0].jour.slice(0, 4),
         achats: new Set(lignes.map((l) => l.ticket_id)).size,
+        depenseTotale: arrondi(somme(lignes)),
+        // Économisé grâce aux promos sur ce produit, depuis le premier achat.
+        economiePromos: arrondi(lignes.reduce((s, l) => s + (l.remise || 0), 0)),
+        premierAchat: lignes[0].jour,
         courbe,
         parEnseigne: [...enseignes].map(([nom, prix]) => ({ nom, prix })).sort((a, b) => a.prix - b.prix),
         habitudes: habitudesAchat(lignes, auPoids, aujourdhui),
         derniersAchats: lignes.slice(-3).reverse().map((l) => ({
-            jour: l.jour, enseigne: l.enseigne, total: l.total,
+            jour: l.jour, enseigne: l.enseigne, total: l.total, remise: l.remise || 0,
             quantite: l.poids ? `${String(l.poids).replace(".", ",")} kg` : l.quantite > 1 ? `×${l.quantite}` : null,
         })),
     };

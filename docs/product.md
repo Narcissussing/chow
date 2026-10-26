@@ -33,8 +33,15 @@ dernier), Stock (aliments encore présents, dont ceux à vérifier) et Courses
 Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais) importé
 dans `tickets`, `achats` et `libelles`. L’estimation des Courses ne demande
 aucune quantité : quantité habituelle (8 derniers passages en caisse, 12
-derniers mois) × dernier prix payé, avec une fourchette ; sans historique,
-`foods.prix_habituel`. La page Stats suit la maquette Figma « Chow ».
+derniers mois) × dernier prix payé (même unité seulement, effet borné à ×1,5),
+avec une fourchette ; sans historique, `foods.prix_habituel`. La fourchette
+s'affiche à côté du titre des Courses ; un clic montre le détail par article.
+
+La page Stats (maquette Figma « Chow ») suit un filtre global (période et
+magasin) : dépensé, dépense par semaine, inflation du foyer comparée à l'INSEE
+(alimentation ou tous les prix), prix des produits classés par dépense, fiche
+produit (dépense par semaine et par mois), dépenses par rayon et par magasin,
+semaine la plus chère.
 
 ### Stock
 

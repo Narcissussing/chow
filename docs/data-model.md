@@ -114,6 +114,12 @@ une fois par `scripts/importer-tickets.js` depuis le dossier local `tickets/`.
   (`food_id`, statut `chow`) ou à un statut `hors-chow`, `non-alimentaire`,
   `non-detaille` (passage connu seulement par la banque) ou `a-classer`.
   Un nouveau libellé n’est associé qu’une fois.
+- `achats.remise` : remise immédiate du ticket (section « BONS DE REDUCTION »
+  de Leclerc) rattachée à la ligne ; `achats.total` est alors le prix réellement
+  payé.
+- `promos` : une ligne par remise (date, magasin, produit, `offre` telle
+  qu’imprimée, `type` « 2e à prix réduit » / « 2+1 » / « remise immédiate »,
+  `pourcentage`, `montant`), pour suivre les promos dans le temps.
 
 `GET /api/courses/estimation` estime les Courses non achetées sans quantité
 saisie : pour chaque aliment, médiane du coût payé lors des 8 derniers

@@ -51,12 +51,12 @@ try {
             // Ticket Marché Frais 466182 photographié sans sa date : importé sans date plutôt qu'avec une date inventée.
             [date.includes("?") ? null : date, magasin,magasin.split(" ")[0].replace("Marché", "Marché Frais"), total.toFixed(2)]
         );
-        for (const [, , rayon, libelle, quantite, poids, prixUnitaire, totalLigne, contenance, unite, prixRef] of lignes) {
+        for (const [, , rayon, libelle, quantite, poids, prixUnitaire, totalLigne, contenance, unite, prixRef, remise] of lignes) {
             await client.query(
-                `INSERT INTO achats (ticket_id, rayon, libelle, quantite, poids, prix_unitaire, total, contenance, unite, prix_ref)
-                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+                `INSERT INTO achats (ticket_id, rayon, libelle, quantite, poids, prix_unitaire, total, contenance, unite, prix_ref, remise)
+                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
                 [ticket.rows[0].id, rayon || null, libelle, nombre(quantite), nombre(poids), nombre(prixUnitaire),
-                    Number(totalLigne), nombre(contenance), unite || null, nombre(prixRef)]
+                    Number(totalLigne), nombre(contenance), unite || null, nombre(prixRef), nombre(remise ?? "") ?? 0]
             );
         }
     }

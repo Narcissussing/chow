@@ -55,7 +55,10 @@ export default function FicheProduit({ idAliment, euros, onFermer }) {
               <span className="fiche__tuile" aria-hidden="true">{fiche.emoji}</span>
               <div>
                 <h2>{fiche.nom}</h2>
-                <p>{fiche.achats} achats</p>
+                <p>
+                  {euros(fiche.depenseTotale ?? 0)} dépensés depuis {fiche.premierAchat?.slice(0, 4) ?? fiche.depuis}
+                  {fiche.economiePromos > 0 && <> · <span className="fiche__economie">{euros(fiche.economiePromos)} économisés en promo</span></>}
+                </p>
               </div>
               <button type="button" className="fiche__fermer" aria-label="Fermer" onClick={onFermer}>✕</button>
             </header>
@@ -101,7 +104,10 @@ export default function FicheProduit({ idAliment, euros, onFermer }) {
                   <p key={i} className="fiche__ligne">
                     <span className="fiche__date">{jour(a.jour)}</span>
                     <span className="discret">{a.enseigne}{a.quantite ? " · " + a.quantite : ""}</span>
-                    <strong>{euros(a.total, 2)}</strong>
+                    <strong>
+                      {euros(a.total, 2)}
+                      {a.remise > 0 && <span className="fiche__promo">−{euros(a.remise, 2)} promo</span>}
+                    </strong>
                   </p>
                 ))}
               </section>

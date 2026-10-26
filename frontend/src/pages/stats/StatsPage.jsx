@@ -18,10 +18,11 @@ const euros = (n, decimales = 0) =>
 const sens = (n) => (n > 0 ? " hausse" : n < 0 ? " baisse" : "");
 const signe = (n) => (n > 0 ? "+" : n < 0 ? "−" : "") + Math.abs(n).toLocaleString("fr-FR");
 
+// Ce qui compte d'abord : l'argent dépensé.
 const TRIS = [
+  { valeur: "depense", texte: "Plus grosses dépenses" },
   { valeur: "achats", texte: "Les plus achetés" },
   { valeur: "hausse", texte: "Plus fortes hausses" },
-  { valeur: "depense", texte: "Les plus coûteux" },
 ];
 
 const titreMois = (m) => new Date(m + "-01T00:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
@@ -154,7 +155,7 @@ export default function StatsPage() {
   const [lecture, setLecture] = useState({ etat: "chargement", donnees: null });
   const [estimation, setEstimation] = useState(null);
   const [recherche, setRecherche] = useState("");
-  const [tri, setTri] = useState("achats");
+  const [tri, setTri] = useState("depense");
   const [tous, setTous] = useState(false);
   const [produit, setProduit] = useState(null);
   const [rayonSurvole, setRayonSurvole] = useState(null);
@@ -213,7 +214,7 @@ export default function StatsPage() {
                 <li key={p.id} className="prix__entree">
                   <button type="button" className="prix__ligne" onClick={() => setProduit(p.id)}>
                     <span className="prix__tuile" aria-hidden="true">{p.emoji}</span>
-                    <span className="prix__nom"><b>{p.nom}</b><span className="discret">{p.achats} achats</span></span>
+                    <span className="prix__nom"><b>{p.nom}</b><span className="discret">{euros(p.depense)} dépensés</span></span>
                     <MiniCourbe valeurs={p.courbe} hausse={p.variation} />
                     <span className="prix__valeur">{euros(p.prix, 2)}{p.unite ? " / " + p.unite : ""}</span>
                     <span className={"puce " + (p.variation > 0 ? "puce--hausse" : p.variation < 0 ? "puce--baisse" : "")}>{p.variation ? signe(p.variation) + " %" : "="}</span>

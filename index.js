@@ -129,6 +129,22 @@ await db.query(`
     )
 `);
 await db.query("CREATE INDEX IF NOT EXISTS achats_ticket_id ON achats (ticket_id)");
+// Une ligne par remise immédiate (offre, type, pourcentage, montant) pour suivre les promos dans le temps.
+await db.query(`
+    CREATE TABLE IF NOT EXISTS promos (
+        id SERIAL PRIMARY KEY,
+        date DATE NOT NULL,
+        magasin TEXT NOT NULL,
+        produit TEXT NOT NULL,
+        offre TEXT NOT NULL,
+        type TEXT NOT NULL,
+        pourcentage INTEGER,
+        montant NUMERIC(10, 2) NOT NULL
+    )
+`);
+await db.query("CREATE INDEX IF NOT EXISTS promos_date ON promos (date)");
+// Remise immédiate déduite (promo du ticket) ; achats.total est le prix réellement payé.
+await db.query("ALTER TABLE achats ADD COLUMN IF NOT EXISTS remise NUMERIC(10, 2) NOT NULL DEFAULT 0");
 await db.query("CREATE INDEX IF NOT EXISTS achats_libelle ON achats (libelle)");
 // Un libellé de ticket est associé une seule fois ; les achats suivants réutilisent l'association.
 await db.query(`
@@ -634,7 +650,7 @@ async function indicesNationaux() {
 async function lignesTickets(foodId) {
     const result = await db.query(
         `SELECT to_char(t.date, 'YYYY-MM-DD') AS jour, t.id AS ticket_id, t.enseigne,
-                a.libelle, a.total::float, a.quantite::float, a.poids::float, a.contenance::float, a.prix_ref::float, a.unite,
+                a.libelle, a.total::float, a.quantite::float, a.poids::float, a.contenance::float, a.prix_ref::float, a.unite, a.remise::float,
                 l.statut, l.food_id, f.nom, f.emoji, f.categorie
          FROM achats a
          JOIN tickets t ON t.id = a.ticket_id

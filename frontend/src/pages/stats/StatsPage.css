@@ -1680,3 +1680,17 @@ button.puce {
 .info-popup {
   z-index: 1000;
 }
+
+/* Promos dans la fiche produit */
+.fiche__promo {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--vert);
+  text-align: right;
+}
+
+.fiche__economie {
+  color: var(--vert);
+  font-weight: 600;
+}

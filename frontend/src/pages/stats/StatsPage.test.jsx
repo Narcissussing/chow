@@ -26,7 +26,10 @@ const FICHE = {
   id: "tomate", nom: "Tomate", emoji: "🍅", unite: "kg", prix: 2.49, variation: 31, depuis: "2025", achats: 78,
   courbe: [{ mois: "2026-01", etiquette: "janv.", prix: 1.89 }, { mois: "2026-02", etiquette: "févr.", prix: 2.49 }],
   parEnseigne: [{ nom: "Leclerc", prix: 1.89 }, { nom: "Marché Frais", prix: 2.49 }],
-  derniersAchats: [{ jour: "2026-10-13", enseigne: "Marché Frais", total: 4.6, quantite: "1,846 kg" }],
+  derniersAchats: [{ jour: "2026-10-13", enseigne: "Marché Frais", total: 4.6, quantite: "1,846 kg", remise: 1.2 }],
+  economiePromos: 8.4,
+  depenseTotale: 312.4,
+  premierAchat: "2023-09-02",
   habitudes: { rythmeJours: 7, quantiteParAchat: 1.2, quantiteParMois: 4.3, depense12Mois: 210.8, achats12Mois: 35, dernierAchat: "2026-10-13", joursDepuis: 10, prochainAchat: "2026-10-20" },
 };
 
@@ -98,6 +101,7 @@ test("Les prix : tri par hausse et recherche sans accents", async () => {
   await screen.findByText("3 195 €");
   const noms = () => [...document.querySelectorAll(".prix__nom b")].map((n) => n.textContent);
   expect(noms()).toEqual(["Mangue", "Tomate"]);
+  expect(screen.getByText("200 € dépensés")).toBeInTheDocument();
   fireEvent.click(document.querySelector(".prix__tri .custom-select__button"));
   fireEvent.click(within(document.querySelector(".custom-select__list")).getByText("Plus fortes hausses"));
   expect(noms()).toEqual(["Tomate", "Mangue"]);
@@ -138,6 +142,9 @@ test("fiche produit : prix par magasin, derniers achats, ajout aux Courses", asy
   await act(async () => fireEvent.click(screen.getByText("Tomate").closest("button")));
   const fiche = await screen.findByRole("dialog", { name: "Tomate" });
   expect(within(fiche).getByText("+31 % depuis 2025")).toBeInTheDocument();
+  expect(within(fiche).getByText(/312 € dépensés depuis 2023/)).toBeInTheDocument();
+  expect(within(fiche).getByText("8 € économisés en promo")).toBeInTheDocument();
+  expect(within(fiche).getByText("−1,20 € promo")).toBeInTheDocument();
   expect(within(fiche).getByText("Marché Frais · 1,846 kg")).toBeInTheDocument();
   expect(within(fiche).getByText("Chaque semaine")).toBeInTheDocument();
   expect(within(fiche).getByText("4,05 €")).toBeInTheDocument();

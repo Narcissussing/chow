@@ -84,6 +84,33 @@ DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scri
 Vérifier la première ligne affichée (`Base : ep-…`) avant de laisser
 continuer.
 
+Remises et promos : `node tickets/extraire.cjs` écrit aussi la colonne `remise`
+de `achats.csv` et `tickets/promos.csv`. Sur une base déjà importée, après
+`fly deploy` (qui crée la colonne et la table) :
+
+```bash
+node scripts/appliquer-remises.js     # total payé et prix au kg par ligne, total des tickets
+node scripts/importer-promos.js       # table promos (vidée puis rechargée)
+```
+
+Les deux sont rejouables ; préfixer avec le `DATABASE_URL` de production comme
+pour l’import.
+
+Corriger des associations libellé → aliment après coup : modifier les règles de
+`tickets/correspondances.cjs`, relancer `node tickets/correspondances.cjs`,
+comparer l'ancien et le nouveau `correspondances.csv`, mettre les lignes changées
+(`LIBELLÉ;aliment`) dans un fichier, puis l'appliquer sur chaque base :
+
+```bash
+node scripts/corriger-libelles.js fichier.txt                       # dev
+DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/corriger-libelles.js fichier.txt   # production
+```
+
+Leçons sur les règles : la première règle qui correspond gagne, donc une marque
+dont le libellé contient un autre mot (« POM'LISSE CHIPS BARBECUE », « LAYS
+BARBECUE », « LAIT ENT.POUDRE ») doit avoir sa règle avant celle de ce mot ; une
+même marque peut faire plusieurs produits (Pom'lisse : chips et frites).
+
 ## Adresse IP bloquée
 
 Une IP bloquée après trop d’échecs de connexion se débloque en base :
