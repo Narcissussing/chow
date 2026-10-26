@@ -1,14 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import CustomSelect from "../../components/CustomSelect.jsx";
 import Page from "../../components/Page.jsx";
 import { api } from "../../api.js";
 import FondModal from "../../components/FondModal.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
+import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { normaliserTexte } from "../../utils/texte.js";
 import { Anneau, Barres, COULEURS_RAYONS, Courbe, MiniCourbe, couleurRayon } from "./graphiques.jsx";
-import { SelecteurMagasin, SelecteurPeriode, libellePeriode } from "./Filtres.jsx";
+import SelecteurMagasin from "../../components/SelecteurMagasin.jsx";
+import { SelecteurPeriode, libellePeriode } from "./Filtres.jsx";
 import FicheProduit from "./FicheProduit.jsx";
+import ListeProduits, { LignePrix } from "./ListeProduits.jsx";
 import { NombreAnime, useBlocsAnimes } from "./animations.js";
 import "./StatsPage.css";
 
@@ -48,29 +52,36 @@ function titreDepense(periode) {
 }
 
 // Bouton qui ouvre une bulle d'explication par-dessus la page (clic ailleurs ou Échap : fermée).
+// Sur téléphone, la bulle devient une feuille en bas de l'écran, rendue hors de la page pour n'être jamais coupée.
+const surTelephone = () => typeof window.matchMedia === "function" && window.matchMedia("(max-width: 860px)").matches;
+
 function InfoBulle({ bouton, classeBouton, titre, children }) {
   const [ouvert, setOuvert] = useState(false);
   const zone = useRef(null);
   const bulleRef = useRef(null);
-  const zones = useMemo(() => [zone], []);
-  useClicExterieur(zones, () => setOuvert(false), ouvert);
+  const zones = useMemo(() => [zone, bulleRef], []);
+  const [ferme, fermer] = useFermetureAnimee(useCallback(() => setOuvert(false), []), 180);
+  useClicExterieur(zones, fermer, !!ouvert);
   useEffect(() => {
     if (!ouvert) return;
-    const echap = (e) => e.key === "Escape" && setOuvert(false);
+    const echap = (e) => e.key === "Escape" && fermer();
     document.addEventListener("keydown", echap);
     return () => document.removeEventListener("keydown", echap);
-  }, [ouvert]);
+  }, [ouvert, fermer]);
+  const bulle = (
+    <span ref={bulleRef} className={"info-popup" + (ouvert === "feuille" ? " info-popup--feuille" : "") + (ferme ? " ferme" : "")} role="dialog" aria-label={titre}>
+      {ouvert === "feuille" && <span className="info-popup__poignee" aria-hidden="true" />}
+      {children}
+    </span>
+  );
   return (
     <span className="info-ancre" ref={zone}>
-      <button type="button" className={classeBouton} aria-expanded={ouvert} aria-label={typeof bouton === "string" ? titre : undefined} onClick={() => setOuvert((o) => !o)}>
+      <button type="button" className={classeBouton} aria-expanded={!!ouvert} aria-label={typeof bouton === "string" ? titre : undefined} onClick={() => (ouvert ? fermer() : setOuvert(surTelephone() ? "feuille" : "bulle"))}>
         {bouton}
       </button>
-      {ouvert && <FondModal onFermer={() => setOuvert(false)} zone={bulleRef} />}
-      {ouvert && (
-        <span ref={bulleRef} className="info-popup" role="dialog" aria-label={titre}>
-          {children}
-        </span>
-      )}
+      {ouvert && <FondModal onFermer={fermer} zone={bulleRef} fermant={ferme} />}
+      {ouvert === "bulle" && bulle}
+      {ouvert === "feuille" && createPortal(bulle, document.body)}
     </span>
   );
 }
@@ -156,7 +167,7 @@ export default function StatsPage() {
   const [estimation, setEstimation] = useState(null);
   const [recherche, setRecherche] = useState("");
   const [tri, setTri] = useState("depense");
-  const [tous, setTous] = useState(false);
+  const [listeOuverte, setListeOuverte] = useState(false);
   const [produit, setProduit] = useState(null);
   const [rayonSurvole, setRayonSurvole] = useState(null);
   const [axeDepuisZero, setAxeDepuisZero] = useState(false);
@@ -179,6 +190,7 @@ export default function StatsPage() {
   }, []);
 
   const fermerFiche = useCallback(() => setProduit(null), []);
+  const fermerListe = useCallback(() => setListeOuverte(false), []);
   const page = useRef(null);
   useBlocsAnimes(page);
   const d = lecture.donnees;
@@ -191,7 +203,7 @@ export default function StatsPage() {
     return liste.sort((a, b) => cle(b) - cle(a));
   }, [d, recherche, tri]);
 
-  const visibles = tous && !recherche ? produits : produits.slice(0, recherche ? 5 : 6);
+  const visibles = produits.slice(0, 5);
   const totalRayons = d ? d.parRayon.reduce((s, r) => s + r.total, 0) : 0;
   const totalMagasins = d ? d.parMagasin.reduce((s, m) => s + m.total, 0) : 0;
   const inflationPoints = d ? d.inflation.filter((p) => p.indice !== null) : [];
@@ -200,31 +212,26 @@ export default function StatsPage() {
   const franceNationale = d && (franceTout ? d.inflationNationaleEnsemble : d.inflationNationale);
   // Échelle en euros de la courbe : courses alimentaires, ou toutes les courses quand la France suit tous les prix.
   const panier = d && (franceTout ? d.panierMensuelTout ?? d.panierMensuel : d.panierMensuel);
+  const controlesPrix = (id) => (
+    <>
+      <input type="search" className="prix__recherche" placeholder="Rechercher un aliment…" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
+      <div className="prix__tri">
+        <CustomSelect id={id} value={tri} options={TRIS.map((t) => ({ value: t.valeur, label: t.texte }))} onChange={setTri} ariaLabel="Trier" />
+      </div>
+    </>
+  );
   const sectionPrix = d && (
           <section className="carte prix" data-flip="prix">
             <div className="prix__entete">
               <h2>Les prix</h2>
-              <input type="search" className="prix__recherche" placeholder="Rechercher un aliment…" value={recherche} onChange={(e) => setRecherche(e.target.value)} />
-              <div className="prix__tri">
-                <CustomSelect id="triPrix" value={tri} options={TRIS.map((t) => ({ value: t.valeur, label: t.texte }))} onChange={setTri} ariaLabel="Trier" />
-              </div>
+              {controlesPrix("triPrix")}
             </div>
             <ul className="prix__liste">
-              {visibles.map((p) => (
-                <li key={p.id} className="prix__entree">
-                  <button type="button" className="prix__ligne" onClick={() => setProduit(p.id)}>
-                    <span className="prix__tuile" aria-hidden="true">{p.emoji}</span>
-                    <span className="prix__nom"><b>{p.nom}</b><span className="discret">{euros(p.depense)} dépensés</span></span>
-                    <MiniCourbe valeurs={p.courbe} hausse={p.variation} />
-                    <span className="prix__valeur">{euros(p.prix, 2)}{p.unite ? " / " + p.unite : ""}</span>
-                    <span className={"puce " + (p.variation > 0 ? "puce--hausse" : p.variation < 0 ? "puce--baisse" : "")}>{p.variation ? signe(p.variation) + " %" : "="}</span>
-                  </button>
-                </li>
-              ))}
+              {visibles.map((p, i) => <LignePrix key={p.id} p={p} i={i} euros={euros} signe={signe} onOuvrir={setProduit} />)}
             </ul>
             {produits.length === 0 && <p className="vide">Aucun produit pour cette recherche.</p>}
-            {!tous && !recherche && produits.length > 6 && (
-              <button type="button" className="lien" onClick={() => setTous(true)}>Voir les {produits.length} produits →</button>
+            {produits.length > visibles.length && (
+              <button type="button" className="lien" onClick={() => setListeOuverte(true)}>Voir les {produits.length} produits →</button>
             )}
           </section>
   );
@@ -391,24 +398,27 @@ export default function StatsPage() {
                     <path d="M3 17l6-6 4 4 8-8" />
                     <path d="M15 7h6v6" />
                   </svg>
-                  {d.semaineMax.causes.map((c) => (
-                    <span key={c.nom} className="puce puce--hausse cause" tabIndex={0}>
-                      {c.nom} +{euros(c.ecart)}
-                      {c.semaine != null && (
-                        <span className="bulle bulle--cause" role="tooltip">
-                          <b>{c.nom}</b>
-                          <span>{euros(c.semaine)} cette semaine</span>
-                          <span className="bulle__detail">{euros(c.moyenne)} en moyenne ({libellePeriode(periode)}) · {euros(c.semaineAvant ?? 0)} la semaine d’avant</span>
-                        </span>
-                      )}
-                    </span>
-                  ))}
+                  {d.semaineMax.causes.map((c) =>
+                    c.semaine != null ? (
+                      <InfoBulle key={c.nom} classeBouton="puce puce--hausse cause" titre={c.nom} bouton={<>{c.nom} +{euros(c.ecart)}</>}>
+                        <b>{c.nom}</b>
+                        <span>{euros(c.semaine)} cette semaine</span>
+                        <span className="discret">{euros(c.moyenne)} en moyenne ({libellePeriode(periode)}) · {euros(c.semaineAvant ?? 0)} la semaine d’avant</span>
+                      </InfoBulle>
+                    ) : (
+                      <span key={c.nom} className="puce puce--hausse cause">{c.nom} +{euros(c.ecart)}</span>
+                    )
+                  )}
                 </div>
               </div>
             )}
           </section>
 
-          {produit && <FicheProduit idAliment={produit} euros={euros} onFermer={fermerFiche} />}
+          {listeOuverte && (
+            <ListeProduits produits={produits} controles={controlesPrix("triPrixTous")} euros={euros} signe={signe}
+              ficheOuverte={!!produit} onOuvrir={setProduit} onFermer={fermerListe} />
+          )}
+          {produit && <FicheProduit idAliment={produit} periode={periode} enseigne={enseigne} euros={euros} onFermer={fermerFiche} />}
         </main>
       )}
     </Page>

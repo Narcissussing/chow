@@ -3,7 +3,7 @@ import pg from "pg";
 import bcrypt from "bcrypt";
 import { spawn } from "node:child_process";
 
-const ENDPOINT_DEV = "ep-spring-river-aslzwhz5";
+const ENDPOINT_DEV = "ep-spring-truth-b9vjj7sz";
 if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.includes(ENDPOINT_DEV)) {
     console.error("Refusé : DATABASE_URL ne vise pas la branche Neon dev (" + ENDPOINT_DEV + ").");
     process.exit(1);

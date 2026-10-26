@@ -8,7 +8,7 @@ courses et une Cuisine (calories du jour) avec recettes.
 
 - Node.js et Express 5
 - React 19, Vite et React Router (dossier `frontend/`)
-- PostgreSQL sur Neon : branche `family-hub-dev` en local, `production` sur Fly
+- PostgreSQL sur Neon (projet `family-hub-backup`) : branche `dev` en local, `production` sur Fly
 - Passport Local, bcrypt et sessions PostgreSQL
 - Fly.io
 

@@ -115,7 +115,7 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
       }}
     >
       <IndicateurStock item={item} />
-      <span className="course-nom">
+      <span className="course-nom nom-defile">
         <span className="course-nom-emoji" onClick={afficherChamp}>
           {item.emoji}
         </span>{" "}

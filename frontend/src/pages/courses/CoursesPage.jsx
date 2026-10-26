@@ -10,6 +10,7 @@ import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
 import { rangerAuStock, relancerClasse } from "../../utils/animation.js";
 import BoutonMagasin from "./BoutonMagasin.jsx";
+import TiroirMagasins from "./TiroirMagasins.jsx";
 import CourseItem, { jouerPopPanier } from "./CourseItem.jsx";
 import EstimationCourses from "./EstimationCourses.jsx";
 import PanneauAjout from "./PanneauAjout.jsx";
@@ -96,6 +97,11 @@ function Courses({ donnees }) {
   const [cle, setCle] = useState("nom");
   const [items, setItems] = useState(() => trier(donnees.courses.map(preparer), "nom"));
   const [magasin, setMagasin] = useLocalStorage("modeMagasin", (v) => v === "true");
+  // Magasin où l'on se trouve, choisi par deux touchers sur le caddie ; sans choix = tous les magasins.
+  // Seuls ses articles restent (et ceux sans magasin connu).
+  const [enseigne, setEnseigne] = useLocalStorage("magasinCourses", (v) => v || "tous");
+  const enseigneActive = magasin && enseigne !== "tous" ? enseigne : null;
+  const [choixMagasin, setChoixMagasin] = useState(false);
   const [puces, setPuces] = useState(() => [...new Set(donnees.courses.map(categorieDe))].sort());
   const [actives, setActives] = useState(() => new Set(donnees.courses.map(categorieDe)));
   const [armeId, setArmeId] = useState(null);
@@ -107,7 +113,7 @@ function Courses({ donnees }) {
   useEffect(() => {
     const controleur = new AbortController();
     const minuteur = setTimeout(() => {
-      api("/courses/estimation", { signal: controleur.signal })
+      api("/courses/estimation" + (enseigneActive ? "?magasin=" + encodeURIComponent(enseigneActive) : ""), { signal: controleur.signal })
         .then(({ donnees: e }) => setEstimation(e))
         .catch(() => {});
     }, 400);
@@ -115,7 +121,7 @@ function Courses({ donnees }) {
       clearTimeout(minuteur);
       controleur.abort();
     };
-  }, [listeIds]);
+  }, [listeIds, enseigneActive]);
   const [preset, setPreset] = useState(donnees.presetHebdo);
   const [presetConfirme, setPresetConfirme] = useState(false);
   const [badgeEnBarre, setBadgeEnBarre] = useState(false);
@@ -159,6 +165,8 @@ function Courses({ donnees }) {
   const [fusion, setFusion] = useState(false);
   function revelerNouveaux(lignes) {
     const n = lignes.length;
+    // Article ajouté pendant qu'on est au magasin : on sort du filtre pour le voir arriver.
+    setEnseigne("tous");
     const reduit = mouvementReduit();
     const DUREE_ANNONCE = reduit ? 0 : 1000;
     const ECART = 1300;
@@ -191,6 +199,20 @@ function Courses({ donnees }) {
     }, DUREE_ANNONCE + 300 + (n - 1) * ECART + 450 + HALO);
   }
   const nombreAffiche = items.length - aReveler;
+
+  // En mode magasin, la liste est relue toutes les 15 s : un article ajouté depuis l'autre téléphone arrive tout seul.
+  const appliquerListeRef = useRef(appliquerListe);
+  appliquerListeRef.current = appliquerListe;
+  useEffect(() => {
+    if (!magasin) return;
+    const minuteur = setInterval(() => {
+      const numero = ++sequence.current;
+      api("/courses")
+        .then(({ donnees: d }) => d && appliquerListeRef.current(d.courses, numero))
+        .catch(() => {});
+    }, 15000);
+    return () => clearInterval(minuteur);
+  }, [magasin]);
 
   function enregistrerNote(item, commentaire) {
     const numero = ++sequence.current;
@@ -290,11 +312,14 @@ function Courses({ donnees }) {
     }
   }
 
-  const estVisible = (item) => !puces.includes(categorieDe(item)) || actives.has(categorieDe(item));
+  const estIci = (item) => !enseigneActive || !item.magasin || item.magasin === enseigneActive;
+  const estVisible = (item) => (!puces.includes(categorieDe(item)) || actives.has(categorieDe(item))) && estIci(item);
 
+  // Entrer ou sortir du mode magasin repart de tous les magasins ; le magasin se choisit ensuite (deux touchers).
   function basculerMagasin() {
     const actif = !magasin;
     setMagasin(actif);
+    setEnseigne("tous");
     if (!actif) setActives(new Set(puces));
   }
 
@@ -418,6 +443,8 @@ function Courses({ donnees }) {
   async function envoyer(item, type, quantiteAchetee) {
     const corps = { idCourse: String(item.id) };
     if (type === "achat" && quantiteAchetee !== undefined) corps.quantiteAchetee = quantiteAchetee;
+    // Acheté dans ce magasin : l'aliment y est rattaché pour les prochaines fois.
+    if (type === "achat" && enseigneActive) corps.magasin = enseigneActive;
     const numero = ++sequence.current;
     let reponse;
     try {
@@ -529,8 +556,10 @@ function Courses({ donnees }) {
   items.forEach((item) => {
     if (cle === "categorie" && categorieDe(item) !== derniereCategorie) {
       derniereCategorie = categorieDe(item);
+      // Titre masqué quand le filtre cache tous les articles de sa catégorie.
+      const categorieVisible = items.some((i) => categorieDe(i) === derniereCategorie && estVisible(i));
       enfantsListe.push(
-        <p key={"entete-" + derniereCategorie} className="course-categorie-entete">
+        <p key={"entete-" + derniereCategorie} className={"course-categorie-entete" + (categorieVisible ? "" : " hidden")}>
           {libelleCategorie(derniereCategorie)}
         </p>
       );
@@ -588,7 +617,10 @@ function Courses({ donnees }) {
                 }}
               />
             </div>
-            <BoutonMagasin actif={magasin} onBasculer={basculerMagasin} />
+            <span className={"magasin-zone" + (choixMagasin ? " ouvert" : "")}>
+              <BoutonMagasin actif={magasin} enseigne={choixMagasin ? "tous" : enseigne} onBasculer={basculerMagasin} onChoisirMagasin={() => setChoixMagasin(true)} />
+              {choixMagasin && <TiroirMagasins enseigne={enseigne} onChoisir={setEnseigne} onFermer={() => setChoixMagasin(false)} />}
+            </span>
             <span id="badgeCoursesAncre"></span>
             {badgeEnBarre && badgeCourses}
             <button

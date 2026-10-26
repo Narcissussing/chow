@@ -80,7 +80,7 @@ export default function CuisineItem({ entree, onEnregistrerQuantite, onChangerUn
     <div ref={triable.refNoeud} className={classes.join(" ") + triable.classe} style={entree.effets.rang ? { ...triable.style, "--rang": entree.effets.rang } : triable.style} onClick={surTap} onAnimationEnd={(e) => e.animationName === "cuisineTombe" && setArrivee(false)}>
       {triable.poignee}
       <div className="journal-nom-groupe">
-        <span className="journal-nom">
+        <span className="journal-nom nom-defile">
           {entree.ajoute && <span className="journal-coche" aria-label="Ajouté au plat">✓ </span>}
           {entree.emoji} {entree.nom}
         </span>

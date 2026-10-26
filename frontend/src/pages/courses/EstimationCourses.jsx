@@ -1,7 +1,8 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import FondModal from "../../components/FondModal.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
+import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import "./EstimationCourses.css";
 
 const euros = (n, d = 2) => n.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " €";
@@ -37,13 +38,10 @@ function Ligne({ d, rang }) {
     <li className={"estimation__ligne" + (d.estimation == null ? " estimation__ligne--sans-prix" : "")} style={{ "--rang": rang }}>
       <span className="estimation__emoji" aria-hidden="true">{d.emoji}</span>
       <span className="estimation__nom">
-        <b>{d.nom}</b>
+        <b className="nom-defile">{d.nom}</b>
         {d.source === "habitudes" && d.quantite != null && (
           <span className="estimation__detail">
-            {nombre(d.quantite)} {d.unite === "pièce" ? (d.quantite > 1 ? "pièces" : "pièce") : d.unite} par achat · dernier prix {euros(d.dernierPrix)}{prixUnite}
-            {d.prixHabituel != null && Math.abs(d.dernierPrix - d.prixHabituel) >= 0.01 && (
-              <span className={d.dernierPrix > d.prixHabituel ? "plus-cher" : "moins-cher"}> (d’habitude {euros(d.prixHabituel)})</span>
-            )}
+            {nombre(d.quantite)} {d.unite === "pièce" ? (d.quantite > 1 ? "pièces" : "pièce") : d.unite} par achat · {euros(d.dernierPrix)}{prixUnite}{d.magasin ? " chez " + d.magasin : ""}
           </span>
         )}
         {d.source === "habitudes" && d.quantite == null && <span className="estimation__detail">d’après les {d.passages} derniers achats</span>}
@@ -58,6 +56,7 @@ function Ligne({ d, rang }) {
 // Fourchette des Courses à côté du titre ; un clic ouvre le détail du calcul, article par article.
 export default function EstimationCourses({ estimation }) {
   const [ouvert, setOuvert] = useState(false);
+  const [ferme, fermer] = useFermetureAnimee(useCallback(() => setOuvert(false), []));
   const zone = useRef(null);
   const bulle = useRef(null);
   const zones = useMemo(() => [zone, bulle], []);
@@ -84,31 +83,31 @@ export default function EstimationCourses({ estimation }) {
       window.removeEventListener("resize", placer);
     };
   }, [ouvert]);
-  useClicExterieur(zones, () => setOuvert(false), ouvert);
+  useClicExterieur(zones, fermer, ouvert);
   useEffect(() => {
     if (!ouvert) return;
-    const echap = (e) => e.key === "Escape" && setOuvert(false);
+    const echap = (e) => e.key === "Escape" && fermer();
     document.addEventListener("keydown", echap);
     return () => document.removeEventListener("keydown", echap);
-  }, [ouvert]);
+  }, [ouvert, fermer]);
   const bas = useDefilement(estimation.bas);
   const haut = useDefilement(estimation.haut);
   const details = estimation.details || [];
 
   return (
     <span className="estimation" ref={zone}>
-      <button type="button" className="courses-fourchette" aria-expanded={ouvert} title="Voir le calcul" onClick={() => setOuvert((o) => !o)}>
+      <button type="button" className="courses-fourchette" aria-expanded={ouvert} title="Voir le calcul" onClick={() => (ouvert ? fermer() : setOuvert(true))}>
         {bas} € – {haut} €
       </button>
-      {ouvert && <FondModal onFermer={() => setOuvert(false)} zone={bulle} />}
+      {ouvert && <FondModal onFermer={fermer} zone={bulle} fermant={ferme} />}
       {ouvert && position && createPortal(
-        <div ref={bulle} className="estimation__popup" role="dialog" aria-label="Calcul de l’estimation" style={position}>
+        <div ref={bulle} className={"estimation__popup" + (ferme ? " ferme" : "")} role="dialog" aria-label="Calcul de l’estimation" style={position}>
           <div className="estimation__entete">
             <div>
               <span className="estimation__surtitre">Prochaines courses · {estimation.articles} articles</span>
               <b className="estimation__total">≈ {euros(estimation.estimation, 0)}</b>
             </div>
-            <button type="button" className="estimation__fermer" aria-label="Fermer" onClick={() => setOuvert(false)}>
+            <button type="button" className="estimation__fermer" aria-label="Fermer" onClick={fermer}>
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
             </button>
           </div>

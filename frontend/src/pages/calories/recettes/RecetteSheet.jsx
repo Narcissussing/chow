@@ -345,7 +345,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
             {lecture.ingredients.map((ing) => (
               <li key={ing.food_id}>
                 <span className="recette-lecture-ing-emoji">{ing.emoji || ""}</span>
-                <span className="recette-lecture-ing-nom">{ing.nom}</span>
+                <span className="recette-lecture-ing-nom nom-defile">{ing.nom}</span>
                 <span className="recette-lecture-ing-qte">{texteQuantite(ing)}</span>
               </li>
             ))}

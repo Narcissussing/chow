@@ -17,3 +17,14 @@
     animation: none;
   }
 }
+
+/* Fermeture : le fond s'éclaircit pendant que la bulle sort. */
+.fond-modal.ferme {
+  animation: fond-modal-sortie 0.2s ease forwards;
+}
+
+@keyframes fond-modal-sortie {
+  to {
+    opacity: 0;
+  }
+}

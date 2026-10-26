@@ -587,3 +587,12 @@ body.mode-magasin .course-item__quantite-groupe {
   font-weight: 700;
   white-space: nowrap;
 }
+
+
+/* Un peu d'air après la dernière puce de rayon : elle n'est pas coupée au bout du défilement. */
+.preset-hebdo-row__filtres::after {
+  content: "";
+  flex: none;
+  width: 4px;
+  height: 1px;
+}

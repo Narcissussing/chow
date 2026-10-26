@@ -1,0 +1,116 @@
+/* Tiroir des magasins : collé à droite du caddie, par-dessus le compteur et le + pendant qu'il est ouvert. */
+/* Le caddie glisse (décalage calculé par TiroirMagasins) pour laisser la place aux logos. */
+.magasin-zone {
+  position: relative;
+  display: flex;
+  align-items: center;
+  transition: transform 0.35s cubic-bezier(0.3, 1.2, 0.5, 1);
+}
+
+/* Compteur dans la barre (page défilée) : il s'efface le temps que les logos sont sortis, puis revient. */
+.courses-controls-row__inner .hero__badge {
+  transition: transform 0.25s cubic-bezier(0.3, 1.4, 0.5, 1), opacity 0.2s ease;
+}
+
+.courses-controls-row__inner:has(.magasin-zone.ouvert) .hero__badge {
+  opacity: 0;
+  transform: scale(0.4);
+  pointer-events: none;
+}
+
+
+.tiroir-magasins {
+  position: absolute;
+  left: calc(100% + 4px);
+  top: 50%;
+  z-index: 5;
+  display: flex;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 999px;
+  background: var(--surface);
+  transform: translateY(-50%);
+}
+
+.tiroir-magasins__logo {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 11px;
+  background: #fff;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  /* Sortie du caddie : chaque logo part de la place du caddie (--depart à gauche) et glisse à la sienne. */
+  animation: tiroir-sortie 0.42s cubic-bezier(0.3, 1.35, 0.5, 1) both;
+  animation-delay: calc(var(--i) * 60ms);
+}
+
+.tiroir-magasins__logo img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.tiroir-magasins__logo.actuel {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--accent);
+}
+
+/* Choix : le logo choisi saute puis rentre dans le caddie ; les autres rentrent tout de suite, du plus proche au plus loin. */
+.tiroir-magasins--choisi .tiroir-magasins__logo:not(.choisi),
+.tiroir-magasins--ferme .tiroir-magasins__logo {
+  animation: tiroir-rentree 0.24s cubic-bezier(0.5, 0, 0.75, 0) both;
+  animation-delay: calc(var(--i) * 30ms);
+}
+
+.tiroir-magasins--choisi .tiroir-magasins__logo.choisi {
+  border-color: var(--accent);
+  animation: tiroir-saut 0.26s cubic-bezier(0.3, 1.6, 0.5, 1) both, tiroir-retour 0.3s 0.26s cubic-bezier(0.5, 0, 0.75, 0) both;
+}
+
+@keyframes tiroir-sortie {
+  from {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--depart))) scale(0.3);
+  }
+}
+
+@keyframes tiroir-rentree {
+  to {
+    opacity: 0;
+    transform: translateX(calc(-1 * var(--depart))) scale(0.3);
+  }
+}
+
+@keyframes tiroir-saut {
+  50% {
+    transform: translateY(-6px) scale(1.25);
+  }
+  to {
+    transform: scale(1.1);
+  }
+}
+
+/* Retour vers le coin bas-droit du caddie, là où apparaît sa pastille. */
+@keyframes tiroir-retour {
+  from {
+    transform: scale(1.1);
+  }
+  to {
+    opacity: 0.4;
+    transform: translate(calc(-1 * var(--depart) + 14px), 12px) scale(0.5);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .magasin-zone {
+    transition: none;
+  }
+
+  .tiroir-magasins__logo {
+    animation: none !important;
+  }
+}

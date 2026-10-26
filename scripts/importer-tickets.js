@@ -1,5 +1,5 @@
-// Import unique des tickets de caisse depuis tickets/achats.csv et tickets/correspondances.csv.
-// Usage : node scripts/importer-tickets.js (utilise DATABASE_URL du .env). Ne fait rien si des tickets existent déjà.
+// Import des tickets de caisse depuis tickets/achats.csv et tickets/correspondances.csv.
+// Usage : node scripts/importer-tickets.js (utilise DATABASE_URL du .env). Rejouable : n'ajoute que les tickets et libellés absents.
 import "dotenv/config";
 import fs from "fs";
 import pg from "pg";
@@ -18,21 +18,16 @@ console.log("Base :", hote);
 
 const client = await db.connect();
 try {
-    const existants = await client.query("SELECT count(*)::int AS n FROM tickets");
-    if (existants.rows[0].n > 0) {
-        console.log(`${existants.rows[0].n} tickets déjà présents, import ignoré.`);
-        process.exit(0);
-    }
-
     await client.query("BEGIN");
+    let nouveauxLibelles = 0, nouveauxTickets = 0, nouveauxAchats = 0;
 
     for (const [libelle, aliment] of correspondances) {
         const statut = aliment === "" ? "a-classer" : STATUTS.includes(aliment) ? aliment : "chow";
-        await client.query("INSERT INTO libelles (libelle, food_id, statut) VALUES ($1, $2, $3)", [
+        nouveauxLibelles += (await client.query("INSERT INTO libelles (libelle, food_id, statut) VALUES ($1, $2, $3) ON CONFLICT DO NOTHING", [
             libelle,
             statut === "chow" ? aliment : null,
             statut,
-        ]);
+        ])).rowCount;
     }
 
     // Pas d'identifiant de ticket dans le CSV : un passage en caisse = une date dans un magasin.
@@ -45,6 +40,11 @@ try {
 
     for (const lignes of tickets.values()) {
         const [date, magasin] = lignes[0];
+        const dejaLa = await client.query("SELECT 1 FROM tickets WHERE date IS NOT DISTINCT FROM $1 AND magasin = $2",
+            [date.includes("?") ? null : date, magasin]);
+        if (dejaLa.rowCount) continue;
+        nouveauxTickets++;
+        nouveauxAchats += lignes.length;
         const total = lignes.reduce((somme, l) => somme + Number(l[7]), 0);
         const ticket = await client.query(
             "INSERT INTO tickets (date, magasin, enseigne, total) VALUES ($1, $2, $3, $4) RETURNING id",
@@ -62,7 +62,7 @@ try {
     }
 
     await client.query("COMMIT");
-    console.log(`${correspondances.length} libellés, ${tickets.size} tickets, ${achats.length} achats importés.`);
+    console.log(`${nouveauxLibelles} libellés, ${nouveauxTickets} tickets, ${nouveauxAchats} achats ajoutés.`);
 } catch (err) {
     await client.query("ROLLBACK");
     console.error("Import annulé :", err.message);

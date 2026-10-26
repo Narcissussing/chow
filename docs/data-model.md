@@ -121,9 +121,16 @@ une fois par `scripts/importer-tickets.js` depuis le dossier local `tickets/`.
   qu’imprimée, `type` « 2e à prix réduit » / « 2+1 » / « remise immédiate »,
   `pourcentage`, `montant`), pour suivre les promos dans le temps.
 
-`GET /api/courses/estimation` estime les Courses non achetées sans quantité
-saisie : pour chaque aliment, médiane du coût payé lors des 8 derniers
-passages en caisse des 12 derniers mois (fourchette = 1er et 3e quartiles).
+`foods.magasin` : magasin habituel de l'aliment (choisi, ou appris en cochant
+en mode magasin) ; à défaut, `GET /api/courses` le déduit des tickets des 12
+derniers mois (magasin le plus fréquent).
+
+`GET /api/courses/estimation[?magasin=…]` estime les Courses non achetées sans
+quantité saisie (`prevoirArticle` dans `stats.js`) : quantité habituelle des
+achats sans remise × dernier prix normal, dans le magasin demandé s'il est
+connu ; fourchette = 1er et 3e quartiles des écarts prévu/payé quand chaque
+achat passé est rejoué avec ce qui était connu avant lui. Unités mélangées :
+médiane et quartiles du coût des 8 derniers passages.
 Sans historique, il utilise `foods.prix_habituel` (coût d’un achat habituel,
 ±20 %) ; sinon l’article est compté dans `sansPrix`.
 

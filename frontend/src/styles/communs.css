@@ -414,3 +414,50 @@
   padding-top: 28px;
   padding-bottom: 8px;
 }
+
+/* Nom trop long : une seule ligne qui défile au doigt, fondue à droite (jamais de 2e ligne ni de « … »). */
+.nom-defile {
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: nowrap;
+  padding-right: 24px;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+}
+
+.nom-defile::-webkit-scrollbar {
+  display: none;
+}
+
+/* Placeholder trop long (repéré par usePlaceholdersDefilants) : défilement lent aller-retour, fondu à droite. */
+[data-ph-long]:placeholder-shown {
+  animation: placeholder-defile var(--ph-duree, 6s) ease-in-out 1s infinite alternate;
+}
+
+[data-ph-long]::placeholder {
+  background: linear-gradient(to right, var(--text-muted) calc(100% - 28px), transparent);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes placeholder-defile {
+  0%,
+  15% {
+    text-indent: 0;
+  }
+  85%,
+  100% {
+    text-indent: var(--ph-decalage, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ph-long]:placeholder-shown {
+    animation: none;
+  }
+}

@@ -28,6 +28,7 @@ const FICHE = {
   parEnseigne: [{ nom: "Leclerc", prix: 1.89 }, { nom: "Marché Frais", prix: 2.49 }],
   derniersAchats: [{ jour: "2026-10-13", enseigne: "Marché Frais", total: 4.6, quantite: "1,846 kg", remise: 1.2 }],
   economiePromos: 8.4,
+  periode: { achats: 12, depense: 48 },
   depenseTotale: 312.4,
   premierAchat: "2023-09-02",
   habitudes: { rythmeJours: 7, quantiteParAchat: 1.2, quantiteParMois: 4.3, depense12Mois: 210.8, achats12Mois: 35, dernierAchat: "2026-10-13", joursDepuis: 10, prochainAchat: "2026-10-20" },
@@ -39,11 +40,14 @@ function ouvrirStats() {
   simulerApi({
     "/session": [200, { utilisateur: { id: 1 } }],
     "/courses/estimation": [200, { estimation: 42, bas: 38, haut: 45, articles: 12, sansPrix: 0 }],
-    "/stats/produit/tomate": [200, { produit: FICHE }],
     "/courses/ajouter": (o) => { requetes.push(JSON.parse(o.body)); return [200, { succes: true, item: {} }]; },
   });
   const simule = global.fetch;
   global.fetch = jest.fn((url, options) => {
+    if (url.startsWith("/api/stats/produit/tomate?")) {
+      requetes.push(url);
+      return Promise.resolve({ status: 200, ok: true, json: async () => ({ produit: FICHE }) });
+    }
     if (url.startsWith("/api/stats?")) {
       requetes.push(url);
       const enseigne = new URLSearchParams(url.split("?")[1]).get("enseigne");
@@ -65,7 +69,7 @@ test("Stats : KPIs, estimation, inflation, prix et semaine la plus chère", asyn
   expect(screen.getByRole("dialog", { name: "Ligne France" })).toHaveTextContent("Foyer +2 %");
   expect(screen.getByRole("dialog", { name: "Ligne France" })).toHaveTextContent("plus vite que la moyenne (+1,4 pt)");
   fireEvent.click(document.body);
-  expect(screen.queryByRole("dialog", { name: "Ligne France" })).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Ligne France" })).not.toBeInTheDocument());
   const axe = () => [...document.querySelectorAll(".courbe__graduation")].map((g) => g.textContent);
   const axeAlimentation = axe();
   fireEvent.click(screen.getByRole("button", { name: "Tout" }));
@@ -77,7 +81,10 @@ test("Stats : KPIs, estimation, inflation, prix et semaine la plus chère", asyn
   await waitFor(() => expect(screen.queryByText("0 €")).not.toBeInTheDocument(), { timeout: 2000 });
   expect(screen.getByText("Tomate")).toBeInTheDocument();
   expect(screen.getByText("Steak haché +24 €", { exact: false })).toBeInTheDocument();
-  expect(screen.getByRole("tooltip", { hidden: true })).toHaveTextContent("40 € cette semaine16 € en moyenne (2026) · 10 € la semaine d’avant");
+  fireEvent.click(screen.getByRole("button", { name: /Steak haché \+24 €/ }));
+  expect(screen.getByRole("dialog", { name: "Steak haché" })).toHaveTextContent("40 € cette semaine16 € en moyenne (2026) · 10 € la semaine d’avant");
+  fireEvent.keyDown(document, { key: "Escape" });
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Steak haché" })).not.toBeInTheDocument());
   expect(screen.getByText(/42 produits suivis/)).toBeInTheDocument();
   expect([...document.querySelectorAll(".courbe__graduation")].every((g) => g.textContent.endsWith("€"))).toBe(true);
   fireEvent.click(screen.getByText(/Foyer \+4,1 %/));
@@ -144,6 +151,9 @@ test("fiche produit : prix par magasin, derniers achats, ajout aux Courses", asy
   expect(within(fiche).getByText("+31 % depuis 2025")).toBeInTheDocument();
   expect(within(fiche).getByText(/312 € dépensés depuis 2023/)).toBeInTheDocument();
   expect(within(fiche).getByText("8 € économisés en promo")).toBeInTheDocument();
+  expect(requetes.at(-1)).toMatch(/^\/api\/stats\/produit\/tomate\?periode=annee&ref=.*&enseigne=tous$/);
+  expect(await within(fiche).findByText("12 achats", {}, { timeout: 2000 })).toBeInTheDocument();
+  expect(within(fiche).getByText(String(new Date().getFullYear()))).toBeInTheDocument();
   expect(within(fiche).getByText("−1,20 € promo")).toBeInTheDocument();
   expect(within(fiche).getByText("Marché Frais · 1,846 kg")).toBeInTheDocument();
   expect(within(fiche).getByText("Chaque semaine")).toBeInTheDocument();
@@ -154,5 +164,60 @@ test("fiche produit : prix par magasin, derniers achats, ajout aux Courses", asy
   expect(requetes).toContainEqual({ idAliment: "tomate" });
   expect(within(fiche).getByText("Ajouté aux Courses ✓")).toBeInTheDocument();
   fireEvent.click(within(fiche).getByLabelText("Fermer"));
-  expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+});
+
+test("Les prix : la liste complète s'ouvre dans une feuille qui se ferme", async () => {
+  const avant = STATS.produits;
+  STATS.produits = [...avant, ...["a", "b", "c", "d", "e"].map((id, i) => ({ id, nom: "Produit " + id, emoji: "🥫", achats: 1, depense: 10 - i, prix: 1, unite: null, variation: 0, courbe: [1, 1] }))];
+  try {
+    ouvrirStats();
+    await screen.findByText("3 195 €");
+    expect(document.querySelectorAll(".prix .prix__entree")).toHaveLength(5);
+    fireEvent.click(screen.getByRole("button", { name: "Voir les 7 produits →" }));
+    const liste = screen.getByRole("dialog", { name: "Tous les produits" });
+    expect(liste.querySelectorAll(".prix__entree")).toHaveLength(7);
+    fireEvent.click(within(liste).getByRole("button", { name: "Fermer" }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Tous les produits" })).not.toBeInTheDocument());
+    expect(document.querySelectorAll(".prix .prix__entree")).toHaveLength(5);
+  } finally {
+    STATS.produits = avant;
+  }
+});
+
+test("Dates… : un seul calendrier, deux touchers suffisent, pas de jour futur", async () => {
+  ouvrirStats();
+  await screen.findByText("3 195 €");
+  fireEvent.click(document.querySelector(".periode__choix"));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Dates…" }));
+  const auj = new Date();
+  const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const demain = new Date(auj.getFullYear(), auj.getMonth(), auj.getDate() + 1);
+  if (demain.getMonth() === auj.getMonth()) expect(document.querySelector(`[data-jour="${iso(demain)}"]`)).toBeDisabled();
+  expect(screen.getByLabelText("Suivant")).toBeDisabled();
+  fireEvent.click(screen.getByLabelText("Précédent"));
+  const mois = iso(new Date(auj.getFullYear(), auj.getMonth() - 1, 1)).slice(0, 8);
+  fireEvent.click(document.querySelector(`[data-jour="${mois}10"]`));
+  // Un jour avant le début devient le début : la plage va du 3 au 10.
+  fireEvent.click(document.querySelector(`[data-jour="${mois}03"]`));
+  await waitFor(() => expect(requetes.at(-1)).toContain("periode=dates"));
+  expect(requetes.at(-1)).toContain(`debut=${mois}03`);
+  expect(requetes.at(-1)).toContain(`fin=${mois}10`);
+  await waitFor(() => expect(document.querySelector(".calendrier")).toBeNull());
+});
+
+test("Dates… : le mois ouvre les mois, l'année ouvre les années", async () => {
+  ouvrirStats();
+  await screen.findByText("3 195 €");
+  fireEvent.click(document.querySelector(".periode__choix"));
+  fireEvent.click(screen.getByRole("menuitem", { name: "Dates…" }));
+  fireEvent.click(document.querySelector(".calendrier__titre"));
+  expect(document.querySelectorAll("[data-mois]")).toHaveLength(12);
+  fireEvent.click(document.querySelector(".calendrier__titre"));
+  const annees = [...document.querySelectorAll("[data-annee]")].map((b) => b.textContent);
+  expect(annees.at(-1)).toBe(String(new Date().getFullYear()));
+  fireEvent.click(document.querySelector("[data-annee]"));
+  expect(document.querySelectorAll("[data-mois]")).toHaveLength(12);
+  fireEvent.click(document.querySelector("[data-mois]:not(:disabled)"));
+  expect(document.querySelector("[data-jour]")).not.toBeNull();
 });

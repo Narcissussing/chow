@@ -23,7 +23,7 @@ function ouvrirCourses(surcharges = {}, { courses = COURSES, preset = [] } = {})
     "/session": [200, { utilisateur: { id: 1 } }],
     "/courses": [200, { courses, aliments: ALIMENTS, stock: [], presetHebdo: preset }],
     "/courses/estimation": [200, { estimation: 19, bas: 14, haut: 24, articles: 3, sansPrix: 0, details: [
-      { nom: "Tomate", emoji: "🍅", source: "habitudes", passages: 8, estimation: 4.5, quantite: 1.8, unite: "kg", dernierPrix: 2.49, prixHabituel: 1.89 },
+      { nom: "Tomate", emoji: "🍅", source: "habitudes", passages: 8, estimation: 4.5, quantite: 1.8, unite: "kg", dernierPrix: 2.49, magasin: "Marché Frais" },
       { nom: "Lentilles", emoji: "🫘", source: "prix-habituel", estimation: 2 },
     ] }],
     "/courses/acheter": noter("/courses/acheter", [200, { succes: true }]),
@@ -51,6 +51,18 @@ function choisirTri(libelle) {
   fireEvent.click(within(document.querySelector(".custom-select__list")).getByText(libelle));
 }
 
+// Plus de 320 ms entre deux touchers sur le caddie : sinon c'est un double toucher (choix du magasin).
+const pauseToucher = () => new Promise((r) => setTimeout(r, 350));
+
+// Deux touchers rapprochés sur le caddie sortent les logos ; le magasin est appliqué quand le logo est rentré.
+async function choisirMagasin(nom) {
+  const bouton = document.getElementById("toggleMagasin");
+  fireEvent.click(bouton);
+  fireEvent.click(bouton);
+  fireEvent.click(within(screen.getByRole("group", { name: "Choisir le magasin" })).getByLabelText(nom));
+}
+const logoRentre = () => act(() => new Promise((r) => setTimeout(r, 600)));
+
 afterEach(() => {
   jest.useRealTimers();
   localStorage.clear();
@@ -61,7 +73,7 @@ test("fourchette de prix estimée au bord du titre", async () => {
   await attendrePage();
   fireEvent.click(await screen.findByText("14 € – 24 €"));
   const calcul = screen.getByRole("dialog", { name: "Calcul de l’estimation" });
-  expect(calcul).toHaveTextContent("1,8 kg par achat · dernier prix 2,49 € / kg (d’habitude 1,89 €)");
+  expect(calcul).toHaveTextContent("1,8 kg par achat · 2,49 € / kg chez Marché Frais");
   expect(calcul).toHaveTextContent("jamais acheté sur un ticket");
 });
 
@@ -218,9 +230,12 @@ test("mode magasin : classe sur body, mémorisé, puces de rayon, remise à zér
   fireEvent.click(within(puces).getByText("Tous"));
   expect([...document.querySelectorAll(".course-item.hidden")]).toHaveLength(3);
 
+  await pauseToucher();
   fireEvent.click(document.getElementById("toggleMagasin"));
+  await act(pauseToucher);
   expect(document.body).not.toHaveClass("mode-magasin");
   expect([...document.querySelectorAll(".course-item.hidden")]).toHaveLength(0);
+  await pauseToucher();
   fireEvent.click(document.getElementById("toggleMagasin"));
   unmount();
   expect(document.body).not.toHaveClass("mode-magasin");
@@ -366,7 +381,9 @@ test("bouton magasin : icône seule, état annoncé, entrée puis sortie animée
   expect(bouton).toHaveClass("actif", "entre");
   expect(bouton).toHaveAttribute("aria-label", "Quitter le mode magasin");
   expect(document.body).toHaveClass("mode-magasin");
+  await pauseToucher();
   fireEvent.click(bouton);
+  await act(pauseToucher);
   expect(bouton).toHaveClass("sort");
   expect(bouton).not.toHaveClass("actif");
 });
@@ -408,4 +425,97 @@ test("liste vide : le caddie s'efface quand on ouvre le panneau, et une suggesti
   fireEvent.change(document.getElementById("rechercheAlimentCourses"), { target: { value: "pom" } });
   await act(async () => fireEvent.click(within(document.getElementById("listeAlimentsCourses")).getByText(/Pomme/)));
   expect(requetes).toContainEqual({ chemin: "/courses/ajouter", corps: { idAliment: "pomme", rechercheAliment: null } });
+});
+
+test("mode magasin : un magasin garde ses articles, les autres sont masqués ; l'achat apprend le magasin", async () => {
+  const courses = [
+    { ...COURSES[0], magasin: "Carrefour" },
+    { ...COURSES[1], magasin: "Leclerc" },
+    { ...COURSES[2], magasin: null },
+  ];
+  ouvrirCourses({}, { courses });
+  await attendrePage();
+  await choisirMagasin("Carrefour");
+  await logoRentre();
+  expect(document.body).toHaveClass("mode-magasin");
+  expect(document.getElementById("toggleMagasin")).toHaveAccessibleName("Quitter le mode magasin (Carrefour)");
+  expect(carte("Lait")).not.toHaveClass("hidden");
+  expect(carte("Riz")).toHaveClass("hidden");
+  // Sans magasin connu, l'article reste visible partout.
+  expect(carte("Puck")).not.toHaveClass("hidden");
+  fireEvent.click(carte("Lait").querySelector(".course-nom"));
+  await act(async () => fireEvent.click(carte("Lait").querySelector(".btn-acheter-icone")));
+  // Un réessai réseau d'un test précédent peut arriver pendant l'attente du logo : on cherche l'achat de ce test.
+  expect(requetes).toContainEqual({ chemin: "/courses/acheter", corps: { idCourse: "1", magasin: "Carrefour" } });
+});
+
+test("hors du magasin, deux touchers entrent en mode magasin et sortent les logos", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  const bouton = document.getElementById("toggleMagasin");
+  fireEvent.click(bouton);
+  fireEvent.click(bouton);
+  expect(document.body).toHaveClass("mode-magasin");
+  expect(screen.getByRole("group", { name: "Choisir le magasin" })).toBeInTheDocument();
+});
+
+test("mode magasin : un toucher = tous les magasins ; le magasin choisi se combine aux rayons", async () => {
+  const courses = [
+    { ...COURSES[0], magasin: "Carrefour" },
+    { ...COURSES[1], magasin: "Carrefour" },
+    { ...COURSES[2], magasin: "Leclerc" },
+  ];
+  ouvrirCourses({}, { courses });
+  await attendrePage();
+  fireEvent.click(document.getElementById("toggleMagasin"));
+  expect(document.querySelector(".btn-magasin__logo")).toBeNull();
+  expect([...document.querySelectorAll(".course-item.hidden")]).toHaveLength(0);
+  await new Promise((r) => setTimeout(r, 350));
+  await choisirMagasin("Carrefour");
+  expect(document.getElementById("courseFiltresMagasin")).toBeTruthy();
+  await logoRentre();
+  expect(document.body).toHaveClass("mode-magasin");
+  expect(document.querySelector(".btn-magasin__logo")).not.toBeNull();
+  expect(screen.queryByRole("group", { name: "Choisir le magasin" })).toBeNull();
+  fireEvent.click(within(document.getElementById("courseFiltresMagasin")).getByText("Laitiers"));
+  expect(carte("Lait")).not.toHaveClass("hidden");
+  expect(carte("Riz")).toHaveClass("hidden");
+  expect(carte("Puck")).toHaveClass("hidden");
+});
+
+test("tri par catégorie : un rayon filtré n'affiche plus son titre", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  choisirTri("Catégorie");
+  fireEvent.click(document.getElementById("toggleMagasin"));
+  fireEvent.click(within(document.getElementById("courseFiltresMagasin")).getByText("Laitiers"));
+  const titres = [...document.querySelectorAll(".course-categorie-entete")].filter((t) => !t.classList.contains("hidden")).map((t) => t.textContent);
+  expect(titres).toEqual(["Laitiers"]);
+});
+
+test("mode magasin : la liste est relue toutes les 15 s ; un nouvel article fait sortir du filtre de magasin", async () => {
+  jest.useFakeTimers();
+  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false, magasin: "Leclerc" };
+  let appels = 0;
+  ouvrirCourses({}, { courses: COURSES.map((c) => ({ ...c, magasin: "Carrefour" })) });
+  await act(async () => jest.runOnlyPendingTimers());
+  await attendrePage();
+  const simule = global.fetch;
+  global.fetch = jest.fn((url, o) => {
+    if (url === "/api/courses") {
+      appels++;
+      return Promise.resolve({ status: 200, ok: true, json: async () => ({ courses: [...COURSES.map((c) => ({ ...c, magasin: "Carrefour" })), pain], aliments: ALIMENTS, stock: [], presetHebdo: [] }) });
+    }
+    return simule(url, o);
+  });
+  fireEvent.click(document.getElementById("toggleMagasin"));
+  act(() => jest.advanceTimersByTime(350));
+  await choisirMagasin("Carrefour");
+  act(() => jest.advanceTimersByTime(600));
+  expect(document.querySelector(".btn-magasin__logo")).not.toBeNull();
+  await act(async () => jest.advanceTimersByTime(15000));
+  expect(appels).toBe(1);
+  expect(document.querySelector(".btn-magasin__logo")).toBeNull();
+  act(() => jest.advanceTimersByTime(5000));
+  expect(carte("Pain")).not.toHaveClass("hidden");
 });

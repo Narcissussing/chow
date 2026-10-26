@@ -89,14 +89,6 @@
   color: var(--text-muted);
 }
 
-.estimation__detail .plus-cher {
-  color: #b8452c;
-}
-
-.estimation__detail .moins-cher {
-  color: #2f6f62;
-}
-
 .estimation__montant {
   font-size: 0.85rem;
   font-weight: 600;
@@ -230,9 +222,6 @@
 
 .estimation__nom b {
   font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .estimation__montant {
@@ -293,4 +282,29 @@
 .estimation__liste {
   min-height: 0;
   flex: 1 1 auto;
+}
+
+/* Fermeture : la bulle se replie vers le bouton ; sur téléphone la feuille redescend. */
+.estimation__popup.ferme {
+  animation: estimation-sortie 0.2s ease-in forwards;
+}
+
+@keyframes estimation-sortie {
+  to {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.96);
+  }
+}
+
+@media (max-width: 860px) {
+  .estimation__popup.ferme {
+    animation: estimation-feuille-sortie 0.22s ease-in forwards;
+  }
+}
+
+@keyframes estimation-feuille-sortie {
+  to {
+    opacity: 0.6;
+    transform: translateY(110%);
+  }
 }

@@ -168,46 +168,10 @@
   font-weight: 600;
 }
 
-.magasins {
-  display: flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 999px;
-  background: var(--sable);
-}
-
-.magasins button {
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 28px;
-  border: 0;
-  border-radius: 999px;
-  background: none;
-  color: var(--text);
-  cursor: pointer;
-}
-
-.magasins button.actif {
-  background: #fff;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
-}
-
-.magasins svg {
-  width: 17px;
-  height: 17px;
-}
-
-.magasins img {
-  width: 20px;
-  height: 20px;
-  object-fit: contain;
-}
-
 /* KPIs : libellé à gauche, valeur à droite */
 .stats__kpis {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -870,6 +834,7 @@
 
 .fiche__entete div {
   flex: 1;
+  min-width: 0;
 }
 
 .fiche__entete h2 {
@@ -997,7 +962,33 @@
   }
 
   .stats__kpis {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  /* Petites tuiles sur téléphone : libellé, grand chiffre, comparaison, les uns sous les autres. */
+  .stats .kpi:not(.kpi--large) {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 2px;
+  }
+
+  .kpi:not(.kpi--large) > div {
+    display: contents;
+  }
+
+  .kpi:not(.kpi--large) .kpi__libelle {
+    order: 0;
+  }
+
+  .kpi:not(.kpi--large) .kpi__valeur,
+  .kpi:not(.kpi--large) .info-ancre {
+    order: 1;
+  }
+
+  .kpi:not(.kpi--large) .kpi__detail {
+    order: 2;
+    max-width: 100%;
   }
 
   .kpi--large {
@@ -1484,48 +1475,19 @@ button.puce {
   cursor: default;
 }
 
-.bulle--cause {
-  display: none;
-  top: 0;
-  left: 50%;
-  white-space: normal;
-  width: max-content;
-  max-width: 260px;
-  line-height: 1.4;
-  text-align: left;
 }
 
-.cause:hover .bulle--cause,
-.cause:focus .bulle--cause {
-  display: block;
 }
 
-.bulle--cause {
-  flex-direction: column;
-  gap: 2px;
 }
 
-.cause:hover .bulle--cause,
-.cause:focus .bulle--cause {
-  display: flex;
 }
 
-.bulle__detail {
-  opacity: 0.75;
-  font-size: 0.7rem;
 }
 
 /* Bulle des puces plus compacte */
-.bulle.bulle--cause {
-  padding: 5px 9px;
-  max-width: 210px;
-  font-size: 0.68rem;
-  line-height: 1.35;
-  border-radius: 7px;
 }
 
-.bulle--cause .bulle__detail {
-  font-size: 0.62rem;
 }
 
 /* Bascule de la ligne France : alimentation / tout */
@@ -1649,26 +1611,6 @@ button.puce {
 }
 
 @media (max-width: 860px) {
-  .cause:hover .bulle--cause,
-  .cause:focus .bulle--cause {
-    position: fixed;
-    top: auto;
-    left: 12px;
-    right: 12px;
-    bottom: 12px;
-    max-width: none;
-    width: auto;
-    transform: none;
-    padding: 14px 16px;
-    font-size: 0.85rem;
-    border-radius: 16px;
-    animation: feuille-monte 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-
-  .cause .bulle--cause .bulle__detail {
-    font-size: 0.78rem;
-  }
-
   /* Bulles des graphiques : jamais plus larges que l'écran */
   .bulle {
     max-width: calc(100vw - 48px);
@@ -1693,4 +1635,497 @@ button.puce {
 .fiche__economie {
   color: var(--vert);
   font-weight: 600;
+}
+
+/* Bulle sur téléphone : feuille en bas de l'écran, rendue dans body pour n'être coupée par aucune carte */
+.info-popup.info-popup--feuille {
+  position: fixed;
+  top: auto;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  z-index: 1000;
+  width: auto;
+  max-height: 70vh;
+  overflow-y: auto;
+  gap: 8px;
+  padding: 10px 20px 22px;
+  border-radius: 22px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  box-shadow: 0 -8px 40px rgba(26, 20, 15, 0.22);
+  animation: feuille-rebond 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+.info-popup--feuille::after {
+  display: none;
+}
+
+.info-popup--feuille b {
+  font-size: 1.05rem;
+}
+
+.info-popup__poignee {
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin-bottom: 6px;
+  border-radius: 2px;
+  background: var(--border);
+}
+
+@keyframes feuille-rebond {
+  from {
+    opacity: 0;
+    transform: translateY(60px) scale(0.98);
+  }
+}
+
+.cause {
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.cause:active {
+  transform: scale(0.94);
+}
+
+/* Liste complète des produits : même feuille que la fiche, sous la fiche quand un produit est ouvert */
+.fiche-fond--liste {
+  z-index: 90;
+}
+
+.fiche--liste {
+  gap: 12px;
+  overflow: hidden;
+  animation: liste-glisse 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.liste-produits__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.liste-produits__entete h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.liste-produits__entete .discret {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.liste-produits__controles {
+  display: flex;
+  gap: 8px;
+}
+
+.liste-produits__controles .prix__recherche {
+  flex: 1;
+  min-width: 0;
+}
+
+.liste-produits__liste {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0 -8px;
+  padding: 0 8px;
+}
+
+.prix__entree {
+  animation-delay: calc(var(--i, 0) * 35ms);
+}
+
+@keyframes liste-glisse {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 860px) {
+  .fiche--liste {
+    height: 88vh;
+    animation: monter 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Bulles des barres aux bords : collées au bord au lieu de déborder */
+  .barre-col:first-child .bulle--barre {
+    left: 0;
+    transform: translateY(calc(-100% - 12px));
+  }
+
+  .barre-col:last-child .bulle--barre {
+    left: auto;
+    right: 0;
+    transform: translateY(calc(-100% - 12px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .info-popup--feuille,
+  .fiche--liste {
+    animation: none;
+  }
+}
+
+/* Sous les Dépenses sur téléphone : la semaine sur une ligne, les causes sur une seule rangée qui défile au doigt */
+@media (max-width: 860px) {
+  .semaine-max {
+    flex-direction: column;
+    align-items: stretch;
+    flex-wrap: nowrap;
+    gap: 8px;
+    padding: 10px 0 10px 14px;
+  }
+
+  .semaine-max > p {
+    display: flex;
+    align-items: baseline;
+    padding-right: 14px;
+    white-space: nowrap;
+  }
+
+  .semaine-max > p b {
+    margin-left: auto;
+  }
+
+  .semaine-max__causes {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    padding-right: 14px;
+    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    mask-image: linear-gradient(to right, #000 85%, transparent);
+  }
+
+  .semaine-max__causes::-webkit-scrollbar {
+    display: none;
+  }
+
+  .semaine-max__causes > * {
+    flex-shrink: 0;
+    scroll-snap-align: start;
+    white-space: nowrap;
+  }
+}
+
+/* Fiche : achats dans la période choisie */
+.fiche__periode {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fbe7df 0%, #fdf3ee 100%);
+  animation: periode-pop 0.45s cubic-bezier(0.3, 1.5, 0.5, 1) both;
+}
+
+.fiche__periode-icone {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  background: #f6d3c5;
+  color: var(--rouge);
+}
+
+.fiche__periode-icone svg {
+  width: 20px;
+  height: 20px;
+}
+
+.fiche__periode p {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.fiche__periode p b {
+  font-size: 1.15rem;
+}
+
+.fiche__periode p span {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.fiche__periode strong {
+  font-size: 1.15rem;
+}
+
+@keyframes periode-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fiche__periode {
+    animation: none;
+  }
+}
+
+/* Menu des périodes et choix des dates : ouverture avec un léger rebond */
+.periode__menu {
+  transform-origin: top left;
+  animation: menu-rebond 0.28s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes menu-rebond {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .periode__menu {
+    animation: none;
+  }
+}
+
+/* Calendrier de plage : une grille, début et fin en pastilles, la plage en bande claire */
+.calendrier {
+  width: 286px;
+  gap: 8px;
+  padding: 12px;
+}
+
+.calendrier__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.periode .calendrier__entete > button:not(.calendrier__titre) {
+  display: grid;
+  place-items: center;
+  flex: none;
+  line-height: 1;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+}
+
+.calendrier__entete button:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.periode .calendrier__titre {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: 999px;
+  text-transform: capitalize;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.periode button.calendrier__titre:hover {
+  background: var(--sable);
+}
+
+.calendrier__annees {
+  max-height: 220px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+
+.calendrier__annees::-webkit-scrollbar {
+  display: none;
+}
+
+/* Mois et années : grandes cases, 3 par ligne */
+.calendrier__choix {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  min-height: 220px;
+  align-content: start;
+}
+
+.periode .calendrier__choix button {
+  text-align: center;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  text-transform: capitalize;
+}
+
+.periode .calendrier__choix button:hover:not(:disabled) {
+  background: var(--sable);
+}
+
+.periode .calendrier__choix button.actif {
+  background: var(--rouge);
+  color: #fff;
+  font-weight: 700;
+}
+
+.periode .calendrier__choix button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* Zoom : on recule vers les mois/années (sortie), on avance vers les jours (entrée) */
+.calendrier--sortie {
+  animation: zoom-sortie 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.calendrier--entree {
+  animation: zoom-entree 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes zoom-sortie {
+  from {
+    opacity: 0;
+    transform: scale(1.15);
+  }
+}
+
+@keyframes zoom-entree {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+}
+
+.calendrier__grille {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 2px;
+  animation: apparaitre 0.25s ease;
+}
+
+.calendrier__jour-nom {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  padding-bottom: 4px;
+}
+
+.periode .calendrier__jour {
+  height: 36px;
+  border-radius: 0;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.periode .calendrier__jour:hover:not(:disabled) {
+  background: var(--sable);
+  border-radius: 50%;
+}
+
+.periode .calendrier__jour:disabled {
+  color: var(--text-muted);
+  opacity: 0.35;
+  cursor: default;
+}
+
+.periode .calendrier__jour.aujourdhui {
+  font-weight: 700;
+  color: var(--rouge);
+}
+
+.periode .calendrier__jour.dedans {
+  background: #fbe7df;
+}
+
+.periode .calendrier__jour.borne {
+  border-radius: 50%;
+  background: var(--rouge);
+  color: #fff;
+  font-weight: 700;
+  animation: borne-pop 0.3s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes borne-pop {
+  from {
+    transform: scale(0.6);
+  }
+}
+
+.calendrier__etat {
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendrier--sortie,
+  .calendrier--entree,
+  .calendrier__grille,
+  .periode .calendrier__jour.borne {
+    animation: none;
+  }
+}
+
+/* Fermetures : chaque fenêtre repart comme elle est venue (panneau à droite, feuille vers le bas, bulle qui se replie). */
+.fiche-fond.ferme {
+  animation: fond-sortie 0.22s ease forwards;
+}
+
+.fiche.ferme {
+  animation: panneau-sortie 0.22s ease-in forwards;
+}
+
+.info-popup.ferme {
+  animation: bulle-sortie 0.18s ease-in forwards;
+}
+
+.info-popup.info-popup--feuille.ferme {
+  animation: feuille-sortie 0.22s ease-in forwards;
+}
+
+.periode__menu.ferme {
+  animation: bulle-sortie 0.18s ease-in forwards;
+}
+
+@media (max-width: 860px) {
+  .fiche.ferme {
+    animation: feuille-sortie 0.22s ease-in forwards;
+  }
+}
+
+@keyframes fond-sortie {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes panneau-sortie {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes feuille-sortie {
+  to {
+    opacity: 0.6;
+    transform: translateY(110%);
+  }
+}
+
+@keyframes bulle-sortie {
+  to {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.95);
+  }
 }

@@ -117,7 +117,7 @@ export default function StockItem({ item, visible, edition, setValeurEdition, on
       <div className="stock-item__body">
         <div className="stock-item__infos">
           <div className="stock-item__ligne stock-item__ligne--nom">
-            <span className="stock-nom">{item.nom}</span>
+            <span className="stock-nom nom-defile">{item.nom}</span>
           </div>
           <div className="stock-item__ligne stock-item__ligne--meta">
             <span className="stock-emplacement">{texteEmplacement(item.emplacement)}</span>

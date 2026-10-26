@@ -121,6 +121,26 @@ function EditeurQuantite({ article, onValider, onAnnuler }) {
 export default function Accueil() {
   const { etat, donnees, majDonnees } = usePageData("/accueil");
   const [enEdition, setEnEdition] = useState(null);
+  const [sorties, setSorties] = useState({});
+
+  // La ligne joue sa sortie pendant l'appel au serveur, puis quitte la liste ; en cas d'erreur elle revient.
+  function sortir(article, sens, appel) {
+    setSorties((s) => ({ ...s, [article.id]: sens }));
+    const fin = () => setSorties(({ [article.id]: _, ...s }) => s);
+    Promise.all([appel, new Promise((r) => setTimeout(r, 650))])
+      .then(([{ donnees: reponse }]) => {
+        if (!reponse?.succes) {
+          fin();
+          return afficherToast(reponse?.erreur || "Une erreur est survenue.");
+        }
+        retirer(article, sens === "fini");
+        fin();
+      })
+      .catch(() => {
+        fin();
+        afficherToast("Une erreur est survenue.");
+      });
+  }
 
   // L'article sort tout de suite, puis l'accueil est relu en arrière-plan : l'article suivant à vérifier
   // remonte dans la liste et les compteurs sont ceux du serveur.
@@ -141,22 +161,13 @@ export default function Accueil() {
   // Nouvelle quantité : enregistrée comme dans Stock (la date repart d'aujourd'hui), l'article sort de la liste.
   function modifierQuantite(article, nouvelleQuantite) {
     setEnEdition(null);
-    api("/stock/modifier", { method: "POST", body: { idStock: article.id, nouvelleQuantite } })
-      .then(({ donnees: reponse }) => {
-        if (!reponse?.succes) return afficherToast(reponse?.erreur || "Une erreur est survenue.");
-        retirer(article, nouvelleQuantite === "0" || nouvelleQuantite === "vide");
-      })
-      .catch(() => afficherToast("Une erreur est survenue."));
+    sortir(article, nouvelleQuantite === "0" || nouvelleQuantite === "vide" ? "fini" : "garde",
+      api("/stock/modifier", { method: "POST", body: { idStock: article.id, nouvelleQuantite } }));
   }
 
   // « Toujours là » remet la date à aujourd'hui, « Fini » vide l'article : il sort de la liste dans les deux cas.
   function verifier(article, fini) {
-    api("/stock/verifier", { method: "POST", body: { idStock: article.id, fini } })
-      .then(({ donnees: reponse }) => {
-        if (!reponse?.succes) return afficherToast(reponse?.erreur || "Une erreur est survenue.");
-        retirer(article, fini);
-      })
-      .catch(() => afficherToast("Une erreur est survenue."));
+    sortir(article, fini ? "fini" : "garde", api("/stock/verifier", { method: "POST", body: { idStock: article.id, fini } }));
   }
   return (
     <Page titre="Accueil" etat={etat}>
@@ -217,11 +228,16 @@ export default function Accueil() {
                 <section className="accueil-bloc">
                   <span className="accueil-bloc__titre">Encore à la maison ?</span>
                   <ul className="accueil-verifier">
-                    {donnees.aVerifier.map((a) => (
-                      <li key={a.id} className={enEdition === a.id ? "en-edition" : undefined}>
+                    {donnees.aVerifier.map((a, i) => (
+                      <li
+                        key={a.id}
+                        className={[enEdition === a.id && "en-edition", sorties[a.id] && "sortie-" + sorties[a.id]].filter(Boolean).join(" ") || undefined}
+                        style={{ "--i": i }}
+                        inert={sorties[a.id] ? true : undefined}
+                      >
                         <span className="accueil-verifier__emoji" aria-hidden="true">{a.emoji}</span>
                         <span className="accueil-verifier__nom">
-                          <b>{a.nom}</b>
+                          <b className="nom-defile">{a.nom}</b>
                           <span className="accueil-verifier__jours">il y a {Math.round(a.jours / 7)} sem.</span>
                         </span>
                         {enEdition === a.id ? (

@@ -149,15 +149,28 @@ body.mode-magasin
   background: rgba(107, 142, 111, 0.3);
 }
 
+/* Assez large pour « Quantité » en entier : pas de défilement du placeholder, pas de flèches de champ nombre. */
 .champ-quantite-achat {
-  width: 100px;
+  box-sizing: border-box;
+  width: 104px;
+  height: 38px;
+  padding: 0 10px;
   background: var(--bg);
   border: 1.5px solid var(--border);
   border-radius: 999px;
-  padding: 7px 14px;
   font-family: var(--font-body);
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  line-height: normal;
+  text-align: center;
   color: var(--text);
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.champ-quantite-achat::-webkit-inner-spin-button,
+.champ-quantite-achat::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }
 
 .champ-quantite-achat:focus {
@@ -317,16 +330,4 @@ body.mode-magasin
 
 }
 
-.champ-quantite-achat {
-  box-sizing: border-box;
-  height: 38px;
-  font-size: 0.9rem;
-  line-height: normal;
-}
 
-.champ-quantite-achat {
-  width: 80px;
-  padding: 0 8px;
-  border-radius: 999px;
-  text-align: center;
-}

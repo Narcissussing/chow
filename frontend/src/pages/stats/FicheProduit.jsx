@@ -2,35 +2,40 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "../../api.js";
 import { afficherToast } from "../../toast.js";
 import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
+import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { Courbe } from "./graphiques.jsx";
-import { ENSEIGNES } from "./Filtres.jsx";
+import { ENSEIGNES } from "../../components/SelecteurMagasin.jsx";
+import { libellePeriode } from "./Filtres.jsx";
+import { NombreAnime } from "./animations.js";
 
 const logo = (nom) => ENSEIGNES.find((e) => e.nom === nom)?.logo;
 const rythme = (j) => (j <= 1 ? "Chaque jour" : j < 7 ? `Tous les ${j} jours` : j < 11 ? "Chaque semaine" : j < 25 ? `Toutes les ${Math.round(j / 7)} sem.` : j < 45 ? "Chaque mois" : `Tous les ${Math.round(j / 30)} mois`);
 const jour = (s) => new Date(s + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
 // Fiche d'un produit de « Tes prix » : feuille en bas sur téléphone, panneau à droite sur ordinateur.
-export default function FicheProduit({ idAliment, euros, onFermer }) {
+export default function FicheProduit({ idAliment, periode, enseigne, euros, onFermer }) {
   const [fiche, setFiche] = useState(null);
   const [ajoute, setAjoute] = useState(false);
   const zone = useRef(null);
+  const [ferme, fermer] = useFermetureAnimee(onFermer);
   useVerrouDefilement(true, zone);
 
   useEffect(() => {
     const controleur = new AbortController();
-    api("/stats/produit/" + encodeURIComponent(idAliment), { signal: controleur.signal })
+    const params = new URLSearchParams({ ...periode, enseigne });
+    api("/stats/produit/" + encodeURIComponent(idAliment) + "?" + params, { signal: controleur.signal })
       .then(({ donnees }) => setFiche(donnees?.produit ?? false))
       .catch((err) => {
         if (err.type !== "annulation") setFiche(false);
       });
     return () => controleur.abort();
-  }, [idAliment]);
+  }, [idAliment, periode, enseigne]);
 
   useEffect(() => {
-    const echap = (e) => e.key === "Escape" && onFermer();
+    const echap = (e) => e.key === "Escape" && fermer();
     document.addEventListener("keydown", echap);
     return () => document.removeEventListener("keydown", echap);
-  }, [onFermer]);
+  }, [fermer]);
 
   function ajouterAuxCourses() {
     api("/courses/ajouter", { method: "POST", body: { idAliment } })
@@ -44,8 +49,8 @@ export default function FicheProduit({ idAliment, euros, onFermer }) {
   const unite = fiche?.unite ? " / " + fiche.unite : "";
   const moinsCher = fiche?.parEnseigne[0]?.nom;
   return (
-    <div className="fiche-fond" onClick={onFermer}>
-      <aside ref={zone} className="fiche" role="dialog" aria-modal="true" aria-label={fiche?.nom || "Produit"} onClick={(e) => e.stopPropagation()}>
+    <div className={"fiche-fond" + (ferme ? " ferme" : "")} onClick={fermer}>
+      <aside ref={zone} className={"fiche" + (ferme ? " ferme" : "")} role="dialog" aria-modal="true" aria-label={fiche?.nom || "Produit"} onClick={(e) => e.stopPropagation()}>
         <span className="fiche__poignee" aria-hidden="true" />
         {fiche === null && <p className="fiche__vide">Chargement…</p>}
         {fiche === false && <p className="fiche__vide">Aucun achat trouvé pour ce produit.</p>}
@@ -54,14 +59,30 @@ export default function FicheProduit({ idAliment, euros, onFermer }) {
             <header className="fiche__entete">
               <span className="fiche__tuile" aria-hidden="true">{fiche.emoji}</span>
               <div>
-                <h2>{fiche.nom}</h2>
+                <h2 className="nom-defile">{fiche.nom}</h2>
                 <p>
                   {euros(fiche.depenseTotale ?? 0)} dépensés depuis {fiche.premierAchat?.slice(0, 4) ?? fiche.depuis}
                   {fiche.economiePromos > 0 && <> · <span className="fiche__economie">{euros(fiche.economiePromos)} économisés en promo</span></>}
                 </p>
               </div>
-              <button type="button" className="fiche__fermer" aria-label="Fermer" onClick={onFermer}>✕</button>
+              <button type="button" className="fiche__fermer" aria-label="Fermer" onClick={fermer}>✕</button>
             </header>
+            {fiche.periode && (
+              <div className="fiche__periode">
+                <span className="fiche__periode-icone" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3 4h2l2.4 11.2a1 1 0 0 0 1 .8h8.9a1 1 0 0 0 1-.8L20 8H6.2" />
+                    <circle cx="9" cy="20" r="1.3" />
+                    <circle cx="17" cy="20" r="1.3" />
+                  </svg>
+                </span>
+                <p>
+                  <b><NombreAnime valeur={fiche.periode.achats} format={(n) => Math.round(n) + (Math.round(n) > 1 ? " achats" : " achat")} /></b>
+                  <span>{libellePeriode(periode)}{enseigne !== "tous" ? " · " + enseigne : ""}</span>
+                </p>
+                <strong><NombreAnime valeur={fiche.periode.depense} format={(n) => euros(n)} /></strong>
+              </div>
+            )}
             <div className="fiche__prix">
               <strong>{euros(fiche.prix, 2)}</strong>
               <span>{unite}</span>

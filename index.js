@@ -6,7 +6,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
-import { calculerStats, ficheProduit, jourIso } from "./stats.js";
+import { calculerStats, ficheProduit, jourIso, prevoirArticle, quantile } from "./stats.js";
 
 const app = express();
 
@@ -168,6 +168,8 @@ await db.query(
 
 // Coût d'un achat habituel, pour les aliments sans historique de tickets (prix moyens de supermarché, sauf le niébé).
 await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS prix_habituel NUMERIC(10, 2)");
+// Magasin où le foyer achète l'aliment, choisi ou appris en cochant en mode magasin ; sinon déduit des tickets.
+await db.query("ALTER TABLE foods ADD COLUMN IF NOT EXISTS magasin TEXT");
 await db.query(
     `UPDATE foods SET prix_habituel = v.prix
      FROM (VALUES ('haricots-niebe', 3.20), ('lentilles-vertes', 2.00), ('mortadelle', 2.50), ('sucre-morceaux', 1.60),
@@ -395,7 +397,14 @@ async function chercherCourses() {
                 courses.date_ajout,
                 (courses.photo IS NOT NULL) AS has_photo,
                 COALESCE(foods.nom, courses.nom_libre) AS nom, COALESCE(foods.emoji, '🆕') AS emoji,
-                foods.unite AS food_unite, foods.tracking_type, foods.categorie, foods.pas_achat, stock.quantite AS quantite_stock
+                foods.unite AS food_unite, foods.tracking_type, foods.categorie, foods.pas_achat, stock.quantite AS quantite_stock,
+                COALESCE(foods.magasin, (
+                    SELECT t.enseigne FROM achats a
+                    JOIN libelles l ON l.libelle = a.libelle
+                    JOIN tickets t ON t.id = a.ticket_id
+                    WHERE l.food_id = courses.food_id AND t.date >= CURRENT_DATE - INTERVAL '12 months'
+                    GROUP BY t.enseigne ORDER BY count(DISTINCT t.id) DESC LIMIT 1
+                )) AS magasin
          FROM courses
          LEFT JOIN foods ON courses.food_id = foods.id
          LEFT JOIN stock ON stock.food_id = courses.food_id
@@ -494,18 +503,13 @@ async function chargerPageCourses() {
     return { courses, aliments, stock, presetHebdo: presetHebdo.rows };
 }
 
-function quantile(valeurs, q) {
-    const tri = [...valeurs].sort((a, b) => a - b);
-    const position = (tri.length - 1) * q;
-    const bas = Math.floor(position);
-    return tri[bas] + (tri[Math.ceil(position)] - tri[bas]) * (position - bas);
-}
+// Estimation des Courses sans saisir de quantité, article par article (prevoirArticle de stats.js) : quantité
+// habituelle × dernier prix normal, dans le magasin choisi (mode magasin) ; fourchette tirée des écarts passés entre
+// prévu et payé. Sans unité commune, repli sur la médiane et les quartiles du coût des 8 derniers passages.
+const ENSEIGNES = ["Leclerc", "Carrefour", "Marché Frais"];
 
-// Estimation des Courses sans saisir de quantité : quantité habituelle × dernier prix payé.
-// Habitude = coût payé lors des 8 derniers passages en caisse où l'aliment a été acheté (12 derniers mois) :
-// médiane = estimation, 1er et 3e quartiles = fourchette. Ces coûts sont ramenés au dernier prix au kg, au litre
-// ou à l'unité (dernier prix / prix médian des mêmes passages).
-async function estimerCourses() {
+async function estimerCourses(req) {
+    const magasin = ENSEIGNES.includes(req?.query?.magasin) ? req.query.magasin : null;
     const articles = await db.query(
         `SELECT DISTINCT c.food_id, f.nom, f.emoji, f.prix_habituel
          FROM courses c JOIN foods f ON f.id = c.food_id
@@ -518,19 +522,21 @@ async function estimerCourses() {
                 SUM(COALESCE(a.poids, COALESCE(a.quantite, 1) * a.contenance))::float AS quantite_ref,
                 SUM(COALESCE(a.quantite, 1))::float AS nombre,
                 bool_and(a.contenance IS NOT NULL) AS au_poids,
-                MAX(COALESCE(a.unite, 'u')) AS unite
+                MAX(COALESCE(a.unite, 'u')) AS unite,
+                t.enseigne, SUM(a.remise)::float AS remise
          FROM achats a
          JOIN libelles l ON l.libelle = a.libelle
          JOIN tickets t ON t.id = a.ticket_id
          WHERE l.food_id = ANY($1) AND t.date >= CURRENT_DATE - INTERVAL '12 months'
-         GROUP BY l.food_id, t.id, t.date
+         GROUP BY l.food_id, t.id, t.date, t.enseigne
          ORDER BY t.date DESC`,
         [articles.rows.map((a) => a.food_id)]
     );
     const passagesParAliment = new Map();
     for (const ligne of historique.rows) {
         const passages = passagesParAliment.get(ligne.food_id) || [];
-        if (passages.length < 8) passages.push(ligne);
+        // 20 passages : assez d'historique pour rejouer les prévisions passées (la quantité n'en garde que 8).
+        if (passages.length < 20) passages.push(ligne);
         passagesParAliment.set(ligne.food_id, passages);
     }
 
@@ -540,25 +546,24 @@ async function estimerCourses() {
     const details = [];
     for (const article of articles.rows) {
         const passages = passagesParAliment.get(article.food_id);
-        if (passages) {
-            const couts = passages.map((p) => p.cout);
-            // Dernier prix seulement si tous les passages se comparent dans la même unité (kg, l ou pièce), et
-            // borné à ×1,5 / ÷1,5 : un ticket mal lu ou un produit mal associé ne fait pas exploser l'estimation.
-            const memeUnite = passages.every((p) => p.au_poids === passages[0].au_poids && p.unite === passages[0].unite);
-            const prix = passages.map((p) => p.cout / (p.au_poids ? p.quantite_ref : p.nombre));
-            const ajustement = memeUnite ? Math.min(1.5, Math.max(1 / 1.5, prix[0] / quantile(prix, 0.5))) : 1;
-            estimation += quantile(couts, 0.5) * ajustement;
-            bas += quantile(couts, 0.25) * ajustement;
-            haut += quantile(couts, 0.75) * ajustement;
-            const quantites = passages.map((p) => (p.au_poids ? p.quantite_ref : p.nombre));
+        const prevu = passages && prevoirArticle(passages, magasin);
+        if (prevu) {
+            estimation += prevu.estimation;
+            bas += prevu.bas;
+            haut += prevu.haut;
             details.push({
                 nom: article.nom, emoji: article.emoji, source: "habitudes", passages: passages.length,
-                estimation: Math.round(quantile(couts, 0.5) * ajustement * 100) / 100,
-                quantite: memeUnite ? Math.round(quantile(quantites, 0.5) * 100) / 100 : null,
-                unite: memeUnite ? (passages[0].au_poids ? passages[0].unite : "pièce") : null,
-                dernierPrix: memeUnite ? Math.round(prix[0] * 100) / 100 : null,
-                prixHabituel: memeUnite ? Math.round(quantile(prix, 0.5) * 100) / 100 : null,
+                estimation: prevu.estimation, quantite: prevu.quantite,
+                unite: passages[0].au_poids ? passages[0].unite : "pièce",
+                dernierPrix: prevu.prixUnitaire, magasin: prevu.magasin, comparaisons: prevu.comparaisons,
             });
+        } else if (passages) {
+            // Unités qui ne se comparent pas (pièce puis kg…) : médiane et quartiles du coût des 8 derniers passages.
+            const couts = passages.slice(0, 8).map((p) => p.cout);
+            estimation += quantile(couts, 0.5);
+            bas += quantile(couts, 0.25);
+            haut += quantile(couts, 0.75);
+            details.push({ nom: article.nom, emoji: article.emoji, source: "habitudes", passages: couts.length, estimation: Math.round(quantile(couts, 0.5) * 100) / 100 });
         } else if (article.prix_habituel !== null) {
             const prix = Number(article.prix_habituel);
             estimation += prix;
@@ -667,7 +672,7 @@ app.get("/api/stats", lectureApi(async (req) => {
     return calculerStats(await lignesTickets(), { periode, ref, debut, fin, enseigne }, jourIso(new Date()), await indicesNationaux());
 }));
 app.get("/api/stats/produit/:idAliment", lectureApi(async (req) => {
-    const fiche = ficheProduit((await lignesTickets(req.params.idAliment)).filter((l) => l.jour), jourIso(new Date()));
+    const fiche = ficheProduit((await lignesTickets(req.params.idAliment)).filter((l) => l.jour), jourIso(new Date()), req.query.periode ? req.query : null);
     return fiche ? { produit: fiche } : null;
 }));
 
@@ -1040,6 +1045,8 @@ app.post("/api/courses/acheter", async (req, res) => {
         let quantiteEntiere = null;
         const idCourse = req.body.idCourse;
         const quantiteAchetee = req.body.quantiteAchetee;
+        // Coché en mode magasin : l'aliment est désormais rattaché à ce magasin.
+        const magasin = ENSEIGNES.includes(req.body.magasin) ? req.body.magasin : null;
 
         if (!idCourse) {
             return res.status(400).json({ erreur: "Aucun article sélectionné." });
@@ -1069,6 +1076,9 @@ app.post("/api/courses/acheter", async (req, res) => {
                 [idCourse]
             );
 
+            if (achatResult.rows.length > 0 && foodId && magasin) {
+                await client.query("UPDATE foods SET magasin = $2 WHERE id = $1", [foodId, magasin]);
+            }
             if (achatResult.rows.length > 0 && foodId) {
                 if (trackingType === 'cl') {
                     await client.query(

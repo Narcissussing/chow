@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { ENSEIGNES } from "../../components/SelecteurMagasin.jsx";
 import "./BoutonMagasin.css";
 
 const TRAITS = [
@@ -10,7 +11,8 @@ const TRAITS = [
 
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-export default function BoutonMagasin({ actif, onBasculer }) {
+// Un toucher : entrer ou sortir du mode magasin (tous les magasins). Deux touchers rapprochés, en mode magasin ou non : choisir le magasin.
+export default function BoutonMagasin({ actif, enseigne, onBasculer, onChoisirMagasin }) {
   const svg = useRef(null);
   const [sens, setSens] = useState(null);
   const depart = useRef(actif);
@@ -21,10 +23,37 @@ export default function BoutonMagasin({ actif, onBasculer }) {
     svg.current.querySelectorAll(`animate[data-sens="${sens}"]`).forEach((a) => a.beginElementAt?.(sens === "aller" ? 0.95 : 0.05));
   }, [sens, reduit]);
 
+  const dernierToucher = useRef(0);
+  const sortieEnAttente = useRef(null);
+  useEffect(() => () => clearTimeout(sortieEnAttente.current), []);
   function basculer() {
-    setSens(actif ? "retour" : "aller");
+    const maintenant = Date.now();
+    if (maintenant - dernierToucher.current < 320) {
+      dernierToucher.current = 0;
+      // Deux touchers : on reste (ou entre) en mode magasin et on sort les logos ; la sortie prévue est annulée.
+      clearTimeout(sortieEnAttente.current);
+      sortieEnAttente.current = null;
+      if (!actif) {
+        setSens("aller");
+        onBasculer();
+      }
+      onChoisirMagasin();
+      return;
+    }
+    dernierToucher.current = maintenant;
+    if (actif) {
+      // En mode magasin, la sortie attend un éventuel 2e toucher (choix du magasin) : pas d'aller-retour de l'icône.
+      sortieEnAttente.current = setTimeout(() => {
+        sortieEnAttente.current = null;
+        setSens("retour");
+        onBasculer();
+      }, 320);
+      return;
+    }
+    setSens("aller");
     onBasculer();
   }
+  const logo = actif && ENSEIGNES.find((e) => e.nom === enseigne)?.logo;
 
   const classes = ["btn-magasin"];
   if (actif) classes.push("actif");
@@ -37,8 +66,8 @@ export default function BoutonMagasin({ actif, onBasculer }) {
       id="toggleMagasin"
       className={classes.join(" ")}
       aria-pressed={actif}
-      aria-label={actif ? "Quitter le mode magasin" : "Passer en mode magasin"}
-      title={actif ? "Quitter le mode magasin" : "Mode magasin"}
+      aria-label={actif ? "Quitter le mode magasin" + (logo ? " (" + enseigne + ")" : "") : "Passer en mode magasin"}
+      title={actif ? "Quitter le mode magasin · deux touchers : choisir le magasin" : "Mode magasin · deux touchers : choisir le magasin"}
       onClick={basculer}
     >
       <svg ref={svg} viewBox="0 0 48 48" aria-hidden="true">
@@ -68,6 +97,7 @@ export default function BoutonMagasin({ actif, onBasculer }) {
           <circle className="trait" cx="33" cy="39" r="2.8" />
         </g>
       </svg>
+      {logo && <img key={logo} className="btn-magasin__logo" src={logo} alt="" />}
     </button>
   );
 }

@@ -106,7 +106,7 @@ function GrilleAliments({ aliments }) {
             <Link key={aliment.id} to={`/parametres/aliments/${aliment.id}`} className={"food-card" + (estVisible(aliment) ? "" : " hidden")}>
               <div className="food-card__img-placeholder">{aliment.emoji}</div>
               <div className="food-card__body">
-                <p className="food-card__name">{aliment.nom}</p>
+                <p className="food-card__name nom-defile">{aliment.nom}</p>
                 <p className="food-card__category">{aliment.categorie}</p>
               </div>
             </Link>

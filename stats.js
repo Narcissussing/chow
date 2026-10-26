@@ -76,6 +76,50 @@ function mediane(v) {
     return t.length % 2 ? t[m] : (t[m - 1] + t[m]) / 2;
 }
 
+export function quantile(valeurs, q) {
+    const tri = [...valeurs].sort((a, b) => a - b);
+    const position = (tri.length - 1) * q;
+    const bas = Math.floor(position);
+    return tri[bas] + (tri[Math.ceil(position)] - tri[bas]) * (position - bas);
+}
+
+// Prévision d'un article des Courses à partir de ses passages en caisse, du plus récent au plus ancien
+// ({ cout, quantite_ref, nombre, au_poids, unite, enseigne, remise }).
+// - Prix normal : passages sans remise ; une promo fait acheter plus et moins cher, elle ne dit rien des habitudes.
+// - Prévision : quantité habituelle (médiane des 8 derniers) × dernier prix normal, dans le magasin choisi s'il y est connu.
+// - Fourchette : chaque achat normal passé est rejoué avec ce qui était connu avant lui ; les écarts entre prévu et
+//   payé (8 derniers) donnent la fourchette, qui se resserre à mesure que les prévisions tombent juste.
+// Renvoie null si les passages ne se comparent pas dans une même unité (kg, l ou pièce).
+export function prevoirArticle(passages, magasin = null) {
+    if (!passages.length || !passages.every((p) => p.au_poids === passages[0].au_poids && p.unite === passages[0].unite)) return null;
+    const quantiteDe = (p) => (p.au_poids ? p.quantite_ref : p.nombre);
+    const normaux = passages.filter((p) => !(p.remise > 0));
+    const base = normaux.length ? normaux : passages;
+    const prevoir = (connus, ou) => {
+        const reference = (ou && connus.find((p) => p.enseigne === ou)) || connus[0];
+        const quantite = quantile(connus.slice(0, 8).map(quantiteDe), 0.5);
+        return { quantite, prixUnitaire: reference.cout / quantiteDe(reference), magasin: reference.enseigne };
+    };
+    const p = prevoir(base, magasin);
+    const estimation = p.quantite * p.prixUnitaire;
+    const ecarts = [];
+    for (let i = base.length - 2; i >= 0; i--) {
+        const avant = prevoir(base.slice(i + 1), base[i].enseigne);
+        ecarts.push(base[i].cout / (avant.quantite * avant.prixUnitaire));
+    }
+    const recents = ecarts.slice(-8);
+    const [bas, haut] = recents.length >= 3 ? [quantile(recents, 0.25), quantile(recents, 0.75)] : [0.85, 1.15];
+    return {
+        estimation: arrondi(estimation),
+        bas: arrondi(estimation * Math.min(1, bas)),
+        haut: arrondi(estimation * Math.max(1, haut)),
+        quantite: arrondi(p.quantite),
+        prixUnitaire: arrondi(p.prixUnitaire),
+        magasin: p.magasin,
+        comparaisons: recents.length,
+    };
+}
+
 // Prix comparable d'une ligne : au kg ou au litre si la contenance est connue, sinon à la pièce.
 const prixLigne = (l) => (l.prix_ref ?? l.total / (l.quantite || 1));
 
@@ -365,9 +409,17 @@ function habitudesAchat(lignes, auPoids, aujourdhui) {
     };
 }
 
-export function ficheProduit(lignes, aujourdhui = jourIso(new Date())) {
+export function ficheProduit(lignes, aujourdhui = jourIso(new Date()), params = null) {
     if (!lignes.length) return null;
     lignes.sort((a, b) => a.jour.localeCompare(b.jour));
+    // Achats dans la période et le magasin choisis sur la page Stats.
+    let periode = null;
+    if (params) {
+        const { debut, fin } = bornesPeriode(params, aujourdhui, lignes[0].jour);
+        const enseigne = params.enseigne && params.enseigne !== "tous" ? params.enseigne : null;
+        const dedans = lignes.filter((l) => l.jour >= debut && l.jour < fin && (!enseigne || l.enseigne === enseigne));
+        periode = { achats: new Set(dedans.map((l) => l.ticket_id)).size, depense: arrondi(somme(dedans)) };
+    }
     const auPoids = lignes.filter((l) => l.prix_ref != null).length * 2 >= lignes.length;
     const comparables = lignes.filter((l) => (l.prix_ref != null) === auPoids);
     const parMois = new Map();
@@ -394,6 +446,7 @@ export function ficheProduit(lignes, aujourdhui = jourIso(new Date())) {
         // Économisé grâce aux promos sur ce produit, depuis le premier achat.
         economiePromos: arrondi(lignes.reduce((s, l) => s + (l.remise || 0), 0)),
         premierAchat: lignes[0].jour,
+        periode,
         courbe,
         parEnseigne: [...enseignes].map(([nom, prix]) => ({ nom, prix })).sort((a, b) => a.prix - b.prix),
         habitudes: habitudesAchat(lignes, auPoids, aujourdhui),

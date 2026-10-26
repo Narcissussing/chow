@@ -4,7 +4,7 @@
 
 | Environnement | Base | Configuration |
 |---|---|---|
-| Local | Neon, branche `family-hub-dev` (`ep-spring-river-aslzwhz5`) | `DATABASE_URL` dans `.env` |
+| Local | Neon `family-hub-backup`, branche `dev` (`ep-spring-truth-b9vjj7sz`, 0,25 CU, veille au repos) | `DATABASE_URL` dans `.env` |
 | Production | Neon (`ep-aged-flower-b9sgwq8t`) | `DATABASE_URL` en secret Fly, copie locale dans `.env.production` |
 
 Variables requises :
@@ -74,8 +74,9 @@ démarrage. Par conséquent :
 Les tickets bruts et leurs CSV restent dans `tickets/` (ignoré par Git, sans
 sauvegarde ailleurs). `node tickets/extraire.cjs` puis
 `node tickets/correspondances.cjs` régénèrent `achats.csv` et
-`correspondances.csv`. Import initial, une seule fois par base (refusé si des
-tickets existent) :
+`correspondances.csv`. Import rejouable : n'ajoute que les tickets (date +
+magasin) et libellés absents, donc un nouveau ticket s'ajoute en relançant la
+même commande :
 
 ```bash
 DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/importer-tickets.js
@@ -105,6 +106,20 @@ comparer l'ancien et le nouveau `correspondances.csv`, mettre les lignes changé
 node scripts/corriger-libelles.js fichier.txt                       # dev
 DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/corriger-libelles.js fichier.txt   # production
 ```
+
+Chaque correction est gardée dans `tickets/corrections/`, nommée
+`AAAA-MM-JJ-<type>-<sujet>` : `libelles` (fichier pour `corriger-libelles.js`)
+`aliments` (SQL qui crée des aliments) ou `achats` (SQL qui corrige une ligne de ticket), tous deux lancés par
+`node scripts/executer-sql.js fichier.sql`. Les
+appliquer dans l'ordre des noms ; un fichier `aliments` passe avant les
+`libelles` du même jour, qui pointent vers les aliments qu'il crée.
+
+`tickets/correspondances.cjs` est rangé en sections, dans cet ordre : 1. non
+alimentaire (aucun mot d'aliment ne doit capter un produit ménager) ; 2. faux
+amis (bonbons, glaces, sirops, biscuits qui portent un nom d'aliment) ; 3.
+ingrédients ajoutés comme aliments ; puis les règles générales. Un aliment Chow
+est un ingrédient de recette ou de Stock : un produit acheté au moins 3 fois et
+mal rangé devient un aliment, le reste va dans Hors Chow.
 
 Leçons sur les règles : la première règle qui correspond gagne, donc une marque
 dont le libellé contient un autre mot (« POM'LISSE CHIPS BARBECUE », « LAYS
@@ -158,6 +173,16 @@ DELETE FROM ip_bloquees WHERE ip = '<adresse>';
   surveiller les CU-heures dans la console Neon. Des mots de passe Neon sont passés
   dans une conversation : les réinitialiser (Roles → Reset password) si ce n'est pas
   déjà fait.
+
+### 2026-10-26 — Ancien projet `family-hub` en pause, dev déplacée
+
+- **Symptôme :** le projet Neon `family-hub` (qui portait la branche dev
+  `family-hub-dev`) a atteint sa limite gratuite du mois et a été mis en pause.
+- **Correctif :** nouvelle branche `dev` (`ep-spring-truth-b9vjj7sz`) dans
+  `family-hub-backup`, copiée depuis `production`, calcul fixé à 0,25 CU.
+- **À retenir :** dev et production partagent désormais le calcul gratuit du même
+  projet (environ 100 CU-heures par mois) : serveurs de test et scripts courts, puis
+  arrêtés. L'ancien projet `family-hub` n'est plus utilisé.
 
 ### Panne DNS chez Fly
 

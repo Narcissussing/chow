@@ -82,7 +82,7 @@ function GroupeRecettes({ categorie, recettes, onOuvrir, onNouvelle }) {
             <div key={recette.cle} className={"recette-card" + (recette.sortant ? " disparait" : recette.nouvelle ? " recette-card--nouvelle" : "")} onClick={() => onOuvrir(recette.id, recette.nb_ingredients, recette.kcal_total)}>
               <IconeRecette recette={recette} />
               <div className="recette-corps">
-                <p className="recette-nom">{recette.nom}</p>
+                <p className="recette-nom nom-defile">{recette.nom}</p>
                 <div className="recette-sub">
                   <span className="recette-ingr">{recette.nb_ingredients} ingr.</span>
                   <span className="recette-kcal">{recette.kcal_total} kcal</span>

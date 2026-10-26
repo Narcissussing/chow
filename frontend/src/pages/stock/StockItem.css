@@ -56,9 +56,6 @@
 
 .stock-nom {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
   font-family: var(--font-body);
   font-size: 1.05rem;
   font-weight: 400;

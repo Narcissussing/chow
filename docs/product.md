@@ -32,9 +32,11 @@ dernier), Stock (aliments encore présents, dont ceux à vérifier) et Courses
 
 Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais) importé
 dans `tickets`, `achats` et `libelles`. L’estimation des Courses ne demande
-aucune quantité : quantité habituelle (8 derniers passages en caisse, 12
-derniers mois) × dernier prix payé (même unité seulement, effet borné à ×1,5),
-avec une fourchette ; sans historique, `foods.prix_habituel`. La fourchette
+aucune quantité : quantité habituelle × dernier prix normal, dans le magasin
+choisi en mode magasin. Les achats en promo ne comptent ni dans la quantité ni
+dans le prix (le foyer achète plus quand c'est en promo). La fourchette vient
+des écarts passés entre prévu et payé : elle se resserre à chaque nouveau
+ticket. Sans historique, `foods.prix_habituel`. La fourchette
 s'affiche à côté du titre des Courses ; un clic montre le détail par article.
 
 La page Stats (maquette Figma « Chow ») suit un filtre global (période et
@@ -63,6 +65,12 @@ Liste de courses utilisable avant et pendant les achats.
 - notes et photos de référence ;
 - filtres et regroupement par rayon ;
 - preset hebdomadaire modifiable ;
+- mode magasin : un toucher sur le caddie = tous les magasins ; deux touchers
+  sortent les logos (Leclerc, Carrefour, Marché Frais) pour choisir le magasin,
+  qui s'affiche en pastille sur le caddie. Ses articles restent (et ceux sans
+  magasin connu), les autres sont masqués ; cocher un article
+  le rattache à ce magasin ; la liste est relue toutes les 15 s et un article
+  ajouté ailleurs fait sortir du filtre pour le voir arriver ;
 - achat avec mise à jour du Stock ;
 - protection contre les doubles soumissions et actions accidentelles.
 

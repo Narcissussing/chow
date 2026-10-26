@@ -18,7 +18,7 @@ export default function IngredientLigne({ ligne, onChanger, onRetirer, refLigne,
   return (
     <div ref={triable.refNoeud} className={"ligne-ingredient-recette entree" + (ligne.sortant ? " disparait" : "") + triable.classe} style={triable.style}>
       {triable.poignee}
-      <span className="ingredient-nom-recette">{ligne.nom}</span>
+      <span className="ingredient-nom-recette nom-defile">{ligne.nom}</span>
       <input
         ref={refQuantite}
         type="number"
