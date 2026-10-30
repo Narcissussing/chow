@@ -1,0 +1,43 @@
+.bouton-fermer {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sable, #efe8dc);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.bouton-fermer::before {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background-color: currentColor;
+  -webkit-mask: url("/images/svg/fermer.svg") center / contain no-repeat;
+  mask: url("/images/svg/fermer.svg") center / contain no-repeat;
+}
+
+.bouton-fermer:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+.bouton-fermer:active {
+  transform: scale(0.9);
+}
+
+/* Sur une photo en plein écran */
+.bouton-fermer--sur-photo {
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+}
+
+.bouton-fermer--sur-photo:hover {
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+}

@@ -69,7 +69,14 @@ try {
             let articleId = ARTICLES_ATTENTE[correspondance] ?? (correspondance || null);
             if (articleId && !articles.has(articleId)) articleId = null;
             if (!articleId) aClasser.add(libelle);
-            const { contenance, unite } = format(ligne, articleId);
+            let { contenance, unite } = format(ligne, articleId);
+            // Hors alimentation, un paquet vendu à la pièce compte ses unités (14P, X35, 12 RLX).
+            if (unite === "piece" && contenance === 1 && articleId) {
+                const paquet = await client.query(
+                    `SELECT achats.nombre_par_paquet($1) AS n FROM achats.articles a JOIN achats.categories c ON c.id = a.categorie_id
+                     WHERE a.id = $2 AND COALESCE(c.parent_id, c.id) NOT IN ('alimentation', 'boissons')`, [libelle, articleId]);
+                contenance = Number(paquet.rows[0]?.n ?? 1);
+            }
             const produit = await client.query(
                 `INSERT INTO achats.produits (enseigne_id, libelle, article_id, contenance, unite) VALUES ($1, $2, $3, $4, $5)
                  ON CONFLICT (enseigne_id, libelle) DO NOTHING RETURNING id`,

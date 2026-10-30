@@ -5,6 +5,8 @@ import CustomSelect from "../../components/CustomSelect.jsx";
 import Page from "../../components/Page.jsx";
 import { api } from "../../api.js";
 import FondModal from "../../components/FondModal.jsx";
+import BoutonFermer from "../../components/BoutonFermer.jsx";
+import { useGlisserPourFermer } from "../../hooks/useGlisserPourFermer.js";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { normaliserTexte } from "../../utils/texte.js";
@@ -62,6 +64,7 @@ function InfoBulle({ bouton, classeBouton, titre, children }) {
   const zones = useMemo(() => [zone, bulleRef], []);
   const [ferme, fermer] = useFermetureAnimee(useCallback(() => setOuvert(false), []), 180);
   useClicExterieur(zones, fermer, !!ouvert);
+  useGlisserPourFermer(bulleRef, fermer, ouvert === "feuille");
   useEffect(() => {
     if (!ouvert) return;
     const echap = (e) => e.key === "Escape" && fermer();
@@ -70,7 +73,12 @@ function InfoBulle({ bouton, classeBouton, titre, children }) {
   }, [ouvert, fermer]);
   const bulle = (
     <span ref={bulleRef} className={"info-popup" + (ouvert === "feuille" ? " info-popup--feuille" : "") + (ferme ? " ferme" : "")} role="dialog" aria-label={titre}>
-      {ouvert === "feuille" && <span className="info-popup__poignee" aria-hidden="true" />}
+      {ouvert === "feuille" && (
+        <span className="info-popup__entete" data-entete-feuille>
+          <span className="info-popup__poignee poignee-feuille" aria-hidden="true" />
+          <BoutonFermer onClick={fermer} />
+        </span>
+      )}
       {children}
     </span>
   );

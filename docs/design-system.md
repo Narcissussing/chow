@@ -94,6 +94,20 @@ Les animations décoratives doivent respecter `prefers-reduced-motion`.
 
 ## Composants et comportements partagés
 
+### Fenêtres et feuilles
+
+- Un seul ✕ : `components/BoutonFermer.jsx` (32 px, icône `fermer.svg`), à
+  droite de l'en-tête ; variante `bouton-fermer--sur-photo` sur une photo.
+- L'en-tête (titre, actions, ✕) reste en haut quand le contenu défile
+  (`position: sticky` ou liste qui défile sous l'en-tête) ; il porte
+  `data-entete-feuille`, la poignée `poignee-feuille`.
+- Sur téléphone, tirer vers le bas ferme toute fenêtre :
+  `hooks/useGlisserPourFermer.js` (depuis l'en-tête, ou de partout quand le
+  contenu est en haut ; seulement l'en-tête si les lignes se déplacent au
+  doigt). Les courbes et `[data-pas-glisser]` gardent leur geste.
+- Fermeture aussi par le fond et Échap, avec l'animation de sortie
+  (`useFermetureAnimee`).
+
 ### Sélecteur personnalisé
 
 `frontend/src/components/CustomSelect.jsx` remplace les `select` natifs :

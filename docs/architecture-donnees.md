@@ -47,14 +47,43 @@ le pourquoi dans l'[ADR 005](adr/005-base-family-hub-par-domaines.md).
     article marqué `fourre_tout`, exclu des prix ; un produit acheté souvent
     reçoit son propre article.
 
+## Classer un achat non alimentaire
+
+Les aliments gardent les catégories de Chow. Le reste se range dans neuf
+familles (`achats.categories` sans parent), chacune avec son icône
+`public/images/categories/<id>.svg` : `hygiene`, `entretien`, `cuisine`,
+`electronique`, `bebe`, `sante`, `maison`, `animaux`, `divers`.
+
+1. **Une seule place par article : son usage principal**, pas le magasin.
+2. **La personne passe avant l'usage** : ce qui est pour le bébé va dans
+   `bebe`.
+3. **Deux niveaux** : famille → type (`hygiene-dents`).
+4. **Un type n'existe qu'avec au moins 3 articles** ; sinon l'article va
+   directement dans sa famille.
+5. **Type consommable ou équipement** (`categories.consommable`) : seuls les
+   consommables sont suivis en inventaire et en prix.
+6. **Un article par produit qu'on ne peut pas remplacer par un autre** :
+   piles AAA, AA et CR2032, sacs poubelle 30, 50 et 100 L, déodorant femme et
+   homme. Nom « Nom (variante) ».
+7. **Suivi** (`articles.suivi`) : `nombre` pour ce qui se compte (rouleaux,
+   piles), `niveau` pour un flacon entamé qu'on rachète quand il baisse
+   (vinaigre, javel, lessive) ; vide pour un équipement.
+8. **Acheté seulement en promotion** (`articles.achat_en_promo`) : le prix
+   attendu est le prix payé. Vérifier l'historique : presque chaque achat
+   remisé.
+9. **Achats uniques** : article « Famille (divers) » marqué `fourre_tout`.
+
 ## Où vit quoi
 
-- Migration ponctuelle (déplacer, convertir) :
-  `db/migrations/AAAA-MM-JJ-<sujet>.sql`, lancée une fois au démarrage par
-  `index.js`, dans une transaction, avec des contrôles qui l'annulent si un
-  total change.
+- Migration (créer, déplacer, convertir) :
+  `db/migrations/AAAA-MM-JJ-N-<sujet>.sql` (N = ordre dans la journée),
+  appliquée une fois au démarrage par `index.js`, dans l'ordre des noms, dans
+  une transaction, puis enregistrée dans `app.migrations`. Elle contient des
+  contrôles qui l'annulent si un total change. Une migration appliquée ne se
+  modifie plus : on en écrit une nouvelle.
 - Vues et descriptions : `db/vues.sql`, relancé à chaque démarrage
-  (`CREATE OR REPLACE`, `COMMENT ON`).
+  (`CREATE OR REPLACE`, `COMMENT ON`). Une vue existante ne reçoit de nouvelles
+  colonnes qu'à la fin.
 - Imports : `scripts/importer-*.js` ; ils écrivent dans les tables de faits
   et s'arrêtent sur une incohérence (magasin inconnu, remise sans promo).
 - Export : `scripts/exporter-donnees.js` vers `family-hub-data`.
@@ -66,8 +95,7 @@ le pourquoi dans l'[ADR 005](adr/005-base-family-hub-par-domaines.md).
    (règle 4).
 2. Nommer selon la règle 6, typer selon la règle 7, fermer les valeurs
    (règle 8).
-3. Écrire la création dans `index.js` (`CREATE TABLE IF NOT EXISTS`,
-   `ADD COLUMN IF NOT EXISTS`) ou une migration datée si des données bougent.
+3. Écrire une migration datée dans `db/migrations/`.
 4. Ajouter les `COMMENT` dans `db/vues.sql`.
 5. Mettre à jour `data-model.md`.
 6. Vérifier sur dev : redémarrer, `node scripts/verifier-api.js`, totaux

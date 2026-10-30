@@ -35,15 +35,15 @@ Tout ce que le foyer achète. Chaîne : ligne → produit → article → catég
 
 - `enseignes` : `leclerc`, `carrefour`, `marche-frais`.
 - `magasins` : un magasin d'une enseigne (`leclerc-meaux`), avec sa ville.
-- `categories` : arbre unique ; premier niveau Alimentation, Boissons, Hygiène
-  et beauté, Entretien, Maison et cuisine, Bébé, Santé, Animaux, Loisirs et
-  papeterie, Vêtements, Autre ; sous-catégories d'Alimentation reprises des
-  catégories Chow.
-- `articles` : besoin générique (`tomate`, `papier-toilette`), `unite_ref`
-  (`kg`, `l`, `piece`) pour comparer les prix. Un article par aliment Chow
-  (même identifiant) ; `alimentation-a-detailler` et
-  `non-alimentaire-a-classer` sont des fourre-tout (`fourre_tout`) en
-  attendant le catalogue.
+- `categories` : arbre unique à deux niveaux. Alimentation et Boissons
+  reprennent les catégories Chow ; le reste en neuf familles (Hygiène,
+  Entretien, Cuisine, Électronique, Bébé, Santé, Maison, Animaux, Divers) et
+  leurs types, `consommable` ou équipement.
+- `articles` : besoin générique (`tomate`, `papier-toilette`, `piles-aaa`),
+  `unite_ref` (`kg`, `l`, `piece`) pour comparer les prix, `suivi` (`nombre`,
+  `niveau`, vide) pour l'inventaire, `achat_en_promo`. Un article par aliment
+  Chow (même identifiant) ; les fourre-tout (`fourre_tout`) gardent ce qui
+  n'est pas encore détaillé ou n'est acheté qu'une fois.
 - `produits` : un libellé imprimé dans une enseigne, son `article_id` (vide =
   à classer) et le format d'une unité vendue (`contenance` + `unite` ; vide
   pour un produit au poids, 1 `piece` par défaut).
@@ -61,7 +61,13 @@ Vues :
 - `v_lignes` : chaque ligne avec magasin, article, catégorie, `remise`,
   `paye`, `quantite_ref` / `unite_ref`, `comparable` (même unité que
   l'article), `prix_ref_normal` (hors promo) et `prix_ref_paye`.
-- `v_prix` : prix médian hors promo par article, enseigne et mois.
+- `v_prix` : prix médian attendu par article, enseigne et mois (hors promo,
+  sauf articles achetés seulement en promo).
+- Fonction `nombre_par_paquet(libelle)` : unités d'un paquet (2X6P, X35, 14P).
+- `v_economies` (chaque achat remisé : prix affiché, payé, économie, achat en
+  lot) et `v_economies_par_an` (par année et article).
+- `v_bon_prix` : prix payé comparé au prix médian payé pour le même article
+  sur les 12 mois d'avant.
 - `v_panier_habituel` : articles achetés au moins 6 mois sur 12.
 
 ## `chow`
@@ -94,6 +100,12 @@ estime les Courses non achetées (`prevoirArticle` dans `stats.js`) : quantité
 habituelle hors remise × dernier prix normal ; sans historique,
 `prix_habituel` ±20 %.
 
+## `maison`
+
+- `inventaire` : ce qu'il reste à la maison hors aliments, un article par
+  ligne ; `quantite` (suivi au nombre) ou `niveau` (`plein`, `à moitié`,
+  `presque vide`, `vide`), `emplacement`, `date_maj`.
+
 ## `reference`
 
 - `indices_prix` : indices INSEE mensuels par série (`alimentation`,
@@ -101,7 +113,8 @@ habituelle hors remise × dernier prix normal ; sans historique,
 
 ## `app`
 
-- `sessions` (`connect-pg-simple`), `ip_bloquees`.
+- `sessions` (`connect-pg-simple`), `ip_bloquees`, `migrations` (migrations
+  datées déjà appliquées).
 
 ## `ancien`
 

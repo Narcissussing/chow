@@ -44,6 +44,7 @@ async function enTransaction(travail) {
 }
 
 // Migrations de l'ancienne base (tables dans public) : rejouées seulement tant qu'elle n'est pas passée aux domaines.
+const MIGRATION_DOMAINES = "2026-10-30-1-schemas-par-domaine.sql";
 const ancienneBase = (await db.query("SELECT to_regclass('public.foods') IS NOT NULL AS oui")).rows[0].oui;
 if (ancienneBase) {
     await db.query("ALTER TABLE recettes ADD COLUMN IF NOT EXISTS categorie TEXT NOT NULL DEFAULT 'plat'");
@@ -185,7 +186,19 @@ if (ancienneBase) {
     await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS quantite");
     await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS unite");
     await db.query("ALTER TABLE courses DROP COLUMN IF EXISTS magasin");
-    await enTransaction((client) => client.query(fs.readFileSync("db/migrations/2026-10-30-schemas-par-domaine.sql", "utf8")));
+    await enTransaction((client) => client.query(fs.readFileSync(`db/migrations/${MIGRATION_DOMAINES}`, "utf8")));
+}
+// Migrations datées de db/migrations : chacune une fois, dans l'ordre des noms, enregistrée dans app.migrations.
+await db.query("CREATE TABLE IF NOT EXISTS app.migrations (nom TEXT PRIMARY KEY, appliquee_le TIMESTAMPTZ NOT NULL DEFAULT now())");
+await db.query("INSERT INTO app.migrations (nom) VALUES ($1) ON CONFLICT DO NOTHING", [MIGRATION_DOMAINES]);
+const migrationsFaites = new Set((await db.query("SELECT nom FROM app.migrations")).rows.map((r) => r.nom));
+for (const nom of fs.readdirSync("db/migrations").filter((f) => f.endsWith(".sql")).sort()) {
+    if (migrationsFaites.has(nom)) continue;
+    await enTransaction(async (client) => {
+        await client.query(fs.readFileSync(`db/migrations/${nom}`, "utf8"));
+        await client.query("INSERT INTO app.migrations (nom) VALUES ($1)", [nom]);
+    });
+    console.log("Migration appliquée :", nom);
 }
 // Vues de calcul et description des tables, à jour à chaque démarrage.
 await db.query(fs.readFileSync("db/vues.sql", "utf8"));
@@ -722,14 +735,22 @@ app.post("/api/aliments", async (req, res) => {
         if (doublon) {
             return res.status(409).json({ erreur: "Cet aliment existe déjà.", idExistant: doublon.id });
         }
-        const result = await db.query(
-            `INSERT INTO chow.aliments (id, nom, categorie, emoji, unite, poids_unite_g, calories, proteines, glucides, lipides,
-               fibres, sucres, graisses_saturees, sel, emplacement, tracking_type)
-             VALUES ($1, $2, $3, $4, 'g', 0, $5, $6, $7, $8, $9, $10, $11, $12, 'st', 'unite')
-             RETURNING *`,
-            [id, nom, req.body.categorie || "Divers", req.body.emoji || "🆕", calories, nombre("proteines"), nombre("glucides"), nombre("lipides"),
-                nombre("fibres"), nombre("sucres"), nombre("graisses_saturees"), nombre("sel")]
-        );
+        const categorie = req.body.categorie || "Divers";
+        // L'aliment a son article d'achat (même identifiant), pour y rattacher ses futurs tickets.
+        const result = await enTransaction(async (client) => {
+            await client.query(
+                "INSERT INTO achats.articles (id, nom, categorie_id, unite_ref) VALUES ($1, $2, chow.categorie_achat($3), 'kg')",
+                [id, nom, categorie]
+            );
+            return client.query(
+                `INSERT INTO chow.aliments (id, nom, categorie, emoji, unite, poids_unite_g, calories, proteines, glucides, lipides,
+                   fibres, sucres, graisses_saturees, sel, emplacement, tracking_type, article_id)
+                 VALUES ($1, $2, $3, $4, 'g', 0, $5, $6, $7, $8, $9, $10, $11, $12, 'st', 'unite', $1)
+                 RETURNING *`,
+                [id, nom, categorie, req.body.emoji || "🆕", calories, nombre("proteines"), nombre("glucides"), nombre("lipides"),
+                    nombre("fibres"), nombre("sucres"), nombre("graisses_saturees"), nombre("sel")]
+            );
+        });
         res.json({ succes: true, aliment: result.rows[0] });
     } catch (err) {
         console.log("ERREUR:", err.message);

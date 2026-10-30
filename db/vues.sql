@@ -33,7 +33,10 @@ SELECT l.id AS ligne_id,
        q.unite_ref,
        q.unite_ref IS NOT DISTINCT FROM a.unite_ref AS comparable,
        round(l.montant / NULLIF(q.quantite_ref, 0), 2) AS prix_ref_normal,
-       round((l.montant - COALESCE(pr.remise, 0)) / NULLIF(q.quantite_ref, 0), 2) AS prix_ref_paye
+       round((l.montant - COALESCE(pr.remise, 0)) / NULLIF(q.quantite_ref, 0), 2) AS prix_ref_paye,
+       COALESCE(a.achat_en_promo, false) AS achat_en_promo,
+       round(CASE WHEN a.achat_en_promo THEN l.montant - COALESCE(pr.remise, 0) ELSE l.montant END / NULLIF(q.quantite_ref, 0), 2)
+           AS prix_ref_attendu
 FROM achats.lignes l
 JOIN achats.tickets t ON t.id = l.ticket_id
 JOIN achats.magasins m ON m.id = t.magasin_id
@@ -54,10 +57,10 @@ SELECT article_id,
        enseigne_id,
        to_char(date, 'YYYY-MM') AS mois,
        unite_ref,
-       round(percentile_cont(0.5) WITHIN GROUP (ORDER BY prix_ref_normal)::numeric, 2) AS prix_median,
+       round(percentile_cont(0.5) WITHIN GROUP (ORDER BY prix_ref_attendu)::numeric, 2) AS prix_median,
        count(*) AS achats
 FROM achats.v_lignes
-WHERE comparable AND NOT fourre_tout AND prix_ref_normal IS NOT NULL
+WHERE comparable AND NOT fourre_tout AND prix_ref_attendu IS NOT NULL
 GROUP BY article_id, article, enseigne_id, to_char(date, 'YYYY-MM'), unite_ref;
 
 CREATE OR REPLACE VIEW achats.v_panier_habituel AS
@@ -71,6 +74,43 @@ FROM achats.v_lignes
 WHERE date >= current_date - INTERVAL '12 months' AND comparable AND NOT fourre_tout
 GROUP BY article_id, article, unite_ref
 HAVING count(DISTINCT to_char(date, 'YYYY-MM')) >= 6;
+
+-- Économies : chaque achat remisé, ce qu'il aurait coûté au prix affiché et ce qui a été payé.
+CREATE OR REPLACE VIEW achats.v_economies AS
+SELECT v.ligne_id, v.date, v.enseigne, v.libelle, v.article_id, v.article, v.categorie_racine_id,
+       v.quantite AS unites_achetees,
+       v.montant AS prix_affiche,
+       v.paye,
+       v.remise AS economie,
+       round(100 * v.remise / NULLIF(v.montant, 0)) AS pourcentage,
+       v.quantite >= 2 AS achat_en_lot,
+       v.achat_en_promo
+FROM achats.v_lignes v
+WHERE v.remise > 0;
+
+CREATE OR REPLACE VIEW achats.v_economies_par_an AS
+SELECT extract(year FROM date)::int AS annee, article_id, article,
+       count(*) AS achats_remises,
+       sum(unites_achetees) AS unites,
+       sum(prix_affiche) AS prix_affiche,
+       sum(paye) AS paye,
+       sum(economie) AS economie
+FROM achats.v_economies
+GROUP BY 1, 2, 3;
+
+-- Bon prix : prix payé comparé au prix médian payé pour le même article sur les 12 mois d'avant.
+CREATE OR REPLACE VIEW achats.v_bon_prix AS
+SELECT v.ligne_id, v.date, v.enseigne, v.article_id, v.article, v.unite_ref, v.prix_ref_paye,
+       h.prix_habituel,
+       round(100 * (v.prix_ref_paye / NULLIF(h.prix_habituel, 0) - 1)) AS ecart_pourcentage
+FROM achats.v_lignes v
+CROSS JOIN LATERAL (
+    SELECT round(percentile_cont(0.5) WITHIN GROUP (ORDER BY a.prix_ref_paye)::numeric, 2) AS prix_habituel
+    FROM achats.v_lignes a
+    WHERE a.article_id = v.article_id AND a.unite_ref = v.unite_ref AND a.comparable
+      AND a.date < v.date AND a.date >= v.date - INTERVAL '12 months'
+) h
+WHERE v.comparable AND NOT v.fourre_tout AND v.prix_ref_paye IS NOT NULL AND h.prix_habituel IS NOT NULL;
 
 -- Lignes au format lu par les pages Stats et Courses (stats.js), passages bancaires compris.
 CREATE OR REPLACE VIEW chow.v_lignes_stats AS
@@ -100,6 +140,19 @@ FROM achats.tickets t
 JOIN achats.magasins m ON m.id = t.magasin_id
 JOIN achats.enseignes e ON e.id = m.enseigne_id
 WHERE t.source = 'releve-bancaire';
+
+-- Catégorie d'achat d'un aliment Chow, d'après sa catégorie Chow (sert à créer son article).
+CREATE OR REPLACE FUNCTION chow.categorie_achat(categorie TEXT) RETURNS TEXT LANGUAGE sql IMMUTABLE AS $$
+    SELECT CASE categorie
+        WHEN 'Légumes' THEN 'alimentation-legumes' WHEN 'Fruits' THEN 'alimentation-fruits'
+        WHEN 'Viandes' THEN 'alimentation-viandes' WHEN 'Poissons' THEN 'alimentation-poissons'
+        WHEN 'Oeufs' THEN 'alimentation-oeufs' WHEN 'Laitiers' THEN 'alimentation-cremerie'
+        WHEN 'Féculents' THEN 'alimentation-feculents' WHEN 'Légumineuses' THEN 'alimentation-legumineuses'
+        WHEN 'Lipides' THEN 'alimentation-matieres-grasses' WHEN 'Sauces' THEN 'alimentation-sauces'
+        WHEN 'Épices' THEN 'alimentation-epices' WHEN 'Épicerie' THEN 'alimentation-epicerie'
+        WHEN 'Boissons' THEN 'boissons' ELSE 'alimentation-divers'
+    END
+$$;
 
 -- Description : l'export en tire le dictionnaire des données (README.md).
 COMMENT ON SCHEMA famille IS 'Les personnes du foyer et leurs comptes.';
@@ -147,9 +200,13 @@ COMMENT ON TABLE achats.promos IS 'Une remise rattachée à sa ligne de ticket.'
 COMMENT ON COLUMN achats.promos.offre IS 'Texte de l''offre tel qu''imprimé.';
 COMMENT ON COLUMN achats.promos.type IS 'remise immédiate, 2e à prix réduit ou 2+1.';
 COMMENT ON COLUMN achats.promos.montant IS 'Montant déduit, en euros.';
-COMMENT ON VIEW achats.v_lignes IS 'Chaque ligne avec son contexte, la remise, le payé et les prix comparables (prix_ref en euros par unite_ref).';
-COMMENT ON VIEW achats.v_prix IS 'Prix médian hors promo par article, enseigne et mois : série de base de la prévision.';
+COMMENT ON VIEW achats.v_lignes IS 'Chaque ligne avec son contexte, la remise, le payé et les prix comparables (prix_ref en euros par unite_ref) ; prix_ref_attendu = prix payé pour un article acheté seulement en promo, sinon prix normal.';
+COMMENT ON VIEW achats.v_prix IS 'Prix médian attendu par article, enseigne et mois (hors promo, sauf articles achetés seulement en promo) : série de base de la prévision.';
 COMMENT ON VIEW chow.v_lignes_stats IS 'Achats au format lu par les pages Stats et Courses ; statut : chow, hors-chow, non-alimentaire, non-detaille ou a-classer.';
+COMMENT ON FUNCTION chow.categorie_achat(TEXT) IS 'Catégorie d''achat (achats.categories) d''une catégorie Chow.';
+COMMENT ON VIEW achats.v_economies IS 'Chaque achat remisé : prix affiché, payé, économie ; achat_en_lot = au moins 2 unités d''un coup.';
+COMMENT ON VIEW achats.v_economies_par_an IS 'Économies par année et par article.';
+COMMENT ON VIEW achats.v_bon_prix IS 'Prix payé comparé au prix médian payé pour le même article sur les 12 mois d''avant ; ecart_pourcentage négatif = moins cher que d''habitude.';
 COMMENT ON VIEW achats.v_panier_habituel IS 'Articles achetés au moins 6 mois sur les 12 derniers, avec quantité et dépense moyennes par mois.';
 
 COMMENT ON TABLE chow.aliments IS 'Aliment suivi par Chow (valeurs nutritionnelles pour 100 g ou 100 ml), relié à son article d''achat.';

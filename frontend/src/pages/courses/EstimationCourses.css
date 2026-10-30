@@ -146,23 +146,6 @@
   line-height: 1.15;
 }
 
-.estimation__fermer {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border: 0;
-  border-radius: 50%;
-  background: #efe8dc;
-  color: var(--text-muted);
-  cursor: pointer;
-}
-
-.estimation__fermer svg {
-  width: 14px;
-  height: 14px;
-}
-
 /* Jauge bas – haut, avec l'estimation */
 .estimation__jauge-barre {
   position: relative;
@@ -269,6 +252,16 @@
     transform-origin: bottom center;
     animation: estimation-feuille 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+}
+
+.estimation__poignee {
+  flex-shrink: 0;
+  align-self: center;
+  width: 36px;
+  height: 4px;
+  margin: -6px 0 -2px;
+  border-radius: 2px;
+  background: var(--border);
 }
 
 @keyframes estimation-feuille {

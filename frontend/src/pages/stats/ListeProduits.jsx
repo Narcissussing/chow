@@ -2,6 +2,8 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
 import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
+import { useGlisserPourFermer } from "../../hooks/useGlisserPourFermer.js";
+import BoutonFermer from "../../components/BoutonFermer.jsx";
 import { MiniCourbe } from "./graphiques.jsx";
 
 // Ligne de « Les prix », dans la carte comme dans la liste complète.
@@ -25,6 +27,7 @@ export default function ListeProduits({ produits, controles, euros, signe, fiche
   const [ferme, fermer] = useFermetureAnimee(onFermer);
   // La fiche d'un produit s'ouvre par-dessus : c'est elle qui bloque alors le défilement.
   useVerrouDefilement(!ficheOuverte, zone);
+  useGlisserPourFermer(zone, fermer, !ficheOuverte);
 
   useEffect(() => {
     if (ficheOuverte) return;
@@ -36,10 +39,10 @@ export default function ListeProduits({ produits, controles, euros, signe, fiche
   return createPortal(
     <div className={"fiche-fond fiche-fond--liste" + (ferme ? " ferme" : "")} onClick={fermer}>
       <aside ref={zone} className={"fiche fiche--liste" + (ferme ? " ferme" : "")} role="dialog" aria-modal="true" aria-label="Tous les produits" onClick={(e) => e.stopPropagation()}>
-        <span className="fiche__poignee" aria-hidden="true" />
-        <header className="liste-produits__entete">
+        <span className="fiche__poignee poignee-feuille" aria-hidden="true" />
+        <header className="liste-produits__entete" data-entete-feuille>
           <h2>Les prix <span className="discret">{produits.length}</span></h2>
-          <button type="button" className="fiche__fermer" aria-label="Fermer" onClick={fermer}>✕</button>
+          <BoutonFermer onClick={fermer} />
         </header>
         <div className="prix__entete liste-produits__controles">{controles}</div>
         <ul className="prix__liste liste-produits__liste">

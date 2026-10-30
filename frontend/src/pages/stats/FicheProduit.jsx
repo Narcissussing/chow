@@ -3,6 +3,8 @@ import { api } from "../../api.js";
 import { afficherToast } from "../../toast.js";
 import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
 import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
+import { useGlisserPourFermer } from "../../hooks/useGlisserPourFermer.js";
+import BoutonFermer from "../../components/BoutonFermer.jsx";
 import { Courbe } from "./graphiques.jsx";
 import { ENSEIGNES } from "../../components/SelecteurMagasin.jsx";
 import { libellePeriode } from "./Filtres.jsx";
@@ -19,6 +21,7 @@ export default function FicheProduit({ idAliment, periode, enseigne, euros, onFe
   const zone = useRef(null);
   const [ferme, fermer] = useFermetureAnimee(onFermer);
   useVerrouDefilement(true, zone);
+  useGlisserPourFermer(zone, fermer);
 
   useEffect(() => {
     const controleur = new AbortController();
@@ -51,12 +54,12 @@ export default function FicheProduit({ idAliment, periode, enseigne, euros, onFe
   return (
     <div className={"fiche-fond" + (ferme ? " ferme" : "")} onClick={fermer}>
       <aside ref={zone} className={"fiche" + (ferme ? " ferme" : "")} role="dialog" aria-modal="true" aria-label={fiche?.nom || "Produit"} onClick={(e) => e.stopPropagation()}>
-        <span className="fiche__poignee" aria-hidden="true" />
+        <span className="fiche__poignee poignee-feuille" aria-hidden="true" />
         {fiche === null && <p className="fiche__vide">Chargement…</p>}
         {fiche === false && <p className="fiche__vide">Aucun achat trouvé pour ce produit.</p>}
         {fiche && (
           <>
-            <header className="fiche__entete">
+            <header className="fiche__entete" data-entete-feuille>
               <span className="fiche__tuile" aria-hidden="true">{fiche.emoji}</span>
               <div>
                 <h2 className="nom-defile">{fiche.nom}</h2>
@@ -65,7 +68,7 @@ export default function FicheProduit({ idAliment, periode, enseigne, euros, onFe
                   {fiche.economiePromos > 0 && <> · <span className="fiche__economie">{euros(fiche.economiePromos)} économisés en promo</span></>}
                 </p>
               </div>
-              <button type="button" className="fiche__fermer" aria-label="Fermer" onClick={fermer}>✕</button>
+              <BoutonFermer onClick={fermer} />
             </header>
             {fiche.periode && (
               <div className="fiche__periode">

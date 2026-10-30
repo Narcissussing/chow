@@ -3,6 +3,8 @@ import { createPortal } from "react-dom";
 import FondModal from "../../components/FondModal.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
+import { useGlisserPourFermer } from "../../hooks/useGlisserPourFermer.js";
+import BoutonFermer from "../../components/BoutonFermer.jsx";
 import "./EstimationCourses.css";
 
 const euros = (n, d = 2) => n.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " €";
@@ -61,12 +63,18 @@ export default function EstimationCourses({ estimation }) {
   const bulle = useRef(null);
   const zones = useMemo(() => [zone, bulle], []);
   const [position, setPosition] = useState(null);
+  // Sur téléphone, une feuille en bas de l'écran plutôt qu'une bulle accrochée au bouton.
+  const [feuille, setFeuille] = useState(false);
+  useGlisserPourFermer(bulle, fermer, ouvert && feuille && !!position);
 
   // La bulle est rendue dans <body> (au-dessus de la barre d'outils collante) et suit le bouton.
   useLayoutEffect(() => {
     if (!ouvert) return;
     // Sous le bouton s'il reste de la place, sinon au-dessus ; hauteur limitée à l'espace disponible.
     const placer = () => {
+      const telephone = typeof window.matchMedia === "function" && window.matchMedia("(max-width: 860px)").matches;
+      setFeuille(telephone);
+      if (telephone) return setPosition({});
       const r = zone.current?.getBoundingClientRect();
       if (!r) return;
       const left = Math.max(16, Math.min(r.left, window.innerWidth - Math.min(380, window.innerWidth - 32) - 16));
@@ -101,15 +109,14 @@ export default function EstimationCourses({ estimation }) {
       </button>
       {ouvert && <FondModal onFermer={fermer} zone={bulle} fermant={ferme} />}
       {ouvert && position && createPortal(
-        <div ref={bulle} className={"estimation__popup" + (ferme ? " ferme" : "")} role="dialog" aria-label="Calcul de l’estimation" style={position}>
-          <div className="estimation__entete">
+        <div ref={bulle} className={"estimation__popup" + (feuille ? " estimation__popup--feuille" : "") + (ferme ? " ferme" : "")} role="dialog" aria-label="Calcul de l’estimation" style={position}>
+          {feuille && <span className="estimation__poignee poignee-feuille" aria-hidden="true" />}
+          <div className="estimation__entete" data-entete-feuille>
             <div>
               <span className="estimation__surtitre">Prochaines courses · {estimation.articles} articles</span>
               <b className="estimation__total">≈ {euros(estimation.estimation, 0)}</b>
             </div>
-            <button type="button" className="estimation__fermer" aria-label="Fermer" onClick={fermer}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M7 7l10 10M17 7L7 17" /></svg>
-            </button>
+            <BoutonFermer onClick={fermer} />
           </div>
           <div className="estimation__jauge" aria-hidden="true">
             <span className="estimation__jauge-barre">

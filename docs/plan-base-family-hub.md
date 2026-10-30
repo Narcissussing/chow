@@ -176,7 +176,7 @@ sur 12 à 24 mois, pondérée par `v_panier_habituel`, comparée à l'INSEE.
 
 ## Avancement
 
-- 2026-10-30, dev : migration appliquée (`db/migrations/2026-10-30-schemas-par-domaine.sql`),
+- 2026-10-30, dev : migration appliquée (`db/migrations/2026-10-30-1-schemas-par-domaine.sql`),
   vues et descriptions (`db/vues.sql`), code et scripts sur le nouveau modèle,
   `verifier-api.js` conforme, totaux identiques (15 397,04 € payés, 343,05 € de
   remises), premier export local. Règles : `architecture-donnees.md`, ADR 005.
@@ -185,6 +185,13 @@ sur 12 à 24 mois, pondérée par `v_panier_habituel`, comparée à l'INSEE.
 - Plus tard : renommer `food_id` en `aliment_id` avec l'API et le frontend ;
   `v_inflation_foyer` (le calcul reste dans `stats.js` pour l'instant) ;
   `heure`, `bons` et `cagnotte` des tickets à lire dans `tickets/extraire.cjs`.
+
+## Catégories hors Chow (validées le 2026-10-30)
+
+Neuf familles, chacune avec son icône `public/images/categories/<id>.svg` (nom = identifiant de
+la catégorie) : `hygiene`, `entretien`, `cuisine`, `electronique`, `bebe`, `sante`, `maison`,
+`animaux`, `divers`. Pas de vêtements ni de papeterie ; « autre » = `divers`. Les catégories
+d'aliments restent celles de Chow, sans icône.
 
 ## À fournir par Olumide
 

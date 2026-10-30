@@ -53,6 +53,26 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-108 — Fenêtres qui ne se ferment pas pareil, ✕ qui part en défilant
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/components/BoutonFermer.jsx`, `frontend/src/hooks/useGlisserPourFermer.js`, `frontend/src/pages/stats/FicheProduit.jsx`, `frontend/src/pages/stats/ListeProduits.jsx`, `frontend/src/pages/stats/StatsPage.jsx`, `frontend/src/pages/courses/EstimationCourses.jsx`, `frontend/src/pages/courses/PhotoApercu.jsx`, `frontend/src/pages/calories/recettes/RecetteSheet.jsx`
+- **Date de signalement** : 2026-10-30
+- **Date de correction** : 2026-10-30
+
+**Étapes de reproduction** :
+
+1. Téléphone, Stats : ouvrir « Les prix », puis un produit ; faire défiler la fiche.
+2. Comparer le ✕ avec celui des Courses (estimation) et d'une recette.
+3. Tirer une fenêtre vers le bas depuis le haut.
+
+**Résultat attendu** : même ✕ partout, en-tête qui reste en haut, tirer vers le bas ferme toute fenêtre.
+
+**Résultat obtenu** : ✕ de tailles et d'icônes différentes ; dans la fiche produit et la recette, l'en-tête et le ✕ défilent hors de l'écran ; les bulles d'info sur téléphone n'ont pas de ✕ ; tirer vers le bas ne ferme rien.
+
+**Correction** : un ✕ commun, en-têtes collés en haut, geste « tirer pour fermer » commun à toutes les fenêtres (sauf depuis une liste déjà descendue ou une courbe ; en modification de recette, seulement depuis l'en-tête). Tests ajoutés.
+
 ### CHOW-107 — Les ingrédients volent en modifiant une recette
 
 - **Niveau** : Mineure

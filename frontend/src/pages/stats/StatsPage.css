@@ -827,9 +827,15 @@
 }
 
 .fiche__entete {
+  position: sticky;
+  top: -16px;
+  z-index: 3;
   display: flex;
   align-items: center;
   gap: 12px;
+  margin: -28px -28px 0;
+  padding: 28px 28px 12px;
+  background: var(--surface);
 }
 
 .fiche__entete div {
@@ -854,15 +860,6 @@
   border-radius: 12px;
   background: #f8e3dc;
   font-size: 1.5rem;
-}
-
-.fiche__fermer {
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 50%;
-  background: var(--sable);
-  cursor: pointer;
 }
 
 .fiche__prix {
@@ -1069,6 +1066,12 @@
     padding: 10px 20px 24px;
     border-radius: 22px 22px 0 0;
     animation: monter 0.25s ease;
+  }
+
+  .fiche__entete {
+    top: 0;
+    margin: 0 -20px;
+    padding: 10px 20px;
   }
 
   .fiche__poignee {
@@ -1665,11 +1668,28 @@ button.puce {
   font-size: 1.05rem;
 }
 
+/* En-tête de la feuille : poignée au centre, ✕ à droite, reste en haut quand le texte défile */
+.info-popup__entete {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 32px 1fr 32px;
+  align-items: center;
+  margin: -10px -20px 0;
+  padding: 10px 20px 4px;
+  background: #fff;
+}
+
+.info-popup__entete .bouton-fermer {
+  grid-column: 3;
+}
+
 .info-popup__poignee {
-  align-self: center;
+  grid-column: 2;
+  justify-self: center;
   width: 36px;
   height: 4px;
-  margin-bottom: 6px;
   border-radius: 2px;
   background: var(--border);
 }

@@ -7,6 +7,8 @@ import BoutonEffacer from "../../../components/BoutonEffacer.jsx";
 import { ListeTriable } from "../../../components/Triable.jsx";
 import { useMinuteurs } from "../../../hooks/useMinuteurs.js";
 import { useVerrouDefilement } from "../../../hooks/useVerrouDefilement.js";
+import { useGlisserPourFermer } from "../../../hooks/useGlisserPourFermer.js";
+import BoutonFermer from "../../../components/BoutonFermer.jsx";
 import { estLiquide, grammesParUnite, optionsUnite, poidsPieceDe } from "../../../utils/unites.js";
 import { normaliserTexte } from "../../../utils/texte.js";
 import IngredientLigne, { changerUniteLigne } from "./IngredientLigne.jsx";
@@ -62,6 +64,8 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
   const [ouvert, setOuvert] = useState(false);
   useVerrouDefilement(ouvert, sheet);
   const [mode, setMode] = useState("formulaire");
+  // En modification, les ingrédients se déplacent au doigt : la feuille ne se tire que par son en-tête.
+  useGlisserPourFermer(sheet, fermer, ouvert, mode === "formulaire");
   const [lecture, setLecture] = useState({ nom: "", meta: "", ingredients: [], etapes: null });
   const [recetteChargee, setRecetteChargee] = useState(null);
   const [formulaire, setFormulaire] = useState(FORMULAIRE_VIDE);
@@ -318,9 +322,9 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     <>
       <div className={"sheet-backdrop" + (ouvert ? " ouvert" : "")} id="sheetBackdrop" onClick={fermer}></div>
       <div className={"sheet" + (ouvert ? " ouvert" : "")} id="sheet" ref={sheet}>
-        <div className="sheet-handle"></div>
+        <div className="sheet-handle poignee-feuille"></div>
         <div id="recetteLecture" className={"recette-lecture" + (mode !== "lecture" ? " hidden" : "")}>
-          <div className="detail-header">
+          <div className="detail-header" data-entete-feuille>
             <div className="recette-lecture-titre">
               <h2 id="recetteLectureNom" className="recette-lecture-nom">{lecture.nom}</h2>
               <p id="recetteLectureMeta" className="recette-lecture-meta">{lecture.meta}</p>
@@ -338,7 +342,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
               />
               <BoutonOutil icone="cuisiner" disabled={!recetteChargee || envoiCuisine} onClick={envoyerALaCuisine} />
               <button type="button" id="btnModifierRecette" className="btn-modifier-recette" title="Modifier" aria-label="Modifier la recette" onClick={ouvrirEdition}></button>
-              <button type="button" className="sheet-close-btn" data-sheet-close title="Fermer" onClick={fermer}>✕</button>
+              <BoutonFermer onClick={fermer} />
             </div>
           </div>
           <h3>Ingrédients</h3>
@@ -364,7 +368,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
 
         <form id="formRecette" className={mode !== "formulaire" ? "hidden" : undefined} onSubmit={enregistrer}>
 
-          <div className="detail-header">
+          <div className="detail-header" data-entete-feuille>
             <input
               ref={champNom}
               type="text"
@@ -379,7 +383,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
               }}
             />
             <div className="detail-header-actions">
-              <button type="button" id="sheetCloseBtn" className="sheet-close-btn" title="Fermer" onClick={fermer}>✕</button>
+              <BoutonFermer onClick={fermer} />
             </div>
           </div>
 
