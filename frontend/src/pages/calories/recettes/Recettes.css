@@ -148,9 +148,13 @@
     transform 0.15s ease;
 }
 
-.recette-card:hover {
-  border-color: var(--accent-2);
-  transform: translateY(-2px);
+/* Survol seulement à la souris : sur téléphone, il restait collé après un toucher. */
+@media (hover: hover) {
+  .recette-card:hover {
+      border-color: var(--accent-2);
+      transform: translateY(-2px);
+    }
+
 }
 
 .recette-emoji {

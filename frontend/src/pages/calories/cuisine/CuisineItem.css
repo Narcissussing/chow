@@ -49,9 +49,10 @@
   white-space: nowrap;
 }
 
+/* minmax(0, 1fr) : un nom long défile dans sa colonne au lieu de pousser les valeurs hors de la carte. */
 .journal-item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 12px;
   padding-left: 22px;
@@ -62,6 +63,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 }
 
 .journal-nom {

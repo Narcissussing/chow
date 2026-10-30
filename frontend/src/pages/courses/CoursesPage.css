@@ -206,7 +206,7 @@ body.mode-magasin .preset-hebdo-row__filtres {
    chaque ligne présente porte sa propre marge. */
 .course-item {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   column-gap: 14px;
   row-gap: 0;

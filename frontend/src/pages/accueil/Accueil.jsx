@@ -236,7 +236,7 @@ export default function Accueil() {
                     {donnees.aVerifier.map((a, i) => (
                       <li
                         key={a.id}
-                        className={[enEdition === a.id && "en-edition", sorties[a.id] && "sortie-" + sorties[a.id]].filter(Boolean).join(" ") || undefined}
+                        className={[enEdition === a.id && "en-edition carte-active", sorties[a.id] && "sortie-" + sorties[a.id]].filter(Boolean).join(" ") || undefined}
                         style={{ "--i": i }}
                         inert={sorties[a.id] ? true : undefined}
                       >

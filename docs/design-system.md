@@ -84,8 +84,10 @@ Les principales familles sont :
 - rendu Stock : `stockFondu` ; tri, filtre et vue font glisser les cartes
   (`useCartesQuiGlissent`) ; panneau « À racheter » : `suggestionsDeroulent`,
   `suggestionArrive` ;
-- carte active (`.carte-active`, Courses, Stock) : plus claire, monte un peu
-  avec une ombre douce ; redescend de même ;
+- carte active (`.carte-active` : cartes Courses et Stock, ligne de l'accueil en
+  modification) : plus claire, monte un peu avec une ombre douce ; redescend de
+  même. Survols réservés à la souris (`@media (hover: hover)`), sinon ils
+  restent collés après un toucher ;
 - pastille de filtre choisie : `filtreChoisi` (icône SVG teintée, en masque) ;
 - compteurs (sac, boîte, marmite, balance), en titre ou dans les totaux :
   tous 48 px, la hauteur du panier, même chiffre ;

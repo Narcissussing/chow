@@ -75,15 +75,15 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .carte-article.carte-active {
+  .carte-active {
       transform: none;
     }
 
 }
 
 /* Carte active, partout dans l'app : plus claire, elle monte un peu avec une ombre douce ; elle redescend de la même façon. */
-.carte-article.carte-active,
-.carte-article.carte-active:hover {
+.carte-active,
+.carte-active:hover {
   background: #ffffff;
   border-color: #efe7da;
   box-shadow: 0 10px 22px rgba(92, 69, 41, 0.16), 0 2px 4px rgba(92, 69, 41, 0.06);

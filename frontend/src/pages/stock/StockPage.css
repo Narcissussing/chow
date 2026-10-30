@@ -57,10 +57,14 @@
     border-color 0.2s ease;
 }
 
-.stock-item:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-  border-color: var(--accent-2);
+/* Survol seulement à la souris : sur téléphone, il restait collé après un toucher. */
+@media (hover: hover) {
+  .stock-item:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+      border-color: var(--accent-2);
+    }
+
 }
 
 .stock-item:active {
