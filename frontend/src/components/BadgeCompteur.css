@@ -22,10 +22,13 @@
 .badge-compteur--regle::before {
   -webkit-mask-image: url("/images/svg/scale.svg");
   mask-image: url("/images/svg/scale.svg");
+  /* La balance remplit tout son cadre, la marmite 78 % : on la ramène à la même hauteur. */
+  -webkit-mask-size: auto 78%;
+  mask-size: auto 78%;
 }
 
 .titre-page .badge-compteur--regle {
-  padding-bottom: 6px;
+  padding-bottom: 8px;
 }
 
 .badge-compteur--cuisine::before {
@@ -51,7 +54,7 @@
 }
 
 .journal-totaux .badge-compteur--regle {
-  padding-bottom: 5px;
+  padding-bottom: 8px;
 }
 
 .journal-totaux .badge-compteur--cuisine span,
