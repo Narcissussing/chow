@@ -228,6 +228,9 @@ UPDATE achats.produits SET contenance = COALESCE(
         1)
 WHERE unite = 'piece' AND contenance IS NULL;
 
+-- Ticket Marché Frais importé sans date en production ; date donnée par Olumide le 2026-10-23 (tickets-marche-frais.json).
+UPDATE ancien.tickets SET date = '2026-10-04' WHERE date IS NULL AND magasin = 'Marché Frais Meaux' AND total = 55.37;
+
 -- Tickets : mêmes identifiants qu'avant.
 INSERT INTO achats.tickets (id, code, magasin_id, date, source, total_articles, paye)
 SELECT t.id,

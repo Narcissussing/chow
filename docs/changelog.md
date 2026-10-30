@@ -6,6 +6,9 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 
 ## 2026-10
 
+- Panier de la tournée en mode magasin (par rayon, sur plusieurs magasins et
+  jours, « Terminer »), articles de la maison dans les Courses, salutation
+  selon l'heure.
 - Tickets de caisse importés (`tickets`, `achats`, `libelles`) et estimation
   des Courses sans quantité (habitudes × dernier prix).
 - Paramètres réservés à l’administrateur ; Aliments retirés de la navigation.

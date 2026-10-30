@@ -1,0 +1,47 @@
+/* Une couleur fixe par famille ; la santé en vert. */
+.icone-famille {
+  display: inline-block;
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.2em;
+  background-color: var(--couleur-famille, #6b6257);
+  -webkit-mask: var(--icone) center / contain no-repeat;
+  mask: var(--icone) center / contain no-repeat;
+}
+
+.icone-famille--sante {
+  --couleur-famille: #2f6f62;
+}
+
+.icone-famille--hygiene {
+  --couleur-famille: #3e7cb1;
+}
+
+.icone-famille--entretien {
+  --couleur-famille: #4f8f9a;
+}
+
+.icone-famille--cuisine {
+  --couleur-famille: #d9a441;
+}
+
+.icone-famille--electronique {
+  --couleur-famille: #7a8fb8;
+}
+
+.icone-famille--bebe {
+  --couleur-famille: #d98ba0;
+}
+
+.icone-famille--maison {
+  --couleur-famille: #b07aa1;
+}
+
+.icone-famille--animaux {
+  --couleur-famille: #a8896b;
+}
+
+.icone-famille--divers {
+  --couleur-famille: #6b6257;
+}
+

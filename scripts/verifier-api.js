@@ -104,7 +104,7 @@ try {
     verifier("GET /api/stock", r.statut === 200 && Array.isArray(r.donnees?.stock) && Array.isArray(r.donnees?.aliments));
     const stockActuel = r.donnees.stock;
     r = await appel("GET", "/api/courses");
-    verifier("GET /api/courses", r.statut === 200 && ["courses", "aliments", "stock", "presetHebdo"].every((k) => Array.isArray(r.donnees?.[k])));
+    verifier("GET /api/courses", r.statut === 200 && ["courses", "aliments", "articles", "stock", "presetHebdo"].every((k) => Array.isArray(r.donnees?.[k])));
     r = await appel("GET", "/api/courses/estimation");
     const e = r.donnees;
     verifier("GET /api/courses/estimation", r.statut === 200 && e.bas <= e.estimation && e.estimation <= e.haut && e.sansPrix <= e.articles, JSON.stringify(e));
@@ -123,6 +123,49 @@ try {
     const idCourse = r.donnees?.item?.id;
     if (idCourse) nettoyages.push(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourse]));
     verifier("POST /api/courses/ajouter (texte libre)", r.statut === 200 && r.donnees?.item?.nom === MARQUEUR);
+    const inventaireAvant = await db.query("SELECT article_id, quantite, niveau FROM maison.inventaire WHERE article_id IN ('shampoing', 'dentifrice')");
+    r = await appel("POST", "/api/courses/ajouter", { idArticle: "shampoing" });
+    const idCourseArticle = r.donnees?.item?.id;
+    if (idCourseArticle) nettoyages.push(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourseArticle]));
+    verifier("POST /api/courses/ajouter (article de la maison)", r.statut === 200 && r.donnees?.item?.nom === "Shampoing" && r.donnees.item.categorie === "Hygiène" && r.donnees.item.famille_id === "hygiene", JSON.stringify(r.donnees?.item));
+    r = await appel("POST", "/api/courses/acheter", { idCourse: idCourseArticle });
+    verifier("POST /api/courses/acheter (article au niveau → plein)", r.donnees?.succes === true);
+    nettoyages.push(async () => {
+        await db.query("DELETE FROM maison.inventaire WHERE article_id IN ('shampoing', 'dentifrice')");
+        for (const l of inventaireAvant.rows) {
+            await db.query("INSERT INTO maison.inventaire (article_id, quantite, niveau) VALUES ($1, $2, $3)", [l.article_id, l.quantite, l.niveau]);
+        }
+    });
+    const shampoing = (await db.query("SELECT niveau FROM maison.inventaire WHERE article_id = 'shampoing'")).rows[0];
+    verifier("inventaire : shampoing plein", shampoing?.niveau === "plein");
+    r = await appel("POST", "/api/courses/ajouter", { idArticle: "dentifrice" });
+    const idCourseDentifrice = r.donnees?.item?.id;
+    if (idCourseDentifrice) nettoyages.push(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourseDentifrice]));
+    verifier("article au nombre → suivi à l'unité", r.donnees?.item?.tracking_type === "unite");
+    const dentifriceAvant = Number(inventaireAvant.rows.find((l) => l.article_id === "dentifrice")?.quantite || 0);
+    r = await appel("POST", "/api/courses/acheter", { idCourse: idCourseDentifrice, quantiteAchetee: 2 });
+    const dentifrice = (await db.query("SELECT quantite FROM maison.inventaire WHERE article_id = 'dentifrice'")).rows[0];
+    verifier("POST /api/courses/acheter (article au nombre, +2)", r.donnees?.succes === true && Number(dentifrice?.quantite) === dentifriceAvant + 2);
+    // Tournée : ouverte par le mode magasin, l'achat garde enseigne et quantité, le panier les valorise, « Terminer » la ferme.
+    const tourneeAvant = (await db.query("SELECT id FROM chow.tournees WHERE fin IS NULL")).rows[0];
+    r = await appel("POST", "/api/courses/tournee/commencer", {});
+    const tourneeTest = (await db.query("SELECT id FROM chow.tournees WHERE fin IS NULL")).rows[0];
+    nettoyages.push(async () => {
+        if (tourneeAvant) await db.query("UPDATE chow.tournees SET fin = NULL WHERE id = $1", [tourneeAvant.id]);
+        else if (tourneeTest) await db.query("DELETE FROM chow.tournees WHERE id = $1", [tourneeTest.id]);
+    });
+    verifier("POST /api/courses/tournee/commencer", r.donnees?.succes === true && r.donnees.panier?.tournee?.id === tourneeTest?.id);
+    r = await appel("POST", "/api/courses/ajouter", { idArticle: "dentifrice" });
+    const idCourseTournee = r.donnees?.item?.id;
+    if (idCourseTournee) nettoyages.unshift(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourseTournee]));
+    r = await appel("POST", "/api/courses/acheter", { idCourse: idCourseTournee, quantiteAchetee: 2, magasin: "Leclerc" });
+    r = await appel("GET", "/api/courses/panier");
+    const lignePanier = r.donnees?.lignes?.find((l) => l.id === idCourseTournee);
+    verifier("GET /api/courses/panier : article coché valorisé (2 × prix à la pièce), enseigne gardée",
+        lignePanier?.achete === true && lignePanier.enseigne === "Leclerc" && lignePanier.rayon === "Maison" && lignePanier.valeur > lignePanier.prevu, JSON.stringify(lignePanier));
+    r = await appel("POST", "/api/courses/tournee/terminer", {});
+    const ouverte = (await db.query("SELECT count(*)::int AS n FROM chow.tournees WHERE fin IS NULL")).rows[0].n;
+    verifier("POST /api/courses/tournee/terminer", r.donnees?.succes === true && ouverte === 0);
     r = await appel("POST", "/api/courses/commentaire", { idCourse, commentaire: "note de test" });
     verifier("POST /api/courses/commentaire", r.donnees?.succes === true);
     r = await appel("POST", "/api/courses/supprimer", { idCourse });

@@ -19,13 +19,13 @@ export function BoutonRacheter({ suggestions, ouvert, onBasculer }) {
   );
 }
 
-export default function StockSuggestions({ suggestions, onAjouter }) {
+export default function StockSuggestions({ suggestions, ferme = false, onAjouter }) {
   const [tout, setTout] = useState(false);
   if (suggestions.length === 0) return null;
   const visibles = tout ? suggestions : suggestions.slice(0, PREMIERS);
   return (
     <div className="stock-suggestions-zone">
-      <section id="stockSuggestions" className="stock-suggestions" aria-label="À racheter">
+      <section id="stockSuggestions" className={"stock-suggestions" + (ferme ? " ferme" : "")} aria-label="À racheter">
         <ul className="stock-suggestions__liste">
           {visibles.map((s) => (
             <li key={s.food_id} className={"stock-suggestions__ligne" + (s.envoye ? " envoye" : "")} data-food={s.food_id}>

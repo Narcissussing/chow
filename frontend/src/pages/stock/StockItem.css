@@ -158,10 +158,6 @@
   background: var(--bg);
 }
 
-.stock-item.en-edition {
-  border-color: #d77a4291;
-}
-
 @keyframes stockFondu {
   from {
     opacity: 0;

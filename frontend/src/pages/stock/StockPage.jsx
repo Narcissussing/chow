@@ -4,7 +4,9 @@ import { api } from "../../api.js";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import CustomSelect from "../../components/CustomSelect.jsx";
 import Page from "../../components/Page.jsx";
+import { useCartesQuiGlissent } from "../../hooks/useCartesQuiGlissent.js";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
+import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { useLocalStorage } from "../../hooks/useLocalStorage.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
@@ -19,13 +21,13 @@ import "./StockPage.css";
 
 const FILTRES = [
   { emplacement: "tous", texte: "Tous" },
-  { emplacement: "fg", texte: "🧊 Frigo" },
-  { emplacement: "fz", texte: "❄️ Congélateur" },
-  { emplacement: "st", texte: "📦 Réserve" },
-  { type: "cl", texte: "🫙 Niveau" },
-  { type: "autre", texte: "🔢 Pièces" },
-  { type: "bas", texte: "🔻 Bas" },
-  { type: "verifier", texte: "🕒 À vérifier" },
+  { emplacement: "fg", texte: "Frigo", icone: "frigo" },
+  { emplacement: "fz", texte: "Congélateur", icone: "congelateur" },
+  { emplacement: "st", texte: "Réserve", icone: "reserve" },
+  { type: "cl", texte: "Niveau", icone: "niveau" },
+  { type: "autre", texte: "Pièces", icone: "pieces" },
+  { type: "bas", texte: "Bas", icone: "bas" },
+  { type: "verifier", texte: "À vérifier", icone: "oeil" },
 ];
 
 const OPTIONS_TRI = [
@@ -51,6 +53,7 @@ function Stock({ donnees }) {
 
   const [items, setItems] = useState(() => trierStock(donnees.stock.map(preparer), "alpha"));
   const [racheterOuvert, setRacheterOuvert] = useState(false);
+  const [racheterFerme, fermerRacheter] = useFermetureAnimee(() => setRacheterOuvert(false), 220);
   const [aRacheter, setARacheter] = useState(() => suggestionsARacheter(donnees.suggestions || []));
   const [emplacement, setEmplacement] = useState("tous");
   const [params] = useSearchParams();
@@ -67,6 +70,7 @@ function Stock({ donnees }) {
   const filtres = { emplacement, type, termes };
   const visibles = items.filter((i) => correspondFiltres(i, filtres)).length;
   const filtreActif = emplacement !== "tous" || type !== "tous" || termes !== "";
+  useCartesQuiGlissent(cartes, `${critere}|${emplacement}|${type}|${vue}`);
 
   function majItem(id, maj) {
     setItems((liste) => liste.map((i) => (i.id === id ? maj(i) : i)));
@@ -269,7 +273,7 @@ function Stock({ donnees }) {
     <main>
       <div className="page-header titre-page">
         <h1>Stock</h1>
-        <BoutonRacheter suggestions={aRacheter} ouvert={racheterOuvert} onBasculer={() => setRacheterOuvert((o) => !o)} />
+        <BoutonRacheter suggestions={aRacheter} ouvert={racheterOuvert} onBasculer={() => (racheterOuvert ? fermerRacheter() : setRacheterOuvert(true))} />
         <BadgeCompteur
           icone="stock"
           nombre={filtreActif ? visibles : items.length}
@@ -278,7 +282,7 @@ function Stock({ donnees }) {
         />
       </div>
 
-      {racheterOuvert && <StockSuggestions suggestions={aRacheter} onAjouter={ajouterSuggestion} />}
+      {racheterOuvert && <StockSuggestions suggestions={aRacheter} ferme={racheterFerme} onAjouter={ajouterSuggestion} />}
 
       <div className="filters">
         <div className="filters__inner">
@@ -300,6 +304,7 @@ function Stock({ donnees }) {
                     }
                   }}
                 >
+                  {f.icone && <span className="filter-btn__icone" style={{ "--icone": `url("/images/svg/${f.icone}.svg")` }} aria-hidden="true" />}
                   {f.texte}
                 </button>
               );

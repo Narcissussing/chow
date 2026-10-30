@@ -59,8 +59,16 @@ function ouvrirStats() {
   rendreApp("/stats");
 }
 
+// Les Stats s'ouvrent sur la semaine ; ces tests lisent l'année.
+async function passerEnAnnee() {
+  await screen.findByText("3 195 €");
+  fireEvent.click(document.querySelector(".periode__choix"));
+  await act(async () => fireEvent.click(screen.getByRole("menuitem", { name: "Année" })));
+}
+
 test("Stats : KPIs, estimation, inflation, prix et semaine la plus chère", async () => {
   ouvrirStats();
+  await passerEnAnnee();
   expect(await screen.findByText("3 195 €")).toBeInTheDocument();
   expect(screen.getByText(/−6 % vs 2025/)).toBeInTheDocument();
   expect(screen.getByText("38 € – 45 €")).toBeInTheDocument();
@@ -119,6 +127,7 @@ test("Les prix : tri par hausse et recherche sans accents", async () => {
 
 test("période et magasin rechargent les stats ; un seul magasin masque Par magasin", async () => {
   ouvrirStats();
+  await passerEnAnnee();
   await screen.findByText("3 195 €");
   await act(async () => fireEvent.click(screen.getByLabelText("Période précédente")));
   expect(requetes.at(-1)).toContain("ref=" + (new Date().getFullYear() - 1));
@@ -129,16 +138,19 @@ test("période et magasin rechargent les stats ; un seul magasin masque Par maga
 
 test("la flèche précédente s'arrête à l'année du premier achat", async () => {
   ouvrirStats();
+  await passerEnAnnee();
   await screen.findByText("3 195 €");
   expect(screen.getByLabelText("Période précédente")).not.toBeDisabled();
   await act(async () => fireEvent.click(screen.getByLabelText("Période précédente")));
   expect(screen.getByLabelText("Période précédente")).toBeDisabled();
 });
 
-test("Semaine s'ouvre sur la dernière semaine avec des achats", async () => {
+test("Stats s'ouvre sur la semaine en cours ; Semaine choisie ensuite va à la dernière semaine avec des achats", async () => {
   ouvrirStats();
   await screen.findByText("3 195 €");
-  fireEvent.click(screen.getByRole("button", { name: /2026/ }));
+  expect(requetes[0]).toContain("periode=semaine");
+  await passerEnAnnee();
+  fireEvent.click(document.querySelector(".periode__choix"));
   await act(async () => fireEvent.click(screen.getByRole("menuitem", { name: "Semaine" })));
   expect(requetes.at(-1)).toContain("periode=semaine");
   expect(requetes.at(-1)).toContain("ref=2026-10-13");
@@ -146,6 +158,7 @@ test("Semaine s'ouvre sur la dernière semaine avec des achats", async () => {
 
 test("fiche produit : prix par magasin, derniers achats, ajout aux Courses", async () => {
   ouvrirStats();
+  await passerEnAnnee();
   await screen.findByText("3 195 €");
   await act(async () => fireEvent.click(screen.getByText("Tomate").closest("button")));
   const fiche = await screen.findByRole("dialog", { name: "Tomate" });

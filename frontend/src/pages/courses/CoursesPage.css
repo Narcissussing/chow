@@ -202,12 +202,14 @@ body.mode-magasin .preset-hebdo-row__filtres {
   margin-top: 0;
 }
 
+/* Pas d'écart entre les lignes de la grille : une ligne vide (note absente) n'ajoute plus de hauteur ;
+   chaque ligne présente porte sa propre marge. */
 .course-item {
   display: grid;
   grid-template-columns: 1fr auto;
   align-items: center;
   column-gap: 14px;
-  row-gap: 8px;
+  row-gap: 0;
   padding: 12px 50px 12px 16px;
 }
 
@@ -247,16 +249,21 @@ body.mode-magasin .preset-hebdo-row__filtres {
   overflow: hidden;
   transition:
     max-height 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+    margin 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 0.25s ease;
 }
 
 body.mode-magasin .course-item__quantite-groupe {
   max-height: 60px;
+  margin-top: 8px;
   opacity: 1;
 }
 
-.course-item.arme {
-  border-color: #d77a4291;
+/* En magasin, toutes les cartes ont la même hauteur : nom en haut, puis une ligne d'action de la hauteur du champ
+   « Quantité » (38 px), avec ou sans les +1/+2/+5. */
+body.mode-magasin .course-item__shop-slot {
+  height: 38px;
+  margin-top: 8px;
 }
 
 .note-affichee {
@@ -571,7 +578,38 @@ body.mode-magasin .course-item__quantite-groupe {
   }
 }
 
-/* Fourchette estimée collée au titre */
+/* Titre et panier empilés au même endroit ; le mode magasin fait glisser l'un dehors et l'autre dedans. */
+.courses-entete-pile {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  align-items: center;
+}
+
+.courses-titre,
+.courses-panier-zone {
+  grid-area: 1 / 1;
+  min-width: 0;
+  transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0s;
+}
+
+.courses-titre.cache {
+  opacity: 0;
+  transform: translateX(-28px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.35s;
+}
+
+.courses-panier-zone.cache {
+  opacity: 0;
+  transform: translateX(28px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear 0.35s;
+}
+
+/* Fourchette estimée collée au titre : petite pastille ticket, comme les autres pastilles. */
 .courses-titre {
   display: flex;
   align-items: center;
@@ -579,13 +617,88 @@ body.mode-magasin .course-item__quantite-groupe {
 }
 
 .courses-fourchette {
-  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
   border-radius: 999px;
-  background: #e9f3ee;
-  color: #2f6f62;
-  font-size: 0.95rem;
-  font-weight: 700;
+  background: #f3e3dc;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
   white-space: nowrap;
+  animation: fadeIn 0.3s ease;
+}
+
+.courses-fourchette::before {
+  content: "";
+  width: 13px;
+  height: 13px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21z M9.5 8h5M9.5 12h5' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M6 3h12v18l-2-1.5L14 21l-2-1.5L10 21l-2-1.5L6 21z M9.5 8h5M9.5 12h5' fill='none' stroke='%23000' stroke-width='2' stroke-linejoin='round' stroke-linecap='round'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+/* Panier fin sous la barre d'outils quand on descend en mode magasin ; il se replie en remontant. */
+.courses-panier-fin {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
+}
+
+.courses-panier-fin.visible {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.courses-panier-fin__inner {
+  overflow: hidden;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 40px;
+}
+
+.courses-panier-fin.visible .courses-panier-fin__inner {
+  padding-bottom: 4px;
+}
+
+/* Avec le panier fin, la ligne d'outils se resserre au-dessus et au-dessous. */
+.courses-controls-row__inner {
+  transition: padding 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.courses-controls-row.avec-panier .courses-controls-row__inner {
+  padding-top: 2px;
+  padding-bottom: 0;
+}
+
+/* Le bouton magasin, le plus haut de la ligne, rétrécit aussi. */
+.courses-controls-row .btn-magasin {
+  transition: color 0.4s ease, width 0.3s ease, height 0.3s ease;
+}
+
+.courses-controls-row.avec-panier .btn-magasin {
+  width: 34px;
+  height: 34px;
+}
+
+@media (max-width: 768px) {
+  .courses-panier-fin__inner {
+      padding: 0 20px;
+    }
+
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .courses-titre,
+    .courses-panier-zone,
+    .courses-panier-fin {
+      transition: none;
+    }
+
 }
 
 

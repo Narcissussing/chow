@@ -169,7 +169,7 @@ export default function StatsPage() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
   });
-  const [periode, setPeriode] = useState({ periode: "annee", ref: aujourdhui });
+  const [periode, setPeriode] = useState({ periode: "semaine", ref: aujourdhui });
   const [enseigne, setEnseigne] = useState("tous");
   const [lecture, setLecture] = useState({ etat: "chargement", donnees: null });
   const [estimation, setEstimation] = useState(null);

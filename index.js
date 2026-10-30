@@ -414,13 +414,25 @@ async function chercherStock() {
     return result.rows
 }
 
+// Articles d'achat que Chow ne suit pas (shampoing, javel), avec leur famille (nom et identifiant de son icône) ; les fourre-tout sont exclus.
+const ARTICLES_MAISON = `
+    SELECT a.id, a.nom, a.suivi, f.nom AS famille, f.id AS famille_id
+    FROM achats.articles a
+    JOIN achats.categories c ON c.id = a.categorie_id
+    JOIN achats.categories f ON f.id = COALESCE(c.parent_id, c.id)
+    WHERE NOT a.fourre_tout AND NOT EXISTS (SELECT 1 FROM chow.aliments al WHERE al.article_id = a.id)`;
+
 async function chercherCourses() {
     const result = await db.query(
-        `SELECT courses.id, courses.food_id, courses.nom_libre, courses.commentaire, courses.achete,
+        `SELECT courses.id, courses.food_id, courses.article_id, courses.nom_libre, courses.commentaire, courses.achete,
                 courses.date_ajout,
                 (courses.photo IS NOT NULL) AS has_photo,
-                COALESCE(aliments.nom, courses.nom_libre) AS nom, COALESCE(aliments.emoji, '🆕') AS emoji,
-                aliments.unite AS food_unite, aliments.tracking_type, aliments.categorie, aliments.pas_achat, stock.quantite AS quantite_stock,
+                COALESCE(aliments.nom, articles.nom, courses.nom_libre) AS nom,
+                CASE WHEN courses.article_id IS NULL THEN COALESCE(aliments.emoji, '🆕') END AS emoji, articles.famille_id,
+                aliments.unite AS food_unite, COALESCE(aliments.categorie, articles.famille) AS categorie, aliments.pas_achat,
+                -- Un article de la maison se compte comme un aliment à l'unité (nombre) ou au niveau (cl).
+                COALESCE(aliments.tracking_type, CASE articles.suivi WHEN 'nombre' THEN 'unite' WHEN 'niveau' THEN 'cl' END) AS tracking_type,
+                COALESCE(stock.quantite, inventaire.quantite::text, inventaire.niveau) AS quantite_stock,
                 COALESCE(aliments.magasin, (
                     SELECT v.enseigne FROM chow.v_lignes_stats v
                     WHERE v.food_id = courses.food_id AND v.date >= CURRENT_DATE - INTERVAL '12 months'
@@ -428,6 +440,8 @@ async function chercherCourses() {
                 )) AS magasin
          FROM chow.courses
          LEFT JOIN chow.aliments ON courses.food_id = aliments.id
+         LEFT JOIN (${ARTICLES_MAISON}) articles ON articles.id = courses.article_id
+         LEFT JOIN maison.inventaire ON inventaire.article_id = courses.article_id
          LEFT JOIN chow.stock ON stock.food_id = courses.food_id
          WHERE achete = false`
     );
@@ -521,7 +535,8 @@ async function chargerPageCourses() {
     const aliments = await chercherAliments();
     const stock = await chercherStock();
     const presetHebdo = await db.query("SELECT food_id, nom_libre FROM chow.courses_modeles");
-    return { courses, aliments, stock, presetHebdo: presetHebdo.rows };
+    const articles = await db.query(`${ARTICLES_MAISON} ORDER BY a.nom`);
+    return { courses, aliments, articles: articles.rows, stock, presetHebdo: presetHebdo.rows };
 }
 
 // Estimation des Courses sans saisir de quantité, article par article (prevoirArticle de stats.js) : quantité
@@ -529,15 +544,9 @@ async function chargerPageCourses() {
 // prévu et payé. Sans unité commune, repli sur la médiane et les quartiles du coût des 8 derniers passages.
 const ENSEIGNES = ["Leclerc", "Carrefour", "Marché Frais"];
 
-async function estimerCourses(req) {
-    const magasin = ENSEIGNES.includes(req?.query?.magasin) ? req.query.magasin : null;
-    const articles = await db.query(
-        `SELECT DISTINCT c.food_id, f.nom, f.emoji, f.prix_habituel
-         FROM chow.courses c JOIN chow.aliments f ON f.id = c.food_id
-         WHERE c.achete = false`
-    );
-    const libres = await db.query("SELECT count(*)::int AS n FROM chow.courses WHERE achete = false AND food_id IS NULL");
-    // Quantité d'un passage dans l'unité de prix : kg ou litre si la contenance est connue, sinon nombre d'articles.
+// Passages en caisse des 12 derniers mois, par aliment, du plus récent au plus ancien. Quantité d'un passage dans
+// l'unité de prix : kg ou litre si la contenance est connue, sinon nombre d'articles.
+async function passagesDesAliments(ids) {
     const historique = await db.query(
         `SELECT v.food_id, SUM(v.total)::float AS cout,
                 SUM(v.quantite_ref)::float AS quantite_ref,
@@ -549,7 +558,7 @@ async function estimerCourses(req) {
          WHERE v.food_id = ANY($1) AND v.date >= CURRENT_DATE - INTERVAL '12 months'
          GROUP BY v.food_id, v.ticket_id, v.date, v.enseigne
          ORDER BY v.date DESC`,
-        [articles.rows.map((a) => a.food_id)]
+        [ids]
     );
     const passagesParAliment = new Map();
     for (const ligne of historique.rows) {
@@ -558,6 +567,68 @@ async function estimerCourses(req) {
         if (passages.length < 20) passages.push(ligne);
         passagesParAliment.set(ligne.food_id, passages);
     }
+    return passagesParAliment;
+}
+
+// Panier de la tournée en mode magasin : chaque article de la liste ou coché depuis le début de la tournée, avec son
+// prix prévu (même calcul que l'estimation) et, s'il est au chariot, sa valeur (quantité prise × prix à la pièce
+// quand il se compte, sinon le prix prévu). Les sommes par rayon et par magasin se font côté page.
+async function chargerPanier() {
+    const tournee = (await db.query("SELECT id, debut FROM chow.tournees WHERE fin IS NULL")).rows[0] || null;
+    const lignes = (await db.query(
+        `SELECT c.id, c.food_id, c.article_id, c.achete, c.enseigne, c.quantite_achetee::float AS quantite_achetee,
+                COALESCE(a.nom, ar.nom, c.nom_libre) AS nom, a.categorie, a.prix_habituel::float AS prix_habituel, a.magasin
+         FROM chow.courses c
+         LEFT JOIN chow.aliments a ON a.id = c.food_id
+         LEFT JOIN achats.articles ar ON ar.id = c.article_id
+         WHERE c.achete = false OR ($1::timestamptz IS NOT NULL AND c.date_achat >= $1)`,
+        [tournee?.debut ?? null]
+    )).rows;
+    const passages = await passagesDesAliments(lignes.filter((l) => l.food_id).map((l) => l.food_id));
+    // Articles de la maison : prix payé sur les 8 dernières lignes de ticket.
+    const maison = new Map((await db.query(
+        `SELECT article_id, percentile_cont(0.5) WITHIN GROUP (ORDER BY paye)::float AS prevu,
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY paye / NULLIF(quantite, 0))::float AS piece
+         FROM (SELECT article_id, paye, quantite, row_number() OVER (PARTITION BY article_id ORDER BY date DESC) AS rang
+               FROM achats.v_lignes WHERE article_id = ANY($1)) d
+         WHERE rang <= 8 GROUP BY article_id`,
+        [lignes.filter((l) => l.article_id).map((l) => l.article_id)]
+    )).rows.map((r) => [r.article_id, r]));
+    const arrondi = (n) => (n == null ? null : Math.round(n * 100) / 100);
+    return {
+        tournee,
+        lignes: lignes.map((l) => {
+            let prevu = null, piece = null;
+            if (l.food_id) {
+                const p = passages.get(l.food_id);
+                const prevision = p && prevoirArticle(p);
+                if (prevision) {
+                    prevu = prevision.estimation;
+                    if (!p[0].au_poids) piece = prevision.prixUnitaire;
+                } else if (p) prevu = quantile(p.slice(0, 8).map((x) => x.cout), 0.5);
+                else prevu = l.prix_habituel;
+            } else if (l.article_id) {
+                prevu = maison.get(l.article_id)?.prevu ?? null;
+                piece = maison.get(l.article_id)?.piece ?? null;
+            }
+            const valeur = l.achete ? (l.quantite_achetee && piece ? l.quantite_achetee * piece : prevu) : null;
+            return {
+                id: l.id, nom: l.nom, rayon: l.article_id ? "Maison" : l.categorie || "Autres", achete: l.achete,
+                enseigne: l.enseigne, magasin: l.magasin, prevu: arrondi(prevu), valeur: arrondi(valeur),
+            };
+        }),
+    };
+}
+
+async function estimerCourses(req) {
+    const magasin = ENSEIGNES.includes(req?.query?.magasin) ? req.query.magasin : null;
+    const articles = await db.query(
+        `SELECT DISTINCT c.food_id, f.nom, f.emoji, f.prix_habituel
+         FROM chow.courses c JOIN chow.aliments f ON f.id = c.food_id
+         WHERE c.achete = false`
+    );
+    const libres = await db.query("SELECT count(*)::int AS n FROM chow.courses WHERE achete = false AND food_id IS NULL");
+    const passagesParAliment = await passagesDesAliments(articles.rows.map((a) => a.food_id));
 
     let estimation = 0, bas = 0, haut = 0;
     const sansPrix = [];
@@ -629,6 +700,28 @@ app.get("/api/aliments/:idAliment", lectureApi(async (req) => {
 app.get("/api/stock", lectureApi(chargerPageStock));
 app.get("/api/courses", lectureApi(chargerPageCourses));
 app.get("/api/courses/estimation", lectureApi(estimerCourses));
+app.get("/api/courses/panier", lectureApi(chargerPanier));
+
+// Le mode magasin ouvre la tournée s'il n'y en a pas ; « Terminer » la ferme.
+app.post("/api/courses/tournee/commencer", async (req, res) => {
+    try {
+        await db.query("INSERT INTO chow.tournees DEFAULT VALUES ON CONFLICT DO NOTHING");
+        res.json({ succes: true, panier: await chargerPanier() });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
+
+app.post("/api/courses/tournee/terminer", async (req, res) => {
+    try {
+        await db.query("UPDATE chow.tournees SET fin = now() WHERE fin IS NULL");
+        res.json({ succes: true });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
 // Indices nationaux des prix (INSEE, IPC base 2025, ensemble des ménages, France) : alimentation (Coicop 01,
 // produits alimentaires et boissons non alcoolisées) et ensemble (tous les produits). Récupérés au démarrage puis
 // au plus une fois par jour ; l'INSEE publie avec environ un mois de décalage. En cas de panne réseau, les valeurs
@@ -885,29 +978,21 @@ app.post("/api/stock/supprimer", async (req, res) => {
 
 app.post("/api/courses/ajouter", async (req, res) => {
     const idAliment = req.body.idAliment || null;
+    const idArticle = idAliment ? null : req.body.idArticle || null;
     const texteTape = req.body.rechercheAliment;
     try {
-        if (!idAliment && !texteTape) {
+        if (!idAliment && !idArticle && !texteTape) {
             return res.status(400).json({ erreur: "Champs requis." });
         }
 
         const insertResult = await db.query(
-            "INSERT INTO chow.courses (food_id, nom_libre) VALUES ($1, $2) RETURNING id",
-            [idAliment || null, idAliment ? null : texteTape]
+            "INSERT INTO chow.courses (food_id, article_id, nom_libre) VALUES ($1, $2, $3) RETURNING id",
+            [idAliment, idArticle, idAliment || idArticle ? null : texteTape]
         );
         const nouvelId = insertResult.rows[0].id;
+        const courses = await chercherCourses();
 
-        const itemResult = await db.query(
-            `SELECT courses.*, COALESCE(aliments.nom, courses.nom_libre) AS nom, COALESCE(aliments.emoji, '🆕') AS emoji,
-                    aliments.unite AS food_unite, aliments.tracking_type, aliments.categorie, aliments.pas_achat, stock.quantite AS quantite_stock
-             FROM chow.courses
-             LEFT JOIN chow.aliments ON courses.food_id = aliments.id
-             LEFT JOIN chow.stock ON stock.food_id = courses.food_id
-             WHERE courses.id = $1`,
-            [nouvelId]
-        );
-
-        res.json({ succes: true, item: itemResult.rows[0], courses: await chercherCourses() });
+        res.json({ succes: true, item: courses.find((c) => c.id === nouvelId), courses });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
@@ -1076,16 +1161,23 @@ app.post("/api/courses/acheter", async (req, res) => {
             return res.status(400).json({ erreur: "Aucun article sélectionné." });
         }
 
-        const courseResult = await db.query("SELECT food_id FROM chow.courses WHERE id = $1", [idCourse]);
+        const courseResult = await db.query(
+            `SELECT courses.food_id, courses.article_id, articles.suivi
+             FROM chow.courses LEFT JOIN achats.articles ON articles.id = courses.article_id
+             WHERE courses.id = $1`,
+            [idCourse]
+        );
         if (courseResult.rows.length === 0) {
             return res.status(400).json({ erreur: "Article introuvable." });
         }
-        const foodId = courseResult.rows[0].food_id;
+        const { food_id: foodId, article_id: articleId, suivi } = courseResult.rows[0];
 
         let trackingType = null;
         if (foodId) {
             const resultFood = await db.query("SELECT tracking_type FROM chow.aliments WHERE id = $1", [foodId]);
             trackingType = resultFood.rows[0].tracking_type;
+        }
+        if (foodId || suivi === "nombre") {
             if (trackingType !== 'cl') {
                 quantiteEntiere = Math.round(Number(quantiteAchetee));
                 if (!quantiteAchetee || !Number.isFinite(quantiteEntiere) || quantiteEntiere < 1) {
@@ -1096,10 +1188,20 @@ app.post("/api/courses/acheter", async (req, res) => {
 
         await enTransaction(async (client) => {
             const achatResult = await client.query(
-                "UPDATE chow.courses SET achete = true, photo = NULL, date_achat = NOW() WHERE id = $1 AND achete = false RETURNING id",
-                [idCourse]
+                `UPDATE chow.courses SET achete = true, photo = NULL, date_achat = NOW(), quantite_achetee = $2, enseigne = $3
+                 WHERE id = $1 AND achete = false RETURNING id`,
+                [idCourse, quantiteEntiere, magasin]
             );
 
+            // Article de la maison : l'inventaire gagne les unités achetées, ou repasse à plein.
+            if (achatResult.rows.length > 0 && articleId && suivi) {
+                await client.query(
+                    `INSERT INTO maison.inventaire (article_id, quantite, niveau) VALUES ($1, $2, $3)
+                     ON CONFLICT (article_id) DO UPDATE SET
+                        quantite = COALESCE(inventaire.quantite, 0) + EXCLUDED.quantite, niveau = EXCLUDED.niveau, date_maj = CURRENT_DATE`,
+                    [articleId, suivi === "nombre" ? quantiteEntiere : null, suivi === "niveau" ? "plein" : null]
+                );
+            }
             if (achatResult.rows.length > 0 && foodId && magasin) {
                 await client.query("UPDATE chow.aliments SET magasin = $2 WHERE id = $1", [foodId, magasin]);
             }

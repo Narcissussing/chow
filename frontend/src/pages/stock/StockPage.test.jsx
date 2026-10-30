@@ -39,11 +39,11 @@ test("filtres à choix unique et recherche sans accents", async () => {
   ouvrirStock();
   await attendrePage();
   expect(nomsVisibles()).toEqual(["Lait", "Œuf", "Riz"]);
-  fireEvent.click(screen.getByRole("button", { name: "🫙 Niveau" }));
+  fireEvent.click(screen.getByRole("button", { name: "Niveau" }));
   expect(nomsVisibles()).toEqual(["Lait"]);
-  fireEvent.click(screen.getByRole("button", { name: "📦 Réserve" }));
+  fireEvent.click(screen.getByRole("button", { name: "Réserve" }));
   expect(nomsVisibles()).toEqual(["Riz"]);
-  expect(screen.getByRole("button", { name: "🫙 Niveau" })).not.toHaveClass("active");
+  expect(screen.getByRole("button", { name: "Niveau" })).not.toHaveClass("active");
   fireEvent.click(screen.getByRole("button", { name: "Tous" }));
   fireEvent.change(document.getElementById("searchInput"), { target: { value: "oeuf" } });
   expect(nomsVisibles()).toEqual([]);
@@ -231,7 +231,7 @@ test("filtre Bas et compteur : ambre et nombre filtré dès qu'un filtre est act
   const badge = document.querySelector(".badge-compteur--stock");
   expect(badge).toHaveTextContent("3");
   expect(badge).not.toHaveClass("badge-compteur--filtre");
-  fireEvent.click(screen.getByRole("button", { name: "🔻 Bas" }));
+  fireEvent.click(screen.getByRole("button", { name: "Bas" }));
   expect(nomsVisibles()).toEqual(["Lait", "Riz"]);
   expect(badge).toHaveTextContent("2");
   expect(badge).toHaveClass("badge-compteur--filtre");
@@ -250,6 +250,6 @@ test("filtre À vérifier : seulement ce qui reste à la maison sans mise à jou
     ], aliments: ALIMENTS }],
   });
   await attendrePage();
-  fireEvent.click(screen.getByRole("button", { name: "🕒 À vérifier" }));
+  fireEvent.click(screen.getByRole("button", { name: "À vérifier" }));
   expect(nomsVisibles()).toEqual(["Lait", "Riz"]);
 });

@@ -1,0 +1,346 @@
+/* Panier en mode magasin : une ligne, même hauteur que les compteurs des titres. */
+.panier {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  height: 48px;
+  padding: 0 12px;
+  box-sizing: border-box;
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.panier__piste {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 2px;
+  height: 24px;
+  border-radius: 8px;
+  background: #ece4d6;
+  overflow: hidden;
+}
+
+.panier__part {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 6px;
+  cursor: pointer;
+  transform-origin: left;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease;
+  animation: panierPartArrive 0.45s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.panier__part.estompee {
+  opacity: 0.35;
+}
+
+.panier__montant {
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 600;
+  white-space: nowrap;
+  animation: fadeIn 0.3s ease;
+}
+
+/* Le prévu se lit au bout de la piste ; il s'efface quand le chariot l'atteint. */
+.panier__prevu {
+  position: absolute;
+  right: 7px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  opacity: 0.7;
+  font-size: 0.65rem;
+  font-weight: 600;
+  pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.panier__prevu.efface {
+  opacity: 0;
+  transform: translate(6px, -50%);
+}
+
+.panier__repere {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--text);
+  animation: panierRepere 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.panier__total {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-display);
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.panier__depassement {
+  max-width: 0;
+  overflow: hidden;
+  padding: 2px 0;
+  border-radius: 999px;
+  background: #f6e1da;
+  color: var(--accent);
+  font-family: var(--font-body);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  opacity: 0;
+  transform: scale(0.6);
+  transition: max-width 0.3s ease, padding 0.3s ease, opacity 0.25s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.panier__depassement.visible {
+  max-width: 60px;
+  padding: 2px 6px;
+  opacity: 1;
+  transform: none;
+}
+
+/* ✓ caché ; deux touchers le font entrer par la droite et poussent la barre vers la gauche. */
+.panier__terminer {
+  flex: none;
+  width: 0;
+  height: 32px;
+  margin-left: -10px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #dfece8 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M10 16.5l4 4 8-9' fill='none' stroke='%232f6f62' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 26px no-repeat;
+  opacity: 0;
+  transform: scale(0.4) rotate(-90deg);
+  cursor: pointer;
+  transition: width 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.35s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.panier.avec-fin .panier__terminer {
+  width: 32px;
+  margin-left: 0;
+  opacity: 1;
+  transform: none;
+}
+
+/* Bulle du rayon touché, sous sa part : au-dessus, l'en-tête de l'app la cachait. */
+.panier__bulle {
+  position: absolute;
+  top: calc(100% + 8px);
+  z-index: 95;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: var(--text);
+  color: #fffdf8;
+  font-size: 0.72rem;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  transform-origin: top center;
+  animation: panierBulle 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+.panier__bulle::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  background: var(--text);
+  border-radius: 2px;
+  transform: rotate(45deg);
+}
+
+.panier__bulle span {
+  color: #e0d8cc;
+  font-size: 0.68rem;
+}
+
+.panier__bulle.ferme {
+  animation: panierBulleSortie 0.18s ease-in forwards;
+}
+
+/* Version fine, dans la barre d'outils quand on descend. */
+.panier--reduit {
+  height: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  gap: 8px;
+}
+
+.panier--reduit .panier__piste {
+  height: 5px;
+  border-radius: 3px;
+}
+
+.panier--reduit .panier__part {
+  border-radius: 4px;
+  cursor: default;
+}
+
+.panier--reduit .panier__total {
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+/* Confirmation : petite carte au centre, fond assombri. */
+.panier-confirmation {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: min(280px, calc(100vw - 48px));
+  padding: 22px 20px 18px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 14px 30px rgba(26, 20, 15, 0.25);
+  transform: translate(-50%, -50%);
+  animation: panierConfirmation 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.panier-confirmation.ferme {
+  animation: panierConfirmationSortie 0.2s ease-in forwards;
+}
+
+.panier-confirmation b {
+  position: relative;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.panier-confirmation__filigrane {
+  position: absolute;
+  top: -12px;
+  right: -26px;
+  width: 150px;
+  height: 114px;
+  background: #2f6f62;
+  opacity: 0.09;
+  transform: rotate(-12deg);
+  -webkit-mask: url("/images/svg/caddie.svg") center / contain no-repeat;
+  mask: url("/images/svg/caddie.svg") center / contain no-repeat;
+}
+
+.panier-confirmation__actions {
+  position: relative;
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.panier-confirmation__actions button {
+  flex: 1;
+  padding: 12px 0;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.panier-confirmation__actions button:active {
+  transform: scale(0.95);
+}
+
+.panier-confirmation__non {
+  background: #efe8dc;
+  color: var(--text);
+}
+
+.panier-confirmation__oui {
+  background: #2f6f62;
+  color: #fff;
+}
+
+@keyframes panierPartArrive {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes panierRepere {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes panierBulle {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px) scale(0.8);
+  }
+}
+
+@keyframes panierBulleSortie {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-4px) scale(0.85);
+  }
+}
+
+@keyframes panierConfirmation {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+}
+
+@keyframes panierConfirmationSortie {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panier__part,
+    .panier__montant,
+    .panier__repere,
+    .panier__bulle,
+    .panier__bulle.ferme,
+    .panier-confirmation,
+    .panier-confirmation.ferme {
+      animation: none;
+    }
+
+  .panier__part,
+    .panier__prevu,
+    .panier__depassement,
+    .panier__terminer {
+      transition: none;
+    }
+
+}

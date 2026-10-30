@@ -1,11 +1,8 @@
+/* En titre de page, chaque compteur (boîte, marmite, balance) a la taille et le chiffre du sac des Courses (48 px). */
 .titre-page .badge-compteur {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   padding-bottom: 7px;
-}
-
-.badge-compteur span {
-  font-size: 1.15rem;
 }
 
 .badge-compteur--stock::before {
@@ -13,8 +10,8 @@
   mask-image: url("/images/svg/rangement.svg");
 }
 
-.badge-compteur--stock {
-  padding-bottom: 9px;
+.titre-page .badge-compteur--stock {
+  padding-bottom: 8px;
 }
 
 .badge-compteur--filtre::before {
@@ -36,8 +33,8 @@
   mask-image: url("/images/svg/marmite.svg");
 }
 
-.badge-compteur--cuisine {
-  padding-bottom: 9px;
+.titre-page .badge-compteur--cuisine {
+  padding-bottom: 8px;
 }
 
 .journal-totaux .badge-compteur--cuisine,
@@ -47,24 +44,22 @@
   grid-row: 1 / -1;
   justify-self: end;
   align-self: end;
-  width: 36px;
-  height: 36px;
+  width: 48px;
+  height: 48px;
   margin: 0;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
 }
 
 .journal-totaux .badge-compteur--regle {
-  padding-bottom: 3px;
+  padding-bottom: 5px;
 }
 
 .journal-totaux .badge-compteur--cuisine span,
 .journal-totaux .badge-compteur--regle span {
-  font-size: 1.05rem;
+  font-size: 1.25rem;
   line-height: 1;
 }
 
-.titre-page .badge-compteur--cuisine span,
-.titre-page .badge-compteur--regle span {
-  font-size: 1.45rem;
+.titre-page .badge-compteur span {
   line-height: 1;
 }

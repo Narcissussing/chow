@@ -1,4 +1,4 @@
-import { act, fireEvent, screen, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { abonnerToast } from "../../toast.js";
 import { rendreApp, simulerApi } from "../../testUtils.jsx";
 
@@ -12,6 +12,13 @@ const ALIMENTS = [
   { id: "pomme", nom: "Pomme", emoji: "🍎" },
 ];
 
+const ARTICLES = [{ id: "shampoing", nom: "Shampoing", famille: "Hygiène", famille_id: "hygiene" }];
+
+const PANIER = { tournee: { id: 1, debut: "2026-10-30T10:00:00Z" }, lignes: [
+  { id: 1, nom: "Lait", rayon: "Laitiers", achete: true, prevu: 8, valeur: 8, enseigne: "Leclerc", magasin: "Leclerc" },
+  { id: 2, nom: "Riz", rayon: "Féculents", achete: false, prevu: 4, valeur: null, magasin: null },
+] };
+
 let requetes;
 function ouvrirCourses(surcharges = {}, { courses = COURSES, preset = [] } = {}) {
   requetes = [];
@@ -21,7 +28,7 @@ function ouvrirCourses(surcharges = {}, { courses = COURSES, preset = [] } = {})
   };
   const reponses = {
     "/session": [200, { utilisateur: { id: 1 } }],
-    "/courses": [200, { courses, aliments: ALIMENTS, stock: [], presetHebdo: preset }],
+    "/courses": [200, { courses, aliments: ALIMENTS, articles: ARTICLES, stock: [], presetHebdo: preset }],
     "/courses/estimation": [200, { estimation: 19, bas: 14, haut: 24, articles: 3, sansPrix: 0, details: [
       { nom: "Tomate", emoji: "🍅", source: "habitudes", passages: 8, estimation: 4.5, quantite: 1.8, unite: "kg", dernierPrix: 2.49, magasin: "Marché Frais" },
       { nom: "Lentilles", emoji: "🫘", source: "prix-habituel", estimation: 2 },
@@ -35,6 +42,9 @@ function ouvrirCourses(surcharges = {}, { courses = COURSES, preset = [] } = {})
         ? { id: 10, food_id: "pomme", nom: "Pomme", emoji: "🍎", categorie: "Fruits", tracking_type: "unite", quantite_stock: null }
         : { id: 11, food_id: null, nom: corps.rechercheAliment, emoji: "🆕", categorie: null, tracking_type: null, quantite_stock: null } }];
     }),
+    "/courses/panier": [200, PANIER],
+    "/courses/tournee/commencer": noter("/courses/tournee/commencer", [200, { succes: true, panier: PANIER }]),
+    "/courses/tournee/terminer": noter("/courses/tournee/terminer", [200, { succes: true }]),
     "/courses/preset-hebdo": noter("/courses/preset-hebdo", [200, { succes: true, items: [] }]),
     "/courses/preset-hebdo/enregistrer": noter("/courses/preset-hebdo/enregistrer", [200, { succes: true }]),
   };
@@ -427,6 +437,29 @@ test("liste vide : le caddie s'efface quand on ouvre le panneau, et une suggesti
   expect(requetes).toContainEqual({ chemin: "/courses/ajouter", corps: { idAliment: "pomme", rechercheAliment: null } });
 });
 
+test("panneau : un article de la maison (shampoing) se trouve et s'ajoute avec son identifiant", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  fireEvent.click(document.getElementById("btnToggleAjoutCourse"));
+  fireEvent.change(document.getElementById("rechercheAlimentCourses"), { target: { value: "shampo" } });
+  const suggestion = within(document.getElementById("listeAlimentsCourses")).getByText(/Shampoing/);
+  expect(suggestion.querySelector(".icone-famille")).toHaveClass("icone-famille--hygiene");
+  await act(async () => fireEvent.click(suggestion));
+  expect(requetes).toContainEqual({ chemin: "/courses/ajouter", corps: { idAliment: null, rechercheAliment: null, idArticle: "shampoing" } });
+});
+
+test("article de la maison : +1/+2/+5 au nombre, rien au niveau ou sans suivi ; icône de famille", async () => {
+  const maison = (id, nom, tracking_type) => ({ id, food_id: null, article_id: nom.toLowerCase(), nom, emoji: null, famille_id: "hygiene", categorie: "Hygiène", tracking_type, quantite_stock: null, commentaire: null, has_photo: false });
+  ouvrirCourses({}, { courses: [maison(7, "Dentifrice", "unite"), maison(8, "Shampoing", "cl"), maison(9, "Colles", null)] });
+  await attendrePage();
+  expect(carte("Dentifrice").querySelector(".icone-famille--hygiene")).not.toBeNull();
+  expect([...carte("Dentifrice").querySelectorAll(".suggestion")].map((b) => b.textContent)).toEqual(["+1", "+2", "+5"]);
+  expect(carte("Shampoing").querySelector(".suggestion")).toBeNull();
+  expect(carte("Colles").querySelector(".suggestion")).toBeNull();
+  await act(async () => fireEvent.click([...carte("Dentifrice").querySelectorAll(".suggestion")].find((b) => b.textContent === "+2")));
+  expect(requetes).toContainEqual({ chemin: "/courses/acheter", corps: { idCourse: "7", quantiteAchetee: "2" } });
+});
+
 test("mode magasin : un magasin garde ses articles, les autres sont masqués ; l'achat apprend le magasin", async () => {
   const courses = [
     { ...COURSES[0], magasin: "Carrefour" },
@@ -447,6 +480,23 @@ test("mode magasin : un magasin garde ses articles, les autres sont masqués ; l
   await act(async () => fireEvent.click(carte("Lait").querySelector(".btn-acheter-icone")));
   // Un réessai réseau d'un test précédent peut arriver pendant l'attente du logo : on cherche l'achat de ce test.
   expect(requetes).toContainEqual({ chemin: "/courses/acheter", corps: { idCourse: "1", magasin: "Carrefour" } });
+});
+
+test("mode magasin : le panier remplace le titre, ouvre la tournée ; Terminer la ferme et le titre revient", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  expect(document.querySelector(".courses-titre")).not.toHaveClass("cache");
+  fireEvent.click(document.getElementById("toggleMagasin"));
+  expect(requetes).toContainEqual({ chemin: "/courses/tournee/commencer", corps: {} });
+  expect(document.querySelector(".courses-titre")).toHaveClass("cache");
+  const panier = await screen.findByRole("img", { name: "8 € au chariot sur 12 € prévus" });
+  const carteP = panier.closest(".panier");
+  fireEvent.click(carteP);
+  fireEvent.click(carteP);
+  fireEvent.click(screen.getAllByRole("button", { name: "Terminer les courses" })[0]);
+  await act(async () => fireEvent.click(screen.getByRole("button", { name: "Oui" })));
+  expect(requetes).toContainEqual({ chemin: "/courses/tournee/terminer", corps: {} });
+  await waitFor(() => expect(document.querySelector(".courses-titre")).not.toHaveClass("cache"));
 });
 
 test("hors du magasin, deux touchers entrent en mode magasin et sortent les logos", async () => {

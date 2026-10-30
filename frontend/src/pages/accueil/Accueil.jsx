@@ -118,6 +118,11 @@ function EditeurQuantite({ article, onValider, onAnnuler }) {
   );
 }
 
+// Salutation selon l'heure : bonjour de 5 h à 18 h, bonsoir le reste du temps.
+export function salutation(heure) {
+  return heure >= 5 && heure < 18 ? "Bonjour" : "Bonsoir";
+}
+
 export default function Accueil() {
   const { etat, donnees, majDonnees } = usePageData("/accueil");
   const [enEdition, setEnEdition] = useState(null);
@@ -174,7 +179,7 @@ export default function Accueil() {
       <main>
         <section className="hero">
           <div className="hero__text">
-            <h1>Bonjour</h1>
+            <h1>{salutation(new Date().getHours())}</h1>
           </div>
         </section>
 

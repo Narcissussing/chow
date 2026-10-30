@@ -3,6 +3,7 @@ import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { relancerClasse } from "../../utils/animation.js";
 import { classeNiveauCL } from "../../utils/stock.js";
 import "./CourseItem.css";
+import IconeFamille from "../../components/IconeFamille.jsx";
 
 export function jouerPopPanier(bouton) {
   if (!bouton) return;
@@ -40,7 +41,7 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
     setSaisieNote(commentaireServeur);
   }, [commentaireServeur]);
 
-  const estFormQuantite = Boolean(item.food_id) && item.tracking_type !== "cl";
+  const estFormQuantite = Boolean(item.food_id || (item.article_id && item.tracking_type)) && item.tracking_type !== "cl";
   const quantiteInvalide = quantite.trim() === "" || Number(quantite) < 1;
 
   function afficherChamp() {
@@ -99,7 +100,7 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
 
   const classes = ["course-item", "carte-article"];
   if (!visible) classes.push("hidden");
-  if (arme) classes.push("arme");
+  if (arme) classes.push("arme", "carte-active");
   if (effets.entree) classes.push("entree");
   if (effets.miseEnAvant) classes.push("mise-en-avant");
   if (effets.vientDArriver) classes.push("vient-d-arriver");
@@ -117,7 +118,7 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
       <IndicateurStock item={item} />
       <span className="course-nom nom-defile">
         <span className="course-nom-emoji" onClick={afficherChamp}>
-          {item.emoji}
+          {item.famille_id ? <IconeFamille famille={item.famille_id} /> : item.emoji}
         </span>{" "}
         {item.nom}
       </span>

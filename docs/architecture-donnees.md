@@ -51,7 +51,7 @@ le pourquoi dans l'[ADR 005](adr/005-base-family-hub-par-domaines.md).
 
 Les aliments gardent les catégories de Chow. Le reste se range dans neuf
 familles (`achats.categories` sans parent), chacune avec son icône
-`public/images/categories/<id>.svg` : `hygiene`, `entretien`, `cuisine`,
+`public/images/categories/<id>.svg` (teintée à la couleur de sa famille, `IconeFamille`, santé en vert) : `hygiene`, `entretien`, `cuisine`,
 `electronique`, `bebe`, `sante`, `maison`, `animaux`, `divers`.
 
 1. **Une seule place par article : son usage principal**, pas le magasin.

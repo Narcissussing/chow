@@ -79,8 +79,13 @@ Vues :
   route.
 - `stock` : `food_id`, `quantite` (nombre ou état textuel), `unite`,
   `date_maj`.
-- `courses` : `food_id` ou `nom_libre`, `commentaire`, `achete` (la ligne est
-  gardée après achat), `photo` en `BYTEA`, `date_ajout`, `date_achat`.
+- `courses` : `food_id`, `article_id` (article non suivi par Chow : shampoing,
+  javel) ou `nom_libre`, `commentaire`, `achete` (la ligne est gardée après
+  achat), `photo` en `BYTEA`, `date_ajout`, `date_achat`, `quantite_achetee`
+  et `enseigne` (pris en mode magasin).
+- `tournees` : `debut`, `fin` ; une seule ouverte. Le panier
+  (`GET /api/courses/panier`) = articles de la liste + cochés depuis `debut`,
+  valorisés comme l'estimation.
 - `courses_modeles` : articles ajoutés d'un coup chaque semaine ;
   l'enregistrement remplace toutes les lignes.
 - `journal` : `food_id`, `quantite_g`, `date_entree`, `ordre`, `unite`

@@ -1,4 +1,6 @@
 .stock-suggestions {
+  animation: suggestionsDeroulent 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: top right;
   background: var(--surface, #fffdf8);
   border: 1.5px solid var(--border, #e0d8cc);
   border-radius: 14px;
@@ -26,6 +28,46 @@
   padding: 6px 0;
   border-top: 1px solid var(--border, #e0d8cc);
   transition: opacity 0.3s ease;
+  animation: suggestionArrive 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.stock-suggestions__ligne:nth-child(2) {
+  animation-delay: 40ms;
+}
+
+.stock-suggestions__ligne:nth-child(3) {
+  animation-delay: 80ms;
+}
+
+.stock-suggestions__ligne:nth-child(n + 4) {
+  animation-delay: 120ms;
+}
+
+/* Le panneau « À racheter » se déroule depuis son bouton, puis ses lignes arrivent l'une après l'autre. */
+@keyframes suggestionsDeroulent {
+  from {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+/* Fermeture : le panneau remonte vers son bouton et s'efface. */
+.stock-suggestions.ferme {
+  animation: suggestionsSeReplient 0.22s ease-in forwards;
+}
+
+@keyframes suggestionsSeReplient {
+  to {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.97);
+  }
+}
+
+@keyframes suggestionArrive {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
 }
 
 .stock-suggestions__ligne:first-child {
@@ -125,7 +167,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .btn-racheter.actif .btn-racheter__icone {
+  .btn-racheter.actif .btn-racheter__icone,
+    .stock-suggestions,
+    .stock-suggestions.ferme,
+    .stock-suggestions__ligne {
       animation: none;
     }
 
@@ -133,5 +178,4 @@
 
 .stock-suggestions-zone .stock-suggestions {
   margin: 8px 0 0;
-  animation: slideDownNote 0.18s ease both;
 }

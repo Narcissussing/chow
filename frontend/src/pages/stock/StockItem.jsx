@@ -96,7 +96,7 @@ export default function StockItem({ item, visible, edition, setValeurEdition, on
   const enEdition = Boolean(edition);
   const classes = ["stock-item", "carte-article"];
   if (!visible) classes.push("hidden");
-  if (enEdition) classes.push("en-edition");
+  if (enEdition) classes.push("en-edition", "carte-active");
   if (effets.entree) classes.push("entree");
   if (effets.miseEnAvant) classes.push("mise-en-avant");
   if (effets.majFlash) classes.push("maj-flash");

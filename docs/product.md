@@ -61,7 +61,8 @@ Inventaire de ce qui est disponible à la maison.
 
 Liste de courses utilisable avant et pendant les achats.
 
-- aliments connus ou articles en texte libre ;
+- aliments connus, articles de la maison (hygiène, entretien… avec l'icône de
+  leur famille, regroupés sous la famille, sans Stock) ou texte libre ;
 - notes et photos de référence ;
 - filtres et regroupement par rayon ;
 - preset hebdomadaire modifiable ;
@@ -71,6 +72,14 @@ Liste de courses utilisable avant et pendant les achats.
   magasin connu), les autres sont masqués ; cocher un article
   le rattache à ce magasin ; la liste est relue toutes les 15 s et un article
   ajouté ailleurs fait sortir du filtre pour le voir arriver ;
+- panier de la tournée en mode magasin, à la place du titre : barre par rayon
+  (piste = toute la liste prévue, parts = ce qui est au chariot, +1/+2/+5
+  comptés à la pièce), total, prévu effacé quand le chariot l'atteint, repère
+  et « +N € » au-delà ; toucher une part donne son rayon ; filtré par le magasin
+  choisi ; version fine sous la barre d'outils quand on descend ;
+- tournée sur un ou plusieurs magasins et jours : ouverte par le mode magasin,
+  fermée par deux touchers sur le panier puis ✓ et « Terminer ? » ;
+- hors magasin : fourchette prévue en petite pastille ticket à côté du titre ;
 - achat avec mise à jour du Stock ;
 - protection contre les doubles soumissions et actions accidentelles.
 

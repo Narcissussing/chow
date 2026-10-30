@@ -3,8 +3,9 @@ import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { normaliserTexte } from "../../utils/texte.js";
 import "./PanneauAjout.css";
+import IconeFamille from "../../components/IconeFamille.jsx";
 
-export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliments, onChoisir, onAjouterTexte }) {
+export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliments, articles = [], onChoisir, onAjouterTexte }) {
   const zone = useRef(null);
   const [texte, setTexte] = useState("");
   const [listeVisible, setListeVisible] = useState(false);
@@ -18,7 +19,11 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
   useClicExterieur([zone], () => setListeVisible(false));
 
   const termes = normaliserTexte(texte.toLowerCase());
-  const suggestions = aliments.map((a) => ({ ...a, visible: normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes) }));
+  // Aliments de Chow, puis articles de la maison (shampoing, javel) avec l'icône de leur famille.
+  const suggestions = [...aliments, ...articles.map((a) => ({ ...a, cle: `article-${a.id}` }))].map((a) => ({
+    ...a,
+    visible: normaliserTexte(`${a.emoji || ""} ${a.nom}`.toLowerCase()).includes(termes),
+  }));
   const aUneCorrespondance = suggestions.some((s) => s.visible);
   const nouveau = termes !== "" && !aUneCorrespondance;
 
@@ -79,8 +84,8 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
               </div>
               <ul id="listeAlimentsCourses" hidden={!listeVisible || nouveau}>
                 {suggestions.map((s) => (
-                  <li key={s.id} hidden={!s.visible} onClick={() => onChoisir(s)}>
-                    {s.emoji} {s.nom}
+                  <li key={s.cle || s.id} hidden={!s.visible} onClick={() => onChoisir(s)}>
+                    {s.famille_id ? <IconeFamille famille={s.famille_id} /> : s.emoji} {s.nom}
                   </li>
                 ))}
               </ul>

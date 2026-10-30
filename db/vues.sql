@@ -212,7 +212,11 @@ COMMENT ON VIEW achats.v_panier_habituel IS 'Articles achetés au moins 6 mois s
 COMMENT ON TABLE chow.aliments IS 'Aliment suivi par Chow (valeurs nutritionnelles pour 100 g ou 100 ml), relié à son article d''achat.';
 COMMENT ON COLUMN chow.aliments.article_id IS 'Article d''achat correspondant.';
 COMMENT ON TABLE chow.stock IS 'Ce qu''il reste à la maison, un aliment par ligne.';
-COMMENT ON TABLE chow.courses IS 'Liste de courses alimentaire (aliment ou texte libre).';
+COMMENT ON TABLE chow.courses IS 'Liste de courses (aliment, article du catalogue maison ou texte libre).';
+COMMENT ON COLUMN chow.courses.quantite_achetee IS 'Nombre pris au magasin (+1, +2, +5) ; vide pour un article au niveau ou acheté sans quantité.';
+COMMENT ON COLUMN chow.courses.enseigne IS 'Enseigne où l''article a été coché, en mode magasin.';
+COMMENT ON TABLE chow.tournees IS 'Tournée de courses : ouverte au premier passage en mode magasin, fermée par « Terminer » ; une seule ouverte à la fois.';
+COMMENT ON COLUMN chow.courses.article_id IS 'Article non suivi par Chow (shampoing, javel) ; vide pour un aliment ou un texte libre.';
 COMMENT ON TABLE chow.courses_modeles IS 'Articles ajoutés d''un coup aux Courses chaque semaine.';
 COMMENT ON TABLE chow.journal IS 'Ce qui a été mangé, par jour.';
 COMMENT ON COLUMN chow.journal.personne_id IS 'Qui a mangé ; vide pour les entrées d''avant octobre 2026.';

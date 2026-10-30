@@ -13,6 +13,7 @@ import BoutonMagasin from "./BoutonMagasin.jsx";
 import TiroirMagasins from "./TiroirMagasins.jsx";
 import CourseItem, { jouerPopPanier } from "./CourseItem.jsx";
 import EstimationCourses from "./EstimationCourses.jsx";
+import PanierMagasin from "./PanierMagasin.jsx";
 import PanneauAjout from "./PanneauAjout.jsx";
 import PhotoApercu from "./PhotoApercu.jsx";
 import {
@@ -122,6 +123,28 @@ function Courses({ donnees }) {
       controleur.abort();
     };
   }, [listeIds, enseigneActive]);
+  // Panier de la tournée, relu à chaque changement de la liste tant qu'on est en mode magasin.
+  const [panier, setPanier] = useState(null);
+  useEffect(() => {
+    if (!magasin) return;
+    const controleur = new AbortController();
+    const minuteur = setTimeout(() => {
+      api("/courses/panier", { signal: controleur.signal })
+        .then(({ donnees: p }) => p && setPanier(p))
+        .catch(() => {});
+    }, 300);
+    return () => {
+      clearTimeout(minuteur);
+      controleur.abort();
+    };
+  }, [listeIds, magasin]);
+  // Le mode magasin ouvre la tournée (aucun effet si elle l'est déjà, même depuis la veille).
+  useEffect(() => {
+    if (!magasin) return;
+    api("/courses/tournee/commencer", { method: "POST", body: {} })
+      .then(({ donnees: r }) => r?.panier && setPanier(r.panier))
+      .catch(() => {});
+  }, [magasin]);
   const [preset, setPreset] = useState(donnees.presetHebdo);
   const [presetConfirme, setPresetConfirme] = useState(false);
   const [badgeEnBarre, setBadgeEnBarre] = useState(false);
@@ -315,6 +338,21 @@ function Courses({ donnees }) {
   const estIci = (item) => !enseigneActive || !item.magasin || item.magasin === enseigneActive;
   const estVisible = (item) => (!puces.includes(categorieDe(item)) || actives.has(categorieDe(item))) && estIci(item);
 
+  // Panier filtré par le magasin choisi : ce qui y a été coché, et ce qui reste à y prendre.
+  const lignesPanier = (panier?.lignes || []).filter((l) =>
+    l.achete ? !enseigneActive || l.enseigne === enseigneActive : !enseigneActive || !l.magasin || l.magasin === enseigneActive
+  );
+
+  function terminerTournee() {
+    api("/courses/tournee/terminer", { method: "POST", body: {} })
+      .then(() => {
+        setPanier(null);
+        if (magasin) basculerMagasin();
+        afficherToast("Courses terminées.");
+      })
+      .catch(gererErreurReseau);
+  }
+
   // Entrer ou sortir du mode magasin repart de tous les magasins ; le magasin se choisit ensuite (deux touchers).
   function basculerMagasin() {
     const actif = !magasin;
@@ -382,12 +420,12 @@ function Courses({ donnees }) {
     setAAmenerEnVue(null);
   }, [aAmenerEnVue, planifier]);
 
-  function ajouterArticle(idAliment, texteLibre) {
+  function ajouterArticle(idAliment, texteLibre, idArticle = null) {
     if (ajoutEnCours.current) return;
     ajoutEnCours.current = true;
     setAjoutEnAttente(true);
     const numero = ++sequence.current;
-    fetchAvecRetry("/courses/ajouter", { body: { idAliment, rechercheAliment: texteLibre } })
+    fetchAvecRetry("/courses/ajouter", { body: { idAliment, rechercheAliment: texteLibre, ...(idArticle && { idArticle }) } })
       .then((reponse) => {
         if (reponse.erreur) {
           alert(reponse.erreur);
@@ -404,15 +442,16 @@ function Courses({ donnees }) {
       });
   }
 
-  function choisirSuggestion(aliment) {
+  function choisirSuggestion(choix) {
     fermerPanneau();
-    const existant = items.find((i) => i.food_id === aliment.id);
+    const existant = items.find((i) => (choix.cle ? i.article_id === choix.id : i.food_id === choix.id));
     if (existant) {
       afficherToast("Déjà dans la liste de courses.");
       setAAmenerEnVue(existant.id);
       return;
     }
-    ajouterArticle(aliment.id, null);
+    if (choix.cle) ajouterArticle(null, null, choix.id);
+    else ajouterArticle(choix.id, null);
   }
 
   const surClicDocument = useRef(null);
@@ -459,7 +498,7 @@ function Courses({ donnees }) {
     }
     supprimerPhotoLocale(item.id);
     // Acheté : la carte devient son aliment, qui file dans le lien Stock changé en boîte ; l'originale se replie aussitôt.
-    const envolee = type === "achat" && rangerAuStock(document.querySelector(`.course-item[data-id="${item.id}"]`), item.emoji);
+    const envolee = type === "achat" && item.emoji && rangerAuStock(document.querySelector(`.course-item[data-id="${item.id}"]`), item.emoji);
     majEffets(item.id, { sortie: type === "achat" ? (envolee ? "disparait-achete envolee" : "disparait-achete") : "disparait-supprimer" });
     if (reponse.courses) appliquerListe(reponse.courses, numero, [item.id]);
     planifier(() => {
@@ -595,15 +634,21 @@ function Courses({ donnees }) {
   return (
     <main>
       <section className="page-header titre-page" id="heroCourses" ref={hero}>
-        <div className="courses-titre">
-          <h1>Courses</h1>
-          {estimation && items.length > 0 && estimation.haut > 0 && <EstimationCourses estimation={estimation} />}
+        {/* En magasin, le panier pousse le titre : l'un sort par la gauche pendant que l'autre entre. */}
+        <div className="courses-entete-pile">
+          <div className={"courses-titre" + (magasin ? " cache" : "")} aria-hidden={magasin}>
+            <h1>Courses</h1>
+            {estimation && items.length > 0 && estimation.haut > 0 && <EstimationCourses estimation={estimation} />}
+          </div>
+          <div className={"courses-panier-zone" + (magasin ? "" : " cache")} aria-hidden={!magasin}>
+            {panier && <PanierMagasin lignes={lignesPanier} onTerminer={terminerTournee} />}
+          </div>
         </div>
         {badgeEnBarre ? <div className="hero__badge hero__badge--courses" style={{ visibility: "hidden" }} aria-hidden="true" /> : badgeCourses}
       </section>
 
       <div className="courses-section">
-        <div className="courses-controls-row" ref={barreOutils}>
+        <div className={"courses-controls-row" + (magasin && badgeEnBarre && panier ? " avec-panier" : "")} ref={barreOutils}>
           <div className="courses-controls-row__inner">
             <div className="sort-wrapper">
               <label htmlFor="sortSelectCourses">Trier par :</label>
@@ -633,6 +678,9 @@ function Courses({ donnees }) {
             >
               Ajouter un article
             </button>
+          </div>
+          <div className={"courses-panier-fin" + (magasin && badgeEnBarre && panier ? " visible" : "")} aria-hidden={!(magasin && badgeEnBarre)}>
+            <div className="courses-panier-fin__inner">{panier && <PanierMagasin lignes={lignesPanier} reduit />}</div>
           </div>
         </div>
 
@@ -678,6 +726,7 @@ function Courses({ donnees }) {
             onPret={() => setPanneauEtat((p) => (p.ouvert ? { ...p, pret: true } : p))}
             champ={champAjout}
             aliments={donnees.aliments}
+            articles={donnees.articles}
             onChoisir={choisirSuggestion}
             onAjouterTexte={(texte) => ajouterArticle(null, texte)}
           />

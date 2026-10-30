@@ -70,6 +70,9 @@ Un état normal ne doit pas ressembler à une erreur.
 
 ## Animations
 
+Tout ce qui apparaît a aussi son animation de sortie (fermeture d'un panneau,
+carte retirée par un filtre), construite dans le même changement.
+
 Les principales familles sont :
 
 - apparition et ajout : `fadeIn`, `popIn` ;
@@ -78,7 +81,17 @@ Les principales familles sont :
 - mise à jour : `flashMaj`, `pulseMiseEnAvant` ;
 - badge Courses : `badgeSacPop`, `badgeSacShake` ;
 - photos : `oeilSeFerme`, `aspirePhotoVersOeil` ;
-- rendu Stock : `stockFondu`.
+- rendu Stock : `stockFondu` ; tri, filtre et vue font glisser les cartes
+  (`useCartesQuiGlissent`) ; panneau « À racheter » : `suggestionsDeroulent`,
+  `suggestionArrive` ;
+- carte active (`.carte-active`, Courses, Stock) : plus claire, monte un peu
+  avec une ombre douce ; redescend de même ;
+- pastille de filtre choisie : `filtreChoisi` (icône SVG teintée, en masque) ;
+- compteurs (sac, boîte, marmite, balance), en titre ou dans les totaux :
+  tous 48 px, la hauteur du panier, même chiffre ;
+- panier en magasin : titre et panier glissent l'un à la place de l'autre, parts
+  qui grandissent, total qui défile, bulle du rayon, ✓ qui entre par la droite,
+  confirmation qui surgit et se rétracte, version fine qui se déplie.
 
 Aliments qui volent (`lancerVers`, `envoyerAuMenu` dans `utils/animation.js`) :
 
