@@ -23,7 +23,7 @@ await db.connect();
 
 const hash = await bcrypt.hash(password, 10);
 const result = await db.query(
-  "INSERT INTO users (email, password) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET password = $2 RETURNING id, email",
+  "INSERT INTO famille.comptes (email, mot_de_passe) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET mot_de_passe = $2 RETURNING id, email",
   [email, hash]
 );
 

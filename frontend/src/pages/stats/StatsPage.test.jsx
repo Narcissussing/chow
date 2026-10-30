@@ -1,5 +1,6 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { rendreApp, simulerApi } from "../../testUtils.jsx";
+import { decaler, libellePeriode } from "./Filtres.jsx";
 
 const seau = (debut, etiquette, total) => ({ debut, etiquette, total });
 const STATS = {
@@ -220,4 +221,11 @@ test("Dates… : le mois ouvre les mois, l'année ouvre les années", async () =
   expect(document.querySelectorAll("[data-mois]")).toHaveLength(12);
   fireEvent.click(document.querySelector("[data-mois]:not(:disabled)"));
   expect(document.querySelector("[data-jour]")).not.toBeNull();
+});
+
+test("une semaine va du lundi au dimanche, quel que soit le jour de référence", () => {
+  const semaine = { periode: "semaine", ref: "2026-10-21" };
+  expect(libellePeriode(semaine)).toBe("19–25 oct.");
+  expect(libellePeriode(decaler(semaine, -1))).toBe("12–18 oct.");
+  expect(libellePeriode(decaler(semaine, 1))).toBe("26–1 nov.");
 });

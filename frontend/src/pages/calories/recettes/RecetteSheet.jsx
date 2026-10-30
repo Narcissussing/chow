@@ -293,7 +293,8 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
     );
     setTexteEnregistrer(texteInitial);
     fermer();
-    lancerVers(emojis, depart, [".calories-tab-btn:nth-child(2)"], "recoit");
+    // Les ingrédients ne volent vers Recettes que pour une nouvelle recette : une modification ne fait rien entrer.
+    if (!idRecette) lancerVers(emojis, depart, [".calories-tab-btn:nth-child(2)"], "recoit");
   }
 
   function supprimer() {

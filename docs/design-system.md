@@ -80,6 +80,16 @@ Les principales familles sont :
 - photos : `oeilSeFerme`, `aspirePhotoVersOeil` ;
 - rendu Stock : `stockFondu`.
 
+Aliments qui volent (`lancerVers`, `envoyerAuMenu` dans `utils/animation.js`) :
+
+- uniquement quand un aliment entre quelque part : créer une recette (vers
+  l'onglet Recettes), envoyer à la Cuisine (marmite), à RègleX (balance), du
+  Stock aux Courses ou des Courses au Stock (lien du menu) ;
+- jamais pour une modification ou une suppression : rien n'entre ;
+- partent de l'élément touché, au plus 6 emojis, la cible « encaisse »
+  (classe `recoit`) ;
+- rien si la cible n'est pas visible à l'écran.
+
 Les animations décoratives doivent respecter `prefers-reduced-motion`.
 
 ## Composants et comportements partagés

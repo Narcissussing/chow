@@ -71,33 +71,23 @@ démarrage. Par conséquent :
 
 ## Tickets de caisse
 
-Les tickets bruts et leurs CSV restent dans `tickets/` (ignoré par Git, sans
-sauvegarde ailleurs). `node tickets/extraire.cjs` puis
-`node tickets/correspondances.cjs` régénèrent `achats.csv` et
-`correspondances.csv`. Import rejouable : n'ajoute que les tickets (date +
-magasin) et libellés absents, donc un nouveau ticket s'ajoute en relançant la
-même commande :
+Les tickets bruts et leurs CSV restent dans `tickets/` (ignoré par Git).
+`node tickets/extraire.cjs` puis `node tickets/correspondances.cjs`
+régénèrent `achats.csv`, `promos.csv` et `correspondances.csv`. L'import
+remplit `achats.tickets`, `achats.produits`, `achats.lignes` et
+`achats.promos` ; il est rejouable (n'ajoute que les tickets absents, par
+`code` date + magasin) et s'arrête sur un magasin inconnu ou une remise sans
+promo :
 
 ```bash
-DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/importer-tickets.js
+node scripts/importer-tickets.js                                                                   # dev
+DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/importer-tickets.js   # production
 ```
 
 Vérifier la première ligne affichée (`Base : ep-…`) avant de laisser
-continuer.
+continuer. Les libellés listés « À classer » n'ont pas encore d'article.
 
-Remises et promos : `node tickets/extraire.cjs` écrit aussi la colonne `remise`
-de `achats.csv` et `tickets/promos.csv`. Sur une base déjà importée, après
-`fly deploy` (qui crée la colonne et la table) :
-
-```bash
-node scripts/appliquer-remises.js     # total payé et prix au kg par ligne, total des tickets
-node scripts/importer-promos.js       # table promos (vidée puis rechargée)
-```
-
-Les deux sont rejouables ; préfixer avec le `DATABASE_URL` de production comme
-pour l’import.
-
-Corriger des associations libellé → aliment après coup : modifier les règles de
+Corriger le rangement d'un produit (libellé → article) après coup : modifier les règles de
 `tickets/correspondances.cjs`, relancer `node tickets/correspondances.cjs`,
 comparer l'ancien et le nouveau `correspondances.csv`, mettre les lignes changées
 (`LIBELLÉ;aliment`) dans un fichier, puis l'appliquer sur chaque base :
@@ -125,6 +115,15 @@ Leçons sur les règles : la première règle qui correspond gagne, donc une mar
 dont le libellé contient un autre mot (« POM'LISSE CHIPS BARBECUE », « LAYS
 BARBECUE », « LAIT ENT.POUDRE ») doit avoir sa règle avant celle de ce mot ; une
 même marque peut faire plusieurs produits (Pom'lisse : chips et frites).
+
+## Export des données
+
+`node scripts/exporter-donnees.js` écrit dans `~/Perso/House Projects/family-hub-data/`
+un CSV par table et par vue (lignes découpées par année), `README.md` tiré des
+`COMMENT` de la base, et un `pg_dump` complet dans `sauvegardes/` (12 gardés,
+hors Git). À lancer après chaque import de tickets et au moins chaque semaine,
+avec le `DATABASE_URL` de production une fois la base migrée. Restaurer :
+`pg_restore --no-owner -d "<url>" sauvegardes/AAAA-MM-JJ-family-hub.dump`.
 
 ## Adresse IP bloquée
 

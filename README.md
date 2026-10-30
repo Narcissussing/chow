@@ -8,7 +8,7 @@ courses et une Cuisine (calories du jour) avec recettes.
 
 - Node.js et Express 5
 - React 19, Vite et React Router (dossier `frontend/`)
-- PostgreSQL sur Neon (projet `family-hub-backup`) : branche `dev` en local, `production` sur Fly
+- PostgreSQL sur Neon (projet `family-hub-backup`, retour sur `family-hub` en novembre 2026), un schéma par domaine : branche `dev` en local, `production` sur Fly
 - Passport Local, bcrypt et sessions PostgreSQL
 - Fly.io
 
@@ -56,7 +56,8 @@ actuel ou une modification externe.
 |---|---|
 | [Produit](docs/product.md) | Périmètre fonctionnel et règles métier |
 | [Architecture](docs/architecture.md) | Structure technique et flux de requête |
-| [Modèle de données](docs/data-model.md) | Tables, relations et conventions |
+| [Modèle de données](docs/data-model.md) | Tables, relations et vues existantes |
+| [Architecture des données](docs/architecture-donnees.md) | Règles et méthode pour toute modification de la base |
 | [Design system](docs/design-system.md) | Interface et composants partagés |
 | [Exploitation](docs/operations.md) | Environnements, comptes et déploiement |
 | [Qualité](docs/quality.md) | Stratégie de test et workflow des anomalies |

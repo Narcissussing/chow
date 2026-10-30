@@ -10,6 +10,7 @@ répète pas leur contenu.
 | [002](adr/002-sessions-postgresql.md) | Accepté | Sessions stockées dans PostgreSQL |
 | [003](adr/003-photos-courses-postgresql.md) | Accepté | Photos de Courses stockées en `BYTEA` |
 | [004](adr/004-react-recriture-complete.md) | Proposé | Migration React par réécriture complète |
+| [005](adr/005-base-family-hub-par-domaines.md) | Accepté | Base Family Hub en schémas par domaine |
 
 ## Règles métier durables
 

@@ -60,7 +60,7 @@ let serveur = await demarrerServeur();
 
 try {
     const hash = await bcrypt.hash(MOT_DE_PASSE, 10);
-    await db.query("INSERT INTO users (email, password) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET password = $2", [EMAIL, hash]);
+    await db.query("INSERT INTO famille.comptes (email, mot_de_passe) VALUES ($1, $2) ON CONFLICT (email) DO UPDATE SET mot_de_passe = $2", [EMAIL, hash]);
 
     let r = await appel("GET", "/api/session");
     verifier("session sans cookie → 401 JSON", r.statut === 401 && r.donnees?.erreur === "Non connecté.");
@@ -78,13 +78,13 @@ try {
     verifier("6e échec de connexion → 429", r.statut === 429, String(r.statut));
     r = await appel("POST", "/api/login", { email: EMAIL, password: MOT_DE_PASSE });
     verifier("même le bon mot de passe est bloqué", r.statut === 429);
-    const blocage = await db.query("SELECT jusqua > NOW() + INTERVAL '29 days' AS mois FROM ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
+    const blocage = await db.query("SELECT jusqua > NOW() + INTERVAL '29 days' AS mois FROM app.ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
     verifier("IP bloquée 30 jours en base", blocage.rows[0]?.mois === true);
     await arreterServeur(serveur);
     serveur = await demarrerServeur();
     r = await appel("POST", "/api/login", { email: EMAIL, password: MOT_DE_PASSE });
     verifier("blocage IP conservé après redémarrage", r.statut === 429);
-    await db.query("DELETE FROM ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
+    await db.query("DELETE FROM app.ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
     await arreterServeur(serveur);
     serveur = await demarrerServeur();
     r = await appel("POST", "/api/login", { email: EMAIL, password: MOT_DE_PASSE });
@@ -121,7 +121,7 @@ try {
 
     r = await appel("POST", "/api/courses/ajouter", { rechercheAliment: MARQUEUR });
     const idCourse = r.donnees?.item?.id;
-    if (idCourse) nettoyages.push(() => db.query("DELETE FROM courses WHERE id = $1", [idCourse]));
+    if (idCourse) nettoyages.push(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourse]));
     verifier("POST /api/courses/ajouter (texte libre)", r.statut === 200 && r.donnees?.item?.nom === MARQUEUR);
     r = await appel("POST", "/api/courses/commentaire", { idCourse, commentaire: "note de test" });
     verifier("POST /api/courses/commentaire", r.donnees?.succes === true);
@@ -133,13 +133,13 @@ try {
     const horsStock = aliments.find((a) => a.tracking_type !== "cl" && !stockActuel.some((s) => s.food_id === a.id));
     r = await appel("POST", "/api/stock/ajouter", { idAliment: horsStock.id, quantiteAliment: 1 });
     const idStock = r.donnees?.item?.id;
-    if (idStock) nettoyages.push(() => db.query("DELETE FROM stock WHERE id = $1", [idStock]));
+    if (idStock) nettoyages.push(() => db.query("DELETE FROM chow.stock WHERE id = $1", [idStock]));
     verifier("POST /api/stock/ajouter", r.statut === 200 && idStock);
     r = await appel("POST", "/api/stock/modifier", { idStock, nouvelleQuantite: "2" });
     verifier("POST /api/stock/modifier", r.donnees?.quantite === "2");
-    await db.query("UPDATE stock SET date_maj = CURRENT_DATE - 30 WHERE id = $1", [idStock]);
+    await db.query("UPDATE chow.stock SET date_maj = CURRENT_DATE - 30 WHERE id = $1", [idStock]);
     r = await appel("POST", "/api/stock/verifier", { idStock, fini: false });
-    let dateMaj = await db.query("SELECT quantite, date_maj = CURRENT_DATE AS jour FROM stock WHERE id = $1", [idStock]);
+    let dateMaj = await db.query("SELECT quantite, date_maj = CURRENT_DATE AS jour FROM chow.stock WHERE id = $1", [idStock]);
     verifier("vérifier « toujours là » : même quantité, date du jour", r.donnees?.succes && dateMaj.rows[0].quantite === "2" && dateMaj.rows[0].jour);
     r = await appel("POST", "/api/stock/verifier", { idStock, fini: true });
     verifier("vérifier « fini » : article vidé", ["0", "vide"].includes(r.donnees?.quantite));
@@ -149,7 +149,7 @@ try {
     const horsJournal = aliments.find((a) => !journalActuel.some((j) => j.food_id === a.id));
     r = await appel("POST", "/api/calories/ajouter", { idAliment: horsJournal.id, quantiteG: 100 });
     const idEntree = r.donnees?.item?.id;
-    if (idEntree) nettoyages.push(() => db.query("DELETE FROM journal_repas WHERE id = $1", [idEntree]));
+    if (idEntree) nettoyages.push(() => db.query("DELETE FROM chow.journal WHERE id = $1", [idEntree]));
     verifier("POST /api/calories/ajouter", r.statut === 200 && idEntree);
     r = await appel("POST", "/api/calories/modifier", { idEntree, nouvelleQuantite: 50 });
     verifier("POST /api/calories/modifier", r.donnees?.item?.calories_calc !== undefined);
@@ -182,19 +182,19 @@ try {
     };
     r = await appel("POST", `/api/aliments/${encodeURIComponent(avecEquiv.id)}/equivalences`, equivalences);
     verifier("équivalences refusées à un compte non admin → 403", r.statut === 403);
-    await db.query("UPDATE users SET admin = true WHERE email = $1", [EMAIL]);
+    await db.query("UPDATE famille.comptes SET admin = true WHERE email = $1", [EMAIL]);
     r = await appel("GET", "/api/session");
     verifier("session admin", r.donnees?.utilisateur?.admin === true);
     r = await appel("POST", `/api/aliments/${encodeURIComponent(avecEquiv.id)}/equivalences`, equivalences);
     verifier("POST /api/aliments/:id/equivalences en admin (valeurs inchangées)", r.donnees?.succes === true);
-    await db.query("UPDATE users SET admin = false WHERE email = $1", [EMAIL]);
+    await db.query("UPDATE famille.comptes SET admin = false WHERE email = $1", [EMAIL]);
 
     const ingredients = aliments.slice(0, 2).map((a) => ({ food_id: a.id, quantite_g: 10 }));
     r = await appel("POST", "/api/recettes/creer", { nom: MARQUEUR, categorie: "plat", etapes: "a\nb", ingredients });
     const idRecette = r.donnees?.recette?.id;
     if (idRecette) nettoyages.push(async () => {
-        await db.query("DELETE FROM recette_ingredients WHERE recette_id = $1", [idRecette]);
-        await db.query("DELETE FROM recettes WHERE id = $1", [idRecette]);
+        await db.query("DELETE FROM chow.recette_ingredients WHERE recette_id = $1", [idRecette]);
+        await db.query("DELETE FROM chow.recettes WHERE id = $1", [idRecette]);
     });
     verifier("POST /api/recettes/creer", r.statut === 200 && idRecette);
     r = await appel("GET", "/api/recettes/" + idRecette);
@@ -216,9 +216,9 @@ try {
 } finally {
     for (const nettoyer of nettoyages) await nettoyer();
     // Le test de blocage vise localhost : toujours débloqué, même si le script s'arrête en route.
-    await db.query("DELETE FROM ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
-    const u = await db.query("DELETE FROM users WHERE email = $1 RETURNING id", [EMAIL]);
-    if (u.rows[0]) await db.query("DELETE FROM session WHERE (sess->'passport'->>'user')::int = $1", [u.rows[0].id]);
+    await db.query("DELETE FROM app.ip_bloquees WHERE ip IN ('::1', '127.0.0.1', '::ffff:127.0.0.1')");
+    const u = await db.query("DELETE FROM famille.comptes WHERE email = $1 RETURNING id", [EMAIL]);
+    if (u.rows[0]) await db.query("DELETE FROM app.sessions WHERE (sess->'passport'->>'user')::int = $1", [u.rows[0].id]);
     await db.end();
     serveur.kill();
     console.log(echecs === 0 ? "\nTout est conforme ; données de test supprimées." : `\n${echecs} échec(s) ; données de test supprimées.`);

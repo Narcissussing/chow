@@ -224,3 +224,7 @@ service-account.json
 AGENTS.md
 docs/flow-chow-app.md
 tickets/
+
+# Migrations et vues de la base (versionnées, contrairement aux dumps)
+!db/**/*.sql
+!db/*.sql

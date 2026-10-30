@@ -1,152 +1,110 @@
 # Modèle de données
 
-Le modèle est reconstruit depuis les requêtes de `index.js`. Il n’existe pas
-encore de schéma SQL versionné ni d’outil de migration dédié. Les types exacts
-doivent être confirmés directement dans PostgreSQL avant une migration
-importante.
+Ce qui existe dans la base Family Hub. Les règles à suivre pour la modifier
+sont dans [Architecture des données](architecture-donnees.md). Chaque table et
+colonne est aussi décrite dans la base (`COMMENT`, voir `db/vues.sql`).
 
 ## Relations
 
 ```text
-foods ──┬── stock
-        ├── courses
-        ├── courses_preset
-        ├── journal_repas
-        ├── recette_ingredients
-        └── libelles ·· achats (par le texte du libellé) ── tickets
+famille.personnes ── famille.comptes
+                  └─ chow.journal (personne_id)
 
-recettes ── recette_ingredients ── foods
-users ── session (identifiant sérialisé, sans clé étrangère)
+achats.enseignes ── achats.magasins ── achats.tickets ── achats.lignes ── achats.promos
+                 └─ achats.produits ───────────────────────┘
+achats.categories ── achats.articles ── achats.produits
+                                     └─ chow.aliments (article_id)
+
+chow.aliments ──┬── chow.stock
+                ├── chow.courses
+                ├── chow.courses_modeles
+                ├── chow.journal
+                └── chow.recette_ingredients ── chow.recettes
 ```
 
-## Tables
+## `famille`
 
-### `users`
+- `personnes` : `id` lisible, `prenom`, `role` (`parent` / `enfant`),
+  `date_naissance`, `sexe`. Vide tant que les prénoms ne sont pas saisis.
+- `comptes` : connexion (`email`, `mot_de_passe` = empreinte bcrypt, `admin`,
+  `personne_id`). Deux comptes, sans inscription publique.
 
-| Colonne | Rôle |
-|---|---|
-| `id` | Clé primaire |
-| `email` | Identifiant unique |
-| `password` | Hash bcrypt |
+## `achats`
 
-### `foods`
+Tout ce que le foyer achète. Chaîne : ligne → produit → article → catégorie.
 
-Référentiel central. `id` est un slug texte utilisé dans les URL et comme
-clé étrangère.
+- `enseignes` : `leclerc`, `carrefour`, `marche-frais`.
+- `magasins` : un magasin d'une enseigne (`leclerc-meaux`), avec sa ville.
+- `categories` : arbre unique ; premier niveau Alimentation, Boissons, Hygiène
+  et beauté, Entretien, Maison et cuisine, Bébé, Santé, Animaux, Loisirs et
+  papeterie, Vêtements, Autre ; sous-catégories d'Alimentation reprises des
+  catégories Chow.
+- `articles` : besoin générique (`tomate`, `papier-toilette`), `unite_ref`
+  (`kg`, `l`, `piece`) pour comparer les prix. Un article par aliment Chow
+  (même identifiant) ; `alimentation-a-detailler` et
+  `non-alimentaire-a-classer` sont des fourre-tout (`fourre_tout`) en
+  attendant le catalogue.
+- `produits` : un libellé imprimé dans une enseigne, son `article_id` (vide =
+  à classer) et le format d'une unité vendue (`contenance` + `unite` ; vide
+  pour un produit au poids, 1 `piece` par défaut).
+- `tickets` : un passage ; `code` lisible (`2026-10-29-leclerc-meaux`),
+  `source` (`ticket-papier`, `ticket-numerique`, `releve-bancaire`, `saisie`),
+  `total_articles` (avant remises), `bons`, `paye`, `cagnotte`. Un ticket
+  `releve-bancaire` n'a pas de lignes.
+- `lignes` : `quantite` en pièces ou en kg selon `unite_vente`,
+  `prix_unitaire`, `montant` avant remise.
+- `promos` : une remise par ligne (`offre` imprimée, `type`, `pourcentage`,
+  `montant`).
 
-| Groupe | Colonnes |
-|---|---|
-| Identité | `id`, `nom`, `emoji`, `image`, `categorie` |
-| Détail | `description`, `origine` |
-| Stock | `tracking_type`, `emplacement`, `unite` |
-| Nutrition pour 100 g | `calories`, `glucides`, `proteines`, `lipides`, `fibres`, `sucres`, `graisses_saturees`, `sel` |
-| Conversions | `grammes_par_cuil_a_cafe`, `grammes_par_cuil_a_soupe`, `poids_unite_g` |
+Vues :
 
-`tracking_type` vaut `unite`, `pack` ou `cl`. Toutes les valeurs
-nutritionnelles sont interprétées pour 100 g, indépendamment de ce type.
+- `v_lignes` : chaque ligne avec magasin, article, catégorie, `remise`,
+  `paye`, `quantite_ref` / `unite_ref`, `comparable` (même unité que
+  l'article), `prix_ref_normal` (hors promo) et `prix_ref_paye`.
+- `v_prix` : prix médian hors promo par article, enseigne et mois.
+- `v_panier_habituel` : articles achetés au moins 6 mois sur 12.
 
-### `stock`
+## `chow`
 
-| Colonne | Rôle |
-|---|---|
-| `id` | Clé primaire |
-| `food_id` | Référence vers `foods.id` |
-| `quantite` | Nombre ou état textuel pour certains liquides |
-| `unite` | Libellé d’unité dénormalisé |
-| `date_maj` | Dernière mise à jour |
+- `aliments` : référentiel Chow (`id` slug), nutrition pour 100 g ou 100 ml,
+  `tracking_type` (`unite`, `pack`, `cl`), conversions (cuillères, poids à la
+  pièce), `pas_achat`, `prix_habituel`, `magasin`, `article_id`.
+  `fibres`, `sucres`, `graisses_saturees` et `sel` ne sont lus par aucune
+  route.
+- `stock` : `food_id`, `quantite` (nombre ou état textuel), `unite`,
+  `date_maj`.
+- `courses` : `food_id` ou `nom_libre`, `commentaire`, `achete` (la ligne est
+  gardée après achat), `photo` en `BYTEA`, `date_ajout`, `date_achat`.
+- `courses_modeles` : articles ajoutés d'un coup chaque semaine ;
+  l'enregistrement remplace toutes les lignes.
+- `journal` : `food_id`, `quantite_g`, `date_entree`, `ordre`, `unite`
+  affichée (`NULL` = grammes), `ajoute` (déjà dans le plat), `personne_id`.
+  Calories calculées, jamais stockées.
+- `recettes` (`nom`, `categorie`, `etapes` une par ligne) et
+  `recette_ingredients` (`food_id`, `quantite_g`, `unite`, ordre = `id`).
+- Vue `v_lignes_stats` : achats au format lu par `stats.js` (Stats, Courses),
+  passages bancaires compris.
 
-### `courses`
+Les colonnes `food_id` gardent leur nom anglais tant que l'API et le
+frontend ne sont pas renommés ensemble.
 
-| Colonne | Rôle |
-|---|---|
-| `id` | Clé primaire |
-| `food_id` | Aliment connu, nullable |
-| `nom_libre` | Article libre lorsque `food_id` est absent |
-| `commentaire` | Note |
-| `achete` | État d’achat |
-| `photo` | Image compressée en `BYTEA` |
-| `date_ajout` | Date d’ajout |
+`aliments.magasin` : magasin habituel choisi ; à défaut, `GET /api/courses` le
+déduit des achats des 12 derniers mois. `GET /api/courses/estimation`
+estime les Courses non achetées (`prevoirArticle` dans `stats.js`) : quantité
+habituelle hors remise × dernier prix normal ; sans historique,
+`prix_habituel` ±20 %.
 
-Une ligne utilise soit `food_id`, soit `nom_libre`. Les lignes achetées
-sont conservées avec `achete = true`.
+## `reference`
 
-### `courses_preset`
+- `indices_prix` : indices INSEE mensuels par série (`alimentation`,
+  `ensemble`), `source`.
 
-Contient `id`, `food_id` et `nom_libre`. L’enregistrement du preset
-remplace l’ensemble de ses lignes dans une opération, sans calcul de diff.
+## `app`
 
-### `journal_repas`
+- `sessions` (`connect-pg-simple`), `ip_bloquees`.
 
-| Colonne | Rôle |
-|---|---|
-| `id` | Clé primaire |
-| `food_id` | Référence vers `foods.id` |
-| `quantite_g` | Quantité consommée en grammes |
-| `date_entree` | Journée de la Cuisine |
-| `ordre` | Position manuelle dans la journée |
-| `unite` | Unité affichée (`g`, `cafe`, `soupe`, `piece`, `ml`, `l`) ; `NULL` = grammes |
-| `ajoute` | Déjà mis dans le plat (double-tap dans la Cuisine) |
+## `ancien`
 
-Les calories et macros calculées ne sont pas stockées :
-`valeur_food × quantite_g / 100`.
-
-### `recettes` et `recette_ingredients`
-
-`recettes` contient `id`, `nom`, `categorie` et `etapes`. `etapes` stocke une
-étape de préparation par ligne ; l’interface les numérote à l’affichage.
-`recette_ingredients` relie une recette à `food_id` avec
-`quantite_g` et `unite` (unité affichée, reprise dans la Cuisine). Une
-modification remplace les lignes ; leur ordre d’insertion (`id`) est l’ordre
-de la recette.
-
-### `tickets`, `achats` et `libelles`
-
-Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais), importé
-une fois par `scripts/importer-tickets.js` depuis le dossier local `tickets/`.
-
-- `tickets` : un passage en caisse, identifié par `date` et `magasin` ;
-  `enseigne` regroupe les magasins d’une même chaîne, `total` est la somme
-  des lignes. `date` est vide pour un ticket photographié sans sa date.
-- `achats` : une ligne de ticket (`libelle`, `quantite` ou `poids`,
-  `prix_unitaire`, `total`), rattachée à `ticket_id`. `contenance`, `unite`
-  et `prix_ref` donnent le prix au kg ou au litre quand il est connu.
-- `libelles` : association d’un libellé de ticket à un aliment Chow
-  (`food_id`, statut `chow`) ou à un statut `hors-chow`, `non-alimentaire`,
-  `non-detaille` (passage connu seulement par la banque) ou `a-classer`.
-  Un nouveau libellé n’est associé qu’une fois.
-- `achats.remise` : remise immédiate du ticket (section « BONS DE REDUCTION »
-  de Leclerc) rattachée à la ligne ; `achats.total` est alors le prix réellement
-  payé.
-- `promos` : une ligne par remise (date, magasin, produit, `offre` telle
-  qu’imprimée, `type` « 2e à prix réduit » / « 2+1 » / « remise immédiate »,
-  `pourcentage`, `montant`), pour suivre les promos dans le temps.
-
-`foods.magasin` : magasin habituel de l'aliment (choisi, ou appris en cochant
-en mode magasin) ; à défaut, `GET /api/courses` le déduit des tickets des 12
-derniers mois (magasin le plus fréquent).
-
-`GET /api/courses/estimation[?magasin=…]` estime les Courses non achetées sans
-quantité saisie (`prevoirArticle` dans `stats.js`) : quantité habituelle des
-achats sans remise × dernier prix normal, dans le magasin demandé s'il est
-connu ; fourchette = 1er et 3e quartiles des écarts prévu/payé quand chaque
-achat passé est rejoué avec ce qui était connu avant lui. Unités mélangées :
-médiane et quartiles du coût des 8 derniers passages.
-Sans historique, il utilise `foods.prix_habituel` (coût d’un achat habituel,
-±20 %) ; sinon l’article est compté dans `sansPrix`.
-
-### `session`
-
-Table standard créée par `connect-pg-simple`. Elle rend les sessions
-indépendantes du cycle de vie de la machine Fly.io.
-
-## Contraintes applicatives importantes
-
-- aucun CRUD d’administration pour `foods` ;
-- aucune suppression en cascade identifiée ;
-- les migrations sont des `CREATE/ALTER ... IF NOT EXISTS` exécutés au
-  démarrage ;
-- modifier une structure en production exige de considérer le déploiement
-  comme une migration ;
-- `fibres`, `sucres`, `graisses_saturees` et `sel` existent dans `foods`
-  mais ne sont lus par aucune route de `index.js` : les saisir ne change
-  rien à l'affichage tant qu'aucune vue ne les consomme.
+Tables d'achats d'avant le 2026-10-30 (`tickets`, `achats`, `libelles`,
+`promos`), gardées pour comparaison ; à supprimer après la vérification de
+novembre 2026.

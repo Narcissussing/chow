@@ -14,10 +14,12 @@ const NATURES = [
 const iso = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 const date = (s) => new Date(s + "T00:00:00");
 const court = (s, options) => date(s).toLocaleDateString("fr-FR", options);
+// Lundi de la semaine qui contient `s` : une semaine va du lundi au dimanche.
+const lundi = (s) => { const d = date(s); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return d; };
 
 export function libellePeriode(p) {
   if (p.periode === "semaine") {
-    const d = date(p.ref), f = new Date(d);
+    const d = lundi(p.ref), f = new Date(d);
     f.setDate(f.getDate() + 6);
     return `${d.getDate()}–${court(iso(f), { day: "numeric", month: "short" })}`;
   }
@@ -30,7 +32,7 @@ export function libellePeriode(p) {
 
 // Recule ou avance d'une semaine, d'un mois ou d'une année.
 export function decaler(p, sens) {
-  const d = date(p.ref);
+  const d = p.periode === "semaine" ? lundi(p.ref) : date(p.ref);
   if (p.periode === "semaine") d.setDate(d.getDate() + 7 * sens);
   if (p.periode === "mois") d.setMonth(d.getMonth() + sens, 1);
   if (p.periode === "annee") d.setFullYear(d.getFullYear() + sens, 0, 1);

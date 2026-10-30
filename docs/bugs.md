@@ -5,7 +5,7 @@ Registre local des anomalies Chow, synchronisé avec Notion
 Chow → Qualité (QA) → BFV pour les Corrections et vérifications). Les entrées
 les plus récentes apparaissent en premier.
 
-**Champs** : clé Jira (`CHOW-N`) · Titre · Étapes de reproduction · Résultat
+**Champs** : clé (`CHOW-N`, numérotée dans Chow depuis l’abandon de Jira : suite des numéros, dans l’ordre de création, commune à tous les tickets du Kanban) · Titre · Étapes de reproduction · Résultat
 attendu · Résultat obtenu · Fichiers concernés · Niveau
 (Critique/Majeure/Mineure) · Statut (Ouvert/En cours/Corrigé) · Date de
 signalement · Date de correction.
@@ -17,7 +17,7 @@ l’exécute et renseigne son résultat.
 ---
 
 <!--
-### CHOW-? — Suggestion d'ajout impossible à toucher quand les Courses sont vides
+### CHOW-103 — Suggestion d'ajout impossible à toucher quand les Courses sont vides
 
 - **Niveau** : Majeure
 - **Statut** : Corrigé (BFV en attente)
@@ -53,7 +53,45 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
-### CHOW-? — Compteur des Courses bloqué dans la barre après remontée
+### CHOW-107 — Les ingrédients volent en modifiant une recette
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/calories/recettes/RecetteSheet.jsx`
+- **Date de signalement** : 2026-10-30
+- **Date de correction** : 2026-10-30
+
+**Étapes de reproduction** :
+
+1. Calories, Recettes : ouvrir une recette existante, la modifier.
+2. Enregistrer.
+
+**Résultat attendu** : pas de vol d'ingrédients ; seule une nouvelle recette les envoie vers l'onglet Recettes.
+
+**Résultat obtenu** : les emojis des ingrédients volent vers l'onglet Recettes comme pour une création.
+
+**Correction** : le vol n'est lancé que pour une nouvelle recette.
+
+### CHOW-106 — Semaines des Stats décalées (mercredi au mardi)
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/stats/Filtres.jsx`
+- **Date de signalement** : 2026-10-30
+- **Date de correction** : 2026-10-30
+
+**Étapes de reproduction** :
+
+1. Stats, choisir la période « Semaine ».
+2. Lire le libellé, puis reculer avec ‹.
+
+**Résultat attendu** : semaines du lundi au dimanche (12–18 oct., 19–25 oct., 26 oct.–1 nov.).
+
+**Résultat obtenu** : le libellé part du jour du dernier achat (7–13 oct., 14–20 oct., 21…) ; les montants, eux, sont bien calculés du lundi au dimanche.
+
+**Correction** : le libellé et les flèches partent du lundi de la semaine. Test ajouté.
+
+### CHOW-105 — Compteur des Courses bloqué dans la barre après remontée
 
 - **Niveau** : Mineure
 - **Statut** : Corrigé (BFV en attente)
@@ -72,7 +110,7 @@ Correction :
 
 **Correction** : sans le compteur, le titre devenait plus bas que la barre collante (≈ 51 px contre ≈ 62 px) et n'était plus jamais détecté comme visible. Une réserve invisible garde au titre la taille du compteur.
 
-### CHOW-? — Liste d'unités coupée en bas de l'écran
+### CHOW-104 — Liste d'unités coupée en bas de l'écran
 
 - **Niveau** : Mineure
 - **Statut** : Ouvert
@@ -90,7 +128,7 @@ Correction :
 
 **Résultat obtenu** : la liste est coupée par le bas de l'écran ; les dernières unités sont inaccessibles. Faire défiler la page ferme la liste.
 
-### CHOW-? — Le panneau recette ne défile plus
+### CHOW-77 — Le panneau recette ne défile plus
 
 - **Niveau** : Majeure
 - **Statut** : Corrigé (BFV en attente)
@@ -109,7 +147,7 @@ Correction :
 
 **Correction** : panneau à la hauteur visible réelle (`100dvh`, marge pour la barre Safari) au lieu de `100vh`, qui cachait le bas sous la barre ; le verrou de page laisse défiler les listes des sélecteurs. Cause sur iPhone non confirmée : à vérifier en BFV.
 
-### CHOW-? — Listes déroulantes de plus de 5 lignes
+### CHOW-78 — Listes déroulantes de plus de 5 lignes
 
 - **Niveau** : Mineure
 - **Statut** : Corrigé (BFV en attente)
@@ -128,7 +166,7 @@ deux sélecteurs de recettes de la Cuisine.
 
 **Correction** : limite de 5 lignes (215 px, défilement) appliquée à toutes les `.custom-select__list` dans `etats.css`.
 
-### CHOW-? — Quantités adaptées sans arrondi
+### CHOW-79 — Quantités adaptées sans arrondi
 
 - **Niveau** : Mineure
 - **Statut** : Corrigé (BFV en attente)
@@ -147,7 +185,7 @@ deux sélecteurs de recettes de la Cuisine.
 
 **Correction** : grammes arrondis au centième dans `nouvelleLigne` ; RègleX affiche un entier sans décimale, sinon une décimale (`toFixed(1)`).
 
-### CHOW-? — Champs de saisie de tailles différentes
+### CHOW-76 — Champs de saisie de tailles différentes
 
 - **Niveau** : Mineure
 - **Statut** : Corrigé (BFV en attente)
@@ -165,7 +203,7 @@ deux sélecteurs de recettes de la Cuisine.
 
 **Correction** : hauteur 38 px et texte 0,9 rem pour tous les champs ; champs de quantité à 80 px de large (`etats.css`).
 
-### CHOW-? — Achat compté deux fois dans le Stock
+### CHOW-58 — Achat compté deux fois dans le Stock
 
 - **Niveau** : Majeure
 - **Statut** : Corrigé (BFV en attente)
@@ -190,7 +228,7 @@ Vérifié sur la branche Neon dev : deux envois de +3 → +3, trois envois
 simultanés de +2 → +2 ; données de test supprimées. BFV : en magasin, acheter
 un article avec un réseau faible et contrôler le Stock.
 
-### CHOW-? — En-tête de rayon vide après un achat (tri Catégorie)
+### CHOW-59 — En-tête de rayon vide après un achat (tri Catégorie)
 
 - **Niveau** : Mineure
 - **Statut** : Corrigé (BFV en attente)
