@@ -8,6 +8,8 @@ import connectPgSimple from "connect-pg-simple";
 import passport from "passport";
 import { Strategy as LocalStrategy } from "passport-local";
 import { calculerStats, ficheProduit, jourIso, prevoirArticle, quantile } from "./stats.js";
+import { bornesTickets, detailTickets } from "./tickets.js";
+import { habitudes, plan } from "./plan.js";
 
 const app = express();
 
@@ -780,6 +782,140 @@ app.get("/api/stats", lectureApi(async (req) => {
     const { periode, ref, debut, fin, enseigne } = req.query;
     return calculerStats(await lignesTickets(), { periode, ref, debut, fin, enseigne }, jourIso(new Date()), await indicesNationaux());
 }));
+// Tickets d'un jour, d'une semaine ou d'un mois (Stats, icône ticket) : articles achetés, passages et économies.
+async function lignesAchats(debut, fin, enseigne) {
+    const result = await db.query(
+        `SELECT v.ligne_id, v.ticket_id, v.date::text AS jour, v.enseigne, v.produit_id, v.article_id, v.article, v.fourre_tout,
+                v.categorie_racine_id AS racine, al.emoji, ar.a_reduire, v.quantite::float, v.unite_vente, v.paye::float,
+                v.quantite_ref::float, v.unite_ref, v.comparable, v.prix_ref_normal::float, v.prix_ref_paye::float
+         FROM achats.v_lignes v
+         LEFT JOIN achats.articles ar ON ar.id = v.article_id
+         LEFT JOIN chow.aliments al ON al.id = v.aliment_id
+         WHERE v.date >= $1 AND v.date < $2 AND ($3::text IS NULL OR v.enseigne = $3)`,
+        [debut, fin, enseigne]
+    );
+    return result.rows;
+}
+const PERIODES_TICKETS = ["jour", "semaine", "mois", "dates"];
+const JOUR_ISO = /^\d{4}-\d{2}-\d{2}$/;
+app.get("/api/stats/tickets", lectureApi(async (req) => {
+    const enseigne = req.query.enseigne && req.query.enseigne !== "tous" ? req.query.enseigne : null;
+    const dates = JOUR_ISO.test(req.query.debut ?? "") && JOUR_ISO.test(req.query.fin ?? "") && req.query.debut <= req.query.fin;
+    const periode = PERIODES_TICKETS.includes(req.query.periode) && (req.query.periode !== "dates" || dates) ? req.query.periode : "semaine";
+    const jours = (await db.query(
+        `SELECT DISTINCT t.date::text AS jour FROM achats.tickets t JOIN achats.magasins m ON m.id = t.magasin_id
+         JOIN achats.enseignes e ON e.id = m.enseigne_id WHERE $1::text IS NULL OR e.nom = $1 ORDER BY 1`,
+        [enseigne]
+    )).rows.map((r) => r.jour);
+    const aujourdhui = jourIso(new Date());
+    const ref = /^\d{4}-\d{2}-\d{2}$/.test(req.query.ref ?? "") ? req.query.ref : jours.at(-1) ?? aujourdhui;
+    const { debut, fin } = bornesTickets({ periode, ref, debut: req.query.debut, fin: req.query.fin }, aujourdhui);
+    const ilYaUnAn = jourIso(new Date(Date.now() - 365 * 86400000));
+    const tickets = (await db.query(
+        `SELECT t.id, t.date::text AS jour, t.paye::float, m.nom AS magasin, e.nom AS enseigne
+         FROM achats.tickets t JOIN achats.magasins m ON m.id = t.magasin_id JOIN achats.enseignes e ON e.id = m.enseigne_id
+         WHERE t.date >= $1 AND t.date < $2 AND ($3::text IS NULL OR e.nom = $3) ORDER BY t.date DESC, t.id DESC`,
+        [debut, fin, enseigne]
+    )).rows;
+    return detailTickets({
+        lignes: await lignesAchats(debut, fin, enseigne),
+        lignesAn: await lignesAchats(ilYaUnAn, jourIso(new Date(Date.now() + 86400000)), enseigne),
+        tickets, jours, periode, ref, debut, fin, preferes: await articlesPreferes(),
+    });
+}));
+
+async function articlesPreferes() {
+    return new Set((await db.query("SELECT article_id FROM achats.choix WHERE decision = 'garder' AND preference IS NOT NULL")).rows.map((r) => r.article_id));
+}
+const lignesDouzeMois = () => lignesAchats(jourIso(new Date(Date.now() - 365 * 86400000)), jourIso(new Date(Date.now() + 86400000)), null);
+const debutMois = (iso) => iso.slice(0, 7) + "-01";
+
+// Liste d'un niveau d'économie (Tickets) : mettre un article dans « À arrêter » (1), « Desserts » (2), ou l'en sortir.
+app.post("/api/articles/:idArticle/a-reduire", async (req, res) => {
+    const niveau = req.body.niveau;
+    if (![1, 2, null].includes(niveau)) return res.status(400).json({ erreur: "Niveau 1, 2 ou aucun." });
+    try {
+        const r = await db.query("UPDATE achats.articles SET a_reduire = $1 WHERE id = $2 AND NOT fourre_tout", [niveau, req.params.idArticle]);
+        if (!r.rowCount) return res.status(404).json({ erreur: "Article introuvable." });
+        res.json({ succes: true });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
+
+// Mon plan : habitudes de 12 mois et choix du foyer par article.
+app.get("/api/plan", lectureApi(async () => {
+    // Jetés du mois en cours et du précédent : ce qu'on achète en trop en ce moment.
+    const moisDernier = new Date();
+    moisDernier.setDate(1);
+    moisDernier.setMonth(moisDernier.getMonth() - 1);
+    return plan({
+        lignesAn: await lignesDouzeMois(),
+        choix: (await db.query("SELECT article_id, decision, quantite_visee, preference FROM achats.choix")).rows,
+        jetes: (await db.query("SELECT article_id, quantite::float FROM chow.jetes WHERE mois >= $1", [jourIso(moisDernier)])).rows,
+        aujourdhui: jourIso(new Date()),
+    });
+}));
+const DECISIONS = ["garder", "moins", "arreter", "changer"];
+app.post("/api/plan/:idArticle", async (req, res) => {
+    const { decision, quantiteVisee } = req.body;
+    if (decision !== null && !DECISIONS.includes(decision)) return res.status(400).json({ erreur: "Choix inconnu." });
+    if (decision === "moins" && !(Number(quantiteVisee) >= 0)) return res.status(400).json({ erreur: "Quantité visée manquante." });
+    try {
+        if (decision === null) await db.query("DELETE FROM achats.choix WHERE article_id = $1", [req.params.idArticle]);
+        else await db.query(
+            `INSERT INTO achats.choix (article_id, decision, quantite_visee) VALUES ($1, $2, $3)
+             ON CONFLICT (article_id) DO UPDATE SET decision = $2, quantite_visee = $3, modifie_le = now()`,
+            [req.params.idArticle, decision, decision === "moins" ? Number(quantiteVisee) : null]
+        );
+        res.json({ succes: true });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(err.code === "23503" ? 404 : 500).json({ erreur: err.code === "23503" ? "Article introuvable." : err.message });
+    }
+});
+
+// Aliments jetés d'un mois (Paramètres) : les habituels, ceux déjà saisis, et la quantité à acheter en moins.
+const JETES_HABITUELS = ["tomate", "mozzarella", "roquette", "feta", "corne-verte"];
+app.get("/api/jetes", lectureApi(async (req) => {
+    const mois = /^\d{4}-\d{2}$/.test(req.query.mois ?? "") ? req.query.mois + "-01" : debutMois(jourIso(new Date()));
+    const hab = habitudes(await lignesDouzeMois(), jourIso(new Date()));
+    const saisis = (await db.query("SELECT article_id, quantite::float, unite FROM chow.jetes WHERE mois = $1", [mois])).rows;
+    const recents = (await db.query("SELECT DISTINCT article_id FROM chow.jetes WHERE mois >= $1::date - INTERVAL '6 months'", [mois])).rows.map((r) => r.article_id);
+    const ids = [...new Set([...JETES_HABITUELS, ...recents, ...saisis.map((s) => s.article_id)])];
+    const noms = new Map((await db.query("SELECT a.id, a.nom, al.emoji FROM achats.articles a LEFT JOIN chow.aliments al ON al.article_id = a.id WHERE a.id = ANY($1)", [ids])).rows.map((r) => [r.id, r]));
+    const lignes = ids.filter((id) => noms.has(id)).map((id) => {
+        const h = hab.get(id), s = saisis.find((x) => x.article_id === id);
+        const unite = s?.unite ?? h?.unite ?? "piece";
+        const quantite = s?.quantite ?? 0;
+        return {
+            id, nom: noms.get(id).nom, emoji: noms.get(id).emoji, unite, quantite, format: h?.format ?? null,
+            prixUnite: h ? Math.round(h.prixUnite * 100) / 100 : null,
+            montant: Math.round(quantite * (h?.prixUnite ?? 0) * 100) / 100,
+            habitudeMois: h ? Math.round(h.quantiteMois * 10) / 10 : null,
+        };
+    });
+    const autres = [...hab.values()].filter((h) => h.racine === "alimentation" && !ids.includes(h.id))
+        .map((h) => ({ id: h.id, nom: h.nom, unite: h.unite })).sort((a, b) => a.nom.localeCompare(b.nom, "fr"));
+    return { mois: mois.slice(0, 7), lignes, total: Math.round(lignes.reduce((s, l) => s + l.montant, 0) * 100) / 100, autres };
+}));
+app.post("/api/jetes", async (req, res) => {
+    const { article, mois, quantite, unite } = req.body;
+    if (!/^\d{4}-\d{2}$/.test(mois ?? "") || !["kg", "piece"].includes(unite) || !(Number(quantite) >= 0)) return res.status(400).json({ erreur: "Saisie invalide." });
+    try {
+        if (Number(quantite) === 0) await db.query("DELETE FROM chow.jetes WHERE article_id = $1 AND mois = $2", [article, mois + "-01"]);
+        else await db.query(
+            `INSERT INTO chow.jetes (article_id, mois, quantite, unite) VALUES ($1, $2, $3, $4)
+             ON CONFLICT (article_id, mois) DO UPDATE SET quantite = $3, unite = $4, modifie_le = now()`,
+            [article, mois + "-01", Number(quantite), unite]
+        );
+        res.json({ succes: true });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(err.code === "23503" ? 404 : 500).json({ erreur: err.code === "23503" ? "Article introuvable." : err.message });
+    }
+});
 app.get("/api/stats/produit/:idAliment", lectureApi(async (req) => {
     const fiche = ficheProduit((await lignesTickets(req.params.idAliment)).filter((l) => l.jour), jourIso(new Date()), req.query.periode ? req.query : null);
     return fiche ? { produit: fiche } : null;
@@ -1479,18 +1615,21 @@ app.post("/api/recettes/creer", async (req, res) => {
             return res.status(400).json({ erreur: "Nom et au moins un ingrédient requis." });
         }
 
-        const recetteResult = await db.query(
-            "INSERT INTO chow.recettes (nom, categorie, etapes) VALUES ($1, $2, $3) RETURNING id",
-            [nom, categorie, etapes]
-        );
-        const idRecette = recetteResult.rows[0].id;
-
-        for (const ingredient of ingredients) {
-            await db.query(
-                "INSERT INTO chow.recette_ingredients (recette_id, food_id, quantite_g, unite) VALUES ($1, $2, $3, $4)",
-                [idRecette, ingredient.food_id, ingredient.quantite_g, uniteValide(ingredient.unite)]
+        // Recette et ingrédients ensemble : un ingrédient refusé n'en laisse pas une moitié en base.
+        const idRecette = await enTransaction(async (client) => {
+            const recetteResult = await client.query(
+                "INSERT INTO chow.recettes (nom, categorie, etapes) VALUES ($1, $2, $3) RETURNING id",
+                [nom, categorie, etapes]
             );
-        }
+            const id = recetteResult.rows[0].id;
+            for (const ingredient of ingredients) {
+                await client.query(
+                    "INSERT INTO chow.recette_ingredients (recette_id, food_id, quantite_g, unite) VALUES ($1, $2, $3, $4)",
+                    [id, ingredient.food_id, ingredient.quantite_g, uniteValide(ingredient.unite)]
+                );
+            }
+            return id;
+        });
 
         const totaux = await calculerTotauxRecette(idRecette);
         res.json({ succes: true, recette: { id: idRecette, nom: nom, categorie: categorie, etapes: etapes, nb_ingredients: totaux.nb_ingredients, kcal_total: totaux.kcal_total } });

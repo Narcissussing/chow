@@ -53,6 +53,25 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-109 — Spaghetti à 5,1 kg par achat (contenances mal lues sur les tickets)
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `tickets/extraire.cjs`, `tickets/correspondances.csv`, `db/migrations/2026-10-31-1-oeufs-marche-frais.sql`, `db/migrations/2026-10-31-2-donnees-tickets.sql`
+- **Date de signalement** : 2026-10-31
+- **Date de correction** : 2026-10-31
+
+**Étapes de reproduction** :
+
+1. Courses : ajouter Spaghetti.
+2. Ouvrir le détail de l'estimation.
+
+**Résultat attendu** : 1 kg par achat, environ 1,90 €/kg.
+
+**Résultat obtenu** : 5,1 kg par achat, 0,35 €/kg (« PATES SPAGHETTI N 5.1KG » lu comme 5,1 kg).
+
+**Correction** : 21 contenances corrigées (virgule ou point lus comme décimale : « X2,300G », « 1.125G » ; numéro de pâtes), œufs Marché Frais par 12, jus d'orange, sauce poivron et steak végétal rangés au bon article, 65 remises Carrefour notées en promo. Payé inchangé (contrôle dans la migration).
+
 ### CHOW-108 — Fenêtres qui ne se ferment pas pareil, ✕ qui part en défilant
 
 - **Niveau** : Mineure

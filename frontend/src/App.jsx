@@ -5,6 +5,7 @@ import Protege from "./components/Protege.jsx";
 import Shell from "./components/Shell.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import { usePlaceholdersDefilants } from "./hooks/usePlaceholdersDefilants.js";
+import { useDefilementSynchro } from "./hooks/useDefilementSynchro.js";
 import Accueil from "./pages/accueil/Accueil.jsx";
 import AlimentDetail from "./pages/aliments/AlimentDetail.jsx";
 import Aliments from "./pages/aliments/Aliments.jsx";
@@ -28,6 +29,7 @@ function AncienAliment() {
 
 export default function App() {
   usePlaceholdersDefilants();
+  useDefilementSynchro();
   const { key } = useLocation();
   return (
     <AuthProvider>

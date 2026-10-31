@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 
-// Placeholder plus long que son champ : il défile lentement d'un bout à l'autre et se fond à droite
-// (styles dans communs.css). Mesuré pour chaque champ de la page, y compris ceux qui apparaissent ensuite.
+// Placeholder plus long que son champ : marqué ici avec son décalage ; il défile sur l'horloge commune
+// (useDefilementSynchro) et se fond à droite (styles dans communs.css). Mesuré pour chaque champ de la page, y compris ceux qui apparaissent ensuite.
 const mesure = typeof document !== "undefined" ? document.createElement("canvas").getContext?.("2d") : null;
 
 function ajuster(champ) {
@@ -15,7 +15,6 @@ function ajuster(champ) {
   if (depasse <= 28) return champ.removeAttribute("data-ph-long");
   champ.setAttribute("data-ph-long", "");
   champ.style.setProperty("--ph-decalage", `-${depasse}px`);
-  champ.style.setProperty("--ph-duree", `${(2 + depasse / 25).toFixed(1)}s`);
 }
 
 export function usePlaceholdersDefilants() {

@@ -195,19 +195,22 @@ export function detailInflation(lignes) {
 // Inflation d'une période courte (pas de courbe possible) : prix payés dans la période comparés au prix médian
 // des mêmes produits sur les 12 mois d'avant. Même méthode de Jevons et mêmes bornes que l'indice mensuel.
 export function inflationCourte(lignes, avant) {
-    const prixPar = (ls) => {
+    const depenses = new Map();
+    const prixPar = (ls, compter) => {
         const m = new Map();
         for (const l of ls) {
             if (l.statut !== "chow" || !l.food_id) continue;
             const cle = l.food_id + "|" + (l.prix_ref != null ? "kg" : "u");
             m.set(cle, [...(m.get(cle) || []), prixLigne(l)]);
+            if (compter) depenses.set(cle, (depenses.get(cle) || 0) + l.total);
         }
         return m;
     };
-    const maintenant = prixPar(lignes), reference = prixPar(avant);
+    const maintenant = prixPar(lignes, true), reference = prixPar(avant, false);
+    // Chaque aliment pèse ce que le foyer y dépense sur la période, comme dans l'indice mensuel.
     const moyenne = moyennePonderee([...maintenant]
         .filter(([cle]) => reference.has(cle))
-        .map(([cle, p]) => ({ poids: p.length, rapport: mediane(p) / mediane(reference.get(cle)) })));
+        .map(([cle, p]) => ({ poids: depenses.get(cle), rapport: mediane(p) / mediane(reference.get(cle)) })));
     return moyenne === null ? null : arrondi((moyenne - 1) * 100, 1);
 }
 

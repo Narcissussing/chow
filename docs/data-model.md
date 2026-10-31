@@ -41,7 +41,8 @@ Tout ce que le foyer achète. Chaîne : ligne → produit → article → catég
   leurs types, `consommable` ou équipement.
 - `articles` : besoin générique (`tomate`, `papier-toilette`, `piles-aaa`),
   `unite_ref` (`kg`, `l`, `piece`) pour comparer les prix, `suivi` (`nombre`,
-  `niveau`, vide) pour l'inventaire, `achat_en_promo`. Un article par aliment
+  `niveau`, vide) pour l'inventaire, `achat_en_promo`, `a_reduire` (1 superflu,
+  2 dessert : niveaux d'économie des Tickets). Un article par aliment
   Chow (même identifiant) ; les fourre-tout (`fourre_tout`) gardent ce qui
   n'est pas encore détaillé ou n'est acheté qu'une fois.
 - `produits` : un libellé imprimé dans une enseigne, son `article_id` (vide =
@@ -55,6 +56,10 @@ Tout ce que le foyer achète. Chaîne : ligne → produit → article → catég
   `prix_unitaire`, `montant` avant remise.
 - `promos` : une remise par ligne (`offre` imprimée, `type`, `pourcentage`,
   `montant`).
+- `choix` : Mon plan, un choix par article (`decision` garder, moins, arrêter,
+  changer ; `quantite_visee` par mois pour « moins » ; `preference` texte
+  libre, ex. gros œufs à Marché Frais). Un article gardé avec une préférence ne
+  reçoit plus de suggestion « moins cher ».
 
 Vues :
 
@@ -88,6 +93,9 @@ Vues :
   valorisés comme l'estimation.
 - `courses_modeles` : articles ajoutés d'un coup chaque semaine ;
   l'enregistrement remplace toutes les lignes.
+- `jetes` : aliments jetés, une quantité par article et par mois (`mois` = le
+  1er, `unite` kg ou piece), saisis dans Paramètres ; Mon plan en tire une
+  quantité à acheter en moins.
 - `journal` : `food_id`, `quantite_g`, `date_entree`, `ordre`, `unite`
   affichée (`NULL` = grammes), `ajoute` (déjà dans le plat), `personne_id`.
   Calories calculées, jamais stockées.

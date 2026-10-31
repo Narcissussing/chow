@@ -1,0 +1,71 @@
+/* Aliments jetés (Paramètres) : mêmes lignes que les Tickets, avec − et + pour la quantité. */
+.jetes__icone {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--sable, #efe8dc);
+}
+
+.jetes__icone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13'/%3E%3C/svg%3E") center / 22px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 7h14M10 7V5h4v2M7 7l1 13h8l1-13'/%3E%3C/svg%3E") center / 22px no-repeat;
+}
+
+.jetes__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.jetes__total {
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
+.jetes__ligne {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+}
+
+.jetes__ligne.vide .tickets__tuile,
+.jetes__ligne.vide .tickets__nom {
+  opacity: 0.55;
+  transition: opacity 0.2s ease;
+}
+
+.jetes__ligne .plan__quantite span {
+  animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.jetes__ajustes {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(47, 111, 98, 0.08);
+  animation: tickets-entree 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.jetes__ajustes h3 {
+  margin: 0 0 2px;
+  color: #2f6f62;
+  font-size: 0.9rem;
+}
+
+.jetes__ajustes p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jetes__ajustes,
+  .jetes__ligne .plan__quantite span {
+    animation: none;
+  }
+}

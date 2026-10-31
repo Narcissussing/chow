@@ -45,6 +45,22 @@ magasin) : dépensé, dépense par semaine, inflation du foyer comparée à l'IN
 produit (dépense par semaine et par mois), dépenses par rayon et par magasin,
 semaine la plus chère.
 
+Tickets (icône en haut à droite des Stats) : tout ce qui a été acheté sur un
+jour, une semaine ou un mois, filtrable par magasin, en articles ou en tickets
+(un ticket s'ouvre sur ses articles). Total en haut ; trois boutons
+d'économie retirent du total : 1 « À arrêter » (chips, bonbons, chocolat, limonade,
+`achats.articles.a_reduire = 1`), 2 « Desserts » (`a_reduire = 2`),
+3 « Moins cher » (même article acheté au moins deux fois à 85 % du prix ou
+moins, gain d'au moins 0,50 €). Listes par paliers : 10 lignes, puis 10, 20,
+30 de plus.
+
+Mon plan (depuis les Tickets) : pour chaque article proposé, garder, en
+acheter moins (quantité visée par mois), arrêter ou changer pour le moins
+cher ; économie par semaine, mois ou an. Un article gardé avec une préférence
+(gros œufs à Marché Frais) n'est plus proposé moins cher. Aliments jetés
+(Paramètres) : quantité jetée par mois et par aliment ; le plan propose d'en
+acheter d'autant moins.
+
 ### Stock
 
 Inventaire de ce qui est disponible à la maison.

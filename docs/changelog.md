@@ -6,6 +6,11 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 
 ## 2026-10
 
+- Tickets dans les Stats (jour, semaine, mois, par magasin) avec trois niveaux
+  d'économie, Mon plan (garder, moins, arrêter, changer) et aliments jetés
+  dans Paramètres.
+- Données des tickets corrigées : contenances mal lues (spaghetti à 5,1 kg),
+  œufs Marché Frais par 12, trois rangements faux, remises Carrefour notées.
 - Panier de la tournée en mode magasin (par rayon, sur plusieurs magasins et
   jours, « Terminer »), articles de la maison dans les Courses, salutation
   selon l'heure.

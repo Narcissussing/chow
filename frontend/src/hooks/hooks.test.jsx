@@ -61,3 +61,21 @@ test("usePageData : panne réseau → erreur", async () => {
   await act(() => Promise.resolve());
   expect(result.current.etat).toBe("erreur");
 });
+
+test("défilement des textes longs : même vitesse, départ ensemble, arrivée au début ensemble", () => {
+  const { decalageDefilement, VITESSE_DEFILEMENT } = require("./useDefilementSynchro.js");
+  const max = 120, court = 30, trajet = (max / VITESSE_DEFILEMENT) * 1000; // 4 s pour le plus long
+  expect(decalageDefilement(0, max, court)).toBe(0);
+  // Une seconde après le départ, les deux ont glissé de la même distance.
+  expect(decalageDefilement(1500 + 500, max, max)).toBeCloseTo(15, 5);
+  expect(decalageDefilement(1500 + 500, max, court)).toBeCloseTo(15, 5);
+  // Le court s'arrête à son bout ; le long continue.
+  expect(decalageDefilement(1500 + 2000, max, court)).toBe(court);
+  expect(decalageDefilement(1500 + 2000, max, max)).toBeCloseTo(60, 5);
+  // Au retour, le court attend que le long arrive à sa hauteur, puis ils reviennent ensemble au début.
+  const retour = 1500 + trajet + 1500;
+  expect(decalageDefilement(retour + 1000, max, court)).toBe(court);
+  expect(decalageDefilement(retour + 3500, max, max)).toBeCloseTo(15, 5);
+  expect(decalageDefilement(retour + 3500, max, court)).toBeCloseTo(15, 5);
+  expect(decalageDefilement(retour + trajet - 1, max, court)).toBeCloseTo(0, 1);
+});

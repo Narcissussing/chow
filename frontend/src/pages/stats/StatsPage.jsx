@@ -15,6 +15,7 @@ import SelecteurMagasin from "../../components/SelecteurMagasin.jsx";
 import { SelecteurPeriode, libellePeriode } from "./Filtres.jsx";
 import FicheProduit from "./FicheProduit.jsx";
 import ListeProduits, { LignePrix } from "./ListeProduits.jsx";
+import FeuilleTickets from "./FeuilleTickets.jsx";
 import { NombreAnime, useBlocsAnimes } from "./animations.js";
 import "./StatsPage.css";
 
@@ -199,6 +200,8 @@ export default function StatsPage() {
 
   const fermerFiche = useCallback(() => setProduit(null), []);
   const fermerListe = useCallback(() => setListeOuverte(false), []);
+  const [ticketsOuverts, setTicketsOuverts] = useState(false);
+  const fermerTickets = useCallback(() => setTicketsOuverts(false), []);
   const page = useRef(null);
   useBlocsAnimes(page);
   const d = lecture.donnees;
@@ -254,6 +257,7 @@ export default function StatsPage() {
               <SelecteurPeriode periode={periode} onChange={setPeriode} dernierAchat={d.dernierAchat} premierAchat={d.premierAchat} />
               <SelecteurMagasin enseigne={enseigne} onChange={setEnseigne} />
             </div>
+            <button type="button" className="stats__tickets" aria-label="Tickets" title="Tickets" onClick={() => setTicketsOuverts(true)} />
           </header>
 
           <section className="stats__kpis">
@@ -427,6 +431,11 @@ export default function StatsPage() {
               ficheOuverte={!!produit} onOuvrir={setProduit} onFermer={fermerListe} />
           )}
           {produit && <FicheProduit idAliment={produit} periode={periode} enseigne={enseigne} euros={euros} onFermer={fermerFiche} />}
+          {ticketsOuverts && (
+            <FeuilleTickets periodeInitiale={periode.periode === "mois" ? "mois" : "semaine"}
+              refInitiale={periode.periode === "semaine" || periode.periode === "mois" ? periode.ref : d.dernierAchat}
+              enseigneInitiale={enseigne} euros={euros} onFermer={fermerTickets} />
+          )}
         </main>
       )}
     </Page>

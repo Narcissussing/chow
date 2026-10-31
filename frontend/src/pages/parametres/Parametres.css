@@ -40,6 +40,15 @@
   text-decoration: none;
 }
 
+button.parametres__ligne {
+  width: 100%;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
 .parametres__ligne:hover {
   background: #f8f3ec;
 }

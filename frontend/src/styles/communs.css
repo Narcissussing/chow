@@ -415,7 +415,8 @@
   padding-bottom: 8px;
 }
 
-/* Nom trop long : une seule ligne qui défile au doigt, fondue à droite (jamais de 2e ligne ni de « … »). */
+/* Nom trop long : une seule ligne fondue à droite (jamais de 2e ligne ni de « … ») qui défile toute seule, au même
+   rythme que tous les autres textes longs (useDefilementSynchro), et au doigt. */
 .nom-defile {
   display: block;
   min-width: 0;
@@ -433,9 +434,10 @@
   display: none;
 }
 
-/* Placeholder trop long (repéré par usePlaceholdersDefilants) : défilement lent aller-retour, fondu à droite. */
+/* Placeholder trop long (repéré par usePlaceholdersDefilants) : il défile sur la même horloge que les noms
+   (useDefilementSynchro règle --ph-position), fondu à droite. */
 [data-ph-long]:placeholder-shown {
-  animation: placeholder-defile var(--ph-duree, 6s) ease-in-out 1s infinite alternate;
+  text-indent: var(--ph-position, 0);
 }
 
 [data-ph-long]::placeholder {
@@ -445,19 +447,8 @@
   color: transparent;
 }
 
-@keyframes placeholder-defile {
-  0%,
-  15% {
-    text-indent: 0;
-  }
-  85%,
-  100% {
-    text-indent: var(--ph-decalage, 0);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   [data-ph-long]:placeholder-shown {
-    animation: none;
+    text-indent: 0;
   }
 }

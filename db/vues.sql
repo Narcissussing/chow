@@ -177,6 +177,12 @@ COMMENT ON COLUMN achats.categories.ordre IS 'Ordre d''affichage parmi les caté
 COMMENT ON TABLE achats.articles IS 'Ce qu''on écrit sur une liste de courses (tomate, papier toilette). Une marque ou un format différent reste le même article.';
 COMMENT ON COLUMN achats.articles.unite_ref IS 'Unité de comparaison des prix : kg, l ou piece.';
 COMMENT ON COLUMN achats.articles.fourre_tout IS 'Article d''attente pour des produits pas encore détaillés ; exclu des prix et du panier habituel.';
+COMMENT ON TABLE achats.choix IS 'Mon plan : décision du foyer pour un article (garder, moins, arrêter, changer pour le moins cher).';
+COMMENT ON COLUMN achats.choix.quantite_visee IS 'Pour « moins » : quantité visée par mois, dans l''unité d''achat (kg ou nombre).';
+COMMENT ON COLUMN achats.choix.preference IS 'Ce qu''on préfère malgré un prix plus bas ailleurs (« Gros œufs, Marché Frais »).';
+COMMENT ON TABLE chow.jetes IS 'Aliments jetés : quantité d''un article jetée sur un mois, saisie dans Paramètres.';
+COMMENT ON COLUMN chow.jetes.mois IS 'Premier jour du mois concerné.';
+COMMENT ON COLUMN achats.articles.a_reduire IS 'Niveau d''économie proposé dans les Tickets : 1 = superflu à arrêter (chips), 2 = dessert qu''on peut enlever ; vide sinon.';
 COMMENT ON TABLE achats.produits IS 'Un article tel que vendu dans une enseigne, avec le libellé imprimé sur le ticket et le format du paquet.';
 COMMENT ON COLUMN achats.produits.libelle IS 'Texte imprimé sur le ticket, tel quel.';
 COMMENT ON COLUMN achats.produits.article_id IS 'Article correspondant ; vide = à classer.';

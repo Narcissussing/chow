@@ -956,6 +956,12 @@
   .stats__filtres {
     width: 100%;
     justify-content: space-between;
+    order: 3;
+  }
+
+  /* Le ticket reste à droite du titre, les filtres passent dessous. */
+  .stats__tickets {
+    order: 2;
   }
 
   .stats__kpis {

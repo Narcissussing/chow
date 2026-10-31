@@ -1,0 +1,171 @@
+/* Mon plan : par-dessus les Tickets, mêmes lignes et mêmes boutons segmentés. */
+.fiche-fond--plan {
+  z-index: 95;
+}
+
+.plan__icone {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(47, 111, 98, 0.1);
+}
+
+.plan__icone::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #2f6f62;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18l5-5 4 3 7-8'/%3E%3Cpath d='M15 8h5v5'/%3E%3C/svg%3E") center / 22px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 18l5-5 4 3 7-8'/%3E%3Cpath d='M15 8h5v5'/%3E%3C/svg%3E") center / 22px no-repeat;
+}
+
+.plan__total .discret {
+  font-size: 0.85rem;
+}
+
+.plan__gain {
+  color: #2f6f62;
+}
+
+.plan__section h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  font-size: 0.92rem;
+}
+
+.plan__section h3 .plan__gain {
+  margin-left: auto;
+  font-size: 0.82rem;
+}
+
+.plan__point {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c, var(--text-muted));
+}
+
+.plan__section--choix {
+  --c: #7a8fb8;
+  --c-fond: rgba(122, 143, 184, 0.1);
+}
+
+.plan__section--jete {
+  --c: var(--text-muted);
+  --c-fond: rgba(107, 98, 87, 0.08);
+}
+
+.plan__section .tickets__liste {
+  display: grid;
+  gap: 8px;
+}
+
+.plan__ligne {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  animation: tickets-entree 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transition: background-color 0.25s ease, border-color 0.25s ease;
+}
+
+.plan__ligne.choisi {
+  background: rgba(47, 111, 98, 0.05);
+  border-color: rgba(47, 111, 98, 0.3);
+}
+
+.plan__section--choix .plan__ligne {
+  background: var(--c-fond);
+  border-color: color-mix(in srgb, var(--c) 35%, transparent);
+}
+
+.plan__article {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.plan__article .tickets__valeur {
+  grid-column: auto;
+}
+
+.plan__article .tickets__valeur .discret {
+  font-size: 0.72rem;
+}
+
+.plan__choix {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.plan__choix .segmente button {
+  padding: 5px 11px;
+  font-size: 0.78rem;
+}
+
+.plan__quantite {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: popIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Largeur fixe : les − et + ne bougent pas quand la quantité change. */
+.plan__quantite span {
+  width: 76px;
+  text-align: center;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.plan__quantite button {
+  width: 28px;
+  height: 28px;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.plan__quantite button:active {
+  transform: scale(0.88);
+}
+
+.plan__quantite button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Lien vers Mon plan, sous le total des Tickets. */
+.tickets__lien-plan {
+  align-self: flex-start;
+  border: 0;
+  background: none;
+  color: #2f6f62;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan__ligne,
+  .plan__quantite {
+    animation: none;
+  }
+}

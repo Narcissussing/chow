@@ -1,0 +1,723 @@
+/* Tickets (Stats) : total en haut, niveaux d'économie, puis articles ou passages en caisse, liste par paliers. */
+.tickets {
+  gap: 14px;
+}
+
+.tickets__entete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tickets__icone {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: rgba(200, 71, 43, 0.1);
+}
+
+.tickets__icone::after,
+.stats__tickets::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--accent);
+  -webkit-mask: url("/images/svg/ticket.svg") center / 22px no-repeat;
+  mask: url("/images/svg/ticket.svg") center / 22px no-repeat;
+}
+
+.tickets__retour {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--sable, #efe8dc);
+  cursor: pointer;
+  position: relative;
+  animation: fadeIn 0.2s ease;
+}
+
+.tickets__retour::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-color: var(--text-muted);
+  -webkit-mask: url("/images/svg/retour.svg") center / 16px no-repeat;
+  mask: url("/images/svg/retour.svg") center / 16px no-repeat;
+}
+
+.tickets__titre {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tickets__titre h2 {
+  font-size: 1.25rem;
+}
+
+.tickets__defile {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0 -8px;
+  padding: 0 8px 8px;
+}
+
+.tickets__filtres {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.segmente {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--sable, #efe8dc);
+}
+
+.segmente button {
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.segmente button.actif {
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Largeur fixe : rien ne bouge quand le libellé change. */
+.tickets__periode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 172px;
+  padding: 3px;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.tickets__periode span {
+  flex: 1;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.tickets__periode button {
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.tickets__periode button:hover {
+  background: var(--sable, #efe8dc);
+}
+
+.tickets__total {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.tickets__total b {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.tickets__total s {
+  font-size: 1rem;
+  animation: fadeIn 0.25s ease;
+}
+
+.tickets__badge {
+  margin-left: auto;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(47, 111, 98, 0.12);
+  color: #2f6f62;
+  font-size: 0.82rem;
+  font-weight: 600;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.tickets__niveaux {
+  display: grid;
+  gap: 8px;
+}
+
+.niveau--1 {
+  --c: var(--accent);
+  --c-fond: rgba(200, 71, 43, 0.08);
+}
+
+.niveau {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 0 0;
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 0.25s ease, border-color 0.25s ease, transform 0.12s ease;
+}
+
+.niveau--2 {
+  --c: #b07a12;
+  --c-fond: rgba(217, 164, 65, 0.12);
+}
+
+.niveau--3 {
+  --c: #2f6f62;
+  --c-fond: rgba(47, 111, 98, 0.09);
+}
+
+/* Toucher le niveau ouvre sa liste ; le rond à droite retire le niveau du total. */
+.niveau__ouvrir {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto 14px;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0 10px 12px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.niveau__ouvrir:active {
+  transform: scale(0.98);
+}
+
+.niveau__fleche {
+  width: 14px;
+  height: 14px;
+  background: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.niveau-bloc.ouvert .niveau__fleche {
+  transform: rotate(180deg);
+}
+
+.niveau.actif {
+  background: var(--c-fond);
+  border-color: color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+.niveau__numero {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: var(--c-fond);
+  color: var(--c);
+  font-weight: 700;
+}
+
+.niveau__texte,
+.niveau__valeur {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.niveau__texte .discret {
+  font-size: 0.78rem;
+}
+
+.niveau__valeur {
+  align-items: flex-end;
+}
+
+.niveau__valeur .discret {
+  font-size: 0.72rem;
+}
+
+.niveau.actif .niveau__valeur b {
+  color: var(--c);
+}
+
+.niveau__coche {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1.6px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
+}
+
+.niveau__coche:active {
+  transform: scale(0.85);
+}
+
+.niveau__coche:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.niveau__coche[aria-pressed="true"] {
+  border-color: var(--c);
+  background: var(--c) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.2 2.2 4.6-4.8' fill='none' stroke='%23fffdf8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 14px no-repeat;
+  animation: popIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Détail d'un niveau coché : ce qui est retiré, article par article, avec une case pour garder un article. */
+.niveau-bloc {
+  display: grid;
+}
+
+.niveau-bloc.ouvert .niveau {
+  border-bottom-left-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+
+.niveau__detail {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition: grid-template-rows 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease, margin 0.3s ease;
+}
+
+.niveau-bloc.ouvert .niveau__detail {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  margin-top: 4px;
+}
+
+.niveau__detail > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.niveau__detail ul {
+  list-style: none;
+  margin: 0;
+  padding: 4px 12px;
+  border-radius: 4px 4px 0 0;
+  background: var(--c-fond);
+}
+
+.niveau__detail li {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  grid-auto-flow: column;
+  grid-auto-columns: 22px;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 0;
+  transition: opacity 0.2s ease;
+}
+
+.niveau__detail li + li {
+  border-top: 1px solid color-mix(in srgb, var(--c) 15%, transparent);
+}
+
+.niveau__detail .tickets__tuile {
+  background: var(--surface);
+}
+
+.niveau__retire {
+  color: var(--c);
+  font-size: 0.9rem;
+  white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+/* Article gardé : il pâlit et ne compte plus dans l'économie. */
+.niveau__detail li.garde {
+  opacity: 0.5;
+}
+
+.niveau__detail li.garde .niveau__retire {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.niveau__case {
+  width: 22px;
+  height: 22px;
+  border: 1.6px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
+}
+
+.niveau__case[aria-pressed="true"] {
+  border-color: var(--c);
+  background: var(--c) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.2 2.2 4.6-4.8' fill='none' stroke='%23fffdf8' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center / 15px no-repeat;
+}
+
+.niveau__case:active {
+  transform: scale(0.85);
+}
+
+.niveau__detail .tickets__lien-plan {
+  width: 100%;
+  padding: 8px 12px 10px;
+  border-radius: 0 0 12px 12px;
+  background: var(--c-fond);
+  text-align: left;
+  font-size: 0.8rem;
+}
+
+.tickets__liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tickets__ligne,
+.tickets__ligne--ticket button {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0;
+}
+
+.tickets__ligne {
+  animation: tickets-entree 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 35ms);
+  transition: opacity 0.25s ease;
+}
+
+.tickets__ligne--ticket {
+  display: block;
+  padding: 0;
+}
+
+.tickets__ligne--ticket button {
+  width: 100%;
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  margin: 0 -8px;
+  padding: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: content-box;
+}
+
+@media (hover: hover) {
+  .tickets__ligne--ticket button:not(:disabled):hover {
+    background: var(--sable, #efe8dc);
+  }
+}
+
+.tickets__ligne--ticket button:disabled {
+  cursor: default;
+}
+
+.tickets__tuile,
+.tickets__logo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--sable, #efe8dc);
+  font-size: 1.1rem;
+}
+
+.tickets__logo {
+  object-fit: contain;
+  background: #fff;
+  border: 1px solid var(--border);
+  box-sizing: border-box;
+}
+
+.tickets__nom {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tickets__nom .discret {
+  font-size: 0.78rem;
+}
+
+.tickets__pastille {
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--c-fond);
+  color: var(--c);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.tickets__valeur {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  grid-column: -2;
+  white-space: nowrap;
+}
+
+.tickets__valeur b {
+  transition: color 0.25s ease;
+}
+
+.tickets__gain {
+  color: #2f6f62;
+  font-size: 0.75rem;
+  font-weight: 600;
+  animation: fadeIn 0.25s ease;
+}
+
+/* Article retiré par un niveau coché : il pâlit et son prix est barré. */
+.tickets__ligne.retire {
+  opacity: 0.55;
+}
+
+.tickets__ligne.retire .tickets__valeur b {
+  color: var(--text-muted);
+  text-decoration: line-through;
+}
+
+.tickets__ligne.retire:has(.niveau--3) {
+  opacity: 1;
+}
+
+.tickets__ligne.retire:has(.niveau--3) .tickets__valeur b {
+  text-decoration: none;
+  color: var(--text);
+}
+
+.tickets__plus {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin-top: 10px;
+  padding: 11px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--sable, #efe8dc);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+
+.tickets__plus:active {
+  transform: scale(0.97);
+}
+
+.tickets__bloc.sortie {
+  animation: tickets-sortie 0.18s ease-in forwards;
+}
+
+/* Bouton des Tickets en haut à droite des Stats. */
+.stats__tickets {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  margin-left: auto;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.stats__tickets::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  -webkit-mask-size: 19px;
+  mask-size: 19px;
+}
+
+@media (hover: hover) {
+  .stats__tickets:hover {
+    transform: translateY(-1px) rotate(-6deg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+}
+
+.stats__tickets:active {
+  transform: scale(0.92);
+}
+
+@keyframes tickets-entree {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes tickets-sortie {
+  to {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tickets__ligne,
+  .tickets__bloc.sortie,
+  .niveau.actif .niveau__coche,
+  .tickets__badge {
+    animation: none;
+  }
+}
+
+/* Sortir un article du niveau : ✕ discret, la ligne se replie avant que la liste soit relue. */
+.niveau__sortir {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.15s ease;
+}
+
+.niveau__sortir::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--text-muted);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 5l6 6M11 5l-6 6' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center / 14px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M5 5l6 6M11 5l-6 6' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E") center / 14px no-repeat;
+}
+
+@media (hover: hover) {
+  .niveau__sortir:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+}
+
+.niveau__detail li.sort {
+  animation: niveau-sortie 0.26s ease-in forwards;
+}
+
+.niveau__detail > div {
+  border-radius: 4px 4px 12px 12px;
+  background: var(--c-fond);
+}
+
+.niveau__detail ul {
+  background: transparent;
+}
+
+.niveau__detail .tickets__lien-plan {
+  background: transparent;
+}
+
+.niveaux__entete {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.niveaux__entete h3 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.niveaux__aide {
+  position: relative;
+}
+
+.niveaux__aide > button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  font: italic 600 0.72rem/1 Georgia, serif;
+  cursor: pointer;
+}
+
+.niveaux__bulle {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: -8px;
+  z-index: 5;
+  width: 230px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text);
+  animation: popIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.niveaux__bulle.ferme {
+  animation: niveau-sortie 0.18s ease-in forwards;
+}
+
+@keyframes niveau-sortie {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .niveau__detail li.sort,
+  .niveaux__bulle,
+  .niveaux__bulle.ferme {
+    animation: none;
+  }
+}

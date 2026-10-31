@@ -53,7 +53,7 @@ const moisDecale = (m, n) => iso(new Date(Number(m.slice(0, 4)), Number(m.slice(
 
 // Un seul calendrier pour la plage : 1er toucher = début, 2e = fin, appliquée aussitôt (sans bouton).
 // Un jour avant le début devient le début ; pas de jour après aujourd'hui ni avant le premier achat.
-function CalendrierPlage({ debut, fin, min, max, ferme, onAppliquer }) {
+export function CalendrierPlage({ debut, fin, min, max, ferme, onAppliquer }) {
   const [mois, setMois] = useState((fin || max).slice(0, 7));
   const [plage, setPlage] = useState({ debut, fin });
   const [survol, setSurvol] = useState(null);
@@ -185,9 +185,6 @@ export function SelecteurPeriode({ periode, onChange, dernierAchat, premierAchat
       <button type="button" className="periode__fleche" aria-label="Période précédente" hidden={!avecFleches} disabled={precedentImpossible} onClick={() => onChange(decaler(periode, -1))}>‹</button>
       <button type="button" className="periode__choix" aria-haspopup="menu" aria-expanded={ouvert} onClick={() => (ouvert ? fermer() : setOuvert(true))}>
         <span className="periode__libelle">{libellePeriode(periode)}</span>
-        <svg className="chevron-bas" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="m6 9 6 6 6-6" />
-        </svg>
       </button>
       <button type="button" className="periode__fleche" aria-label="Période suivante" hidden={!avecFleches} disabled={suivantImpossible} onClick={() => onChange(decaler(periode, 1))}>›</button>
       {ouvert && (

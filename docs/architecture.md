@@ -49,6 +49,7 @@ privée doit rester déclarée après `app.use(requireAuth)`.
 | Accès | `POST /api/login`, `POST /api/logout`, `GET /api/session` |
 | Accueil | `GET /api/accueil` |
 | Stats | `GET /api/stats?periode=&ref=&enseigne=`, `GET /api/stats/produit/:id` (calculs dans `stats.js`) |
+| Tickets et plan | `GET /api/stats/tickets?periode=jour\|semaine\|mois&ref=&enseigne=` (`tickets.js`), `GET /api/plan`, `POST /api/plan/:idArticle` (`plan.js`), `GET /api/jetes?mois=`, `POST /api/jetes` |
 | Aliments | `GET /api/aliments`, `GET /api/aliments/:id`, créer, équivalences (admin) |
 | Stock | `GET /api/stock`, ajouter, modifier, supprimer |
 | Courses | `GET /api/courses`, `GET /api/courses/estimation`, ajouter, acheter, supprimer, notes, photos, preset |
