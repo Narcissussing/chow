@@ -417,24 +417,33 @@ export function ficheProduit(lignes, aujourdhui = jourIso(new Date()), params = 
     lignes.sort((a, b) => a.jour.localeCompare(b.jour));
     // Achats dans la période et le magasin choisis sur la page Stats.
     let periode = null;
+    let dansPeriode = () => true;
     if (params) {
         const { debut, fin } = bornesPeriode(params, aujourdhui, lignes[0].jour);
         const enseigne = params.enseigne && params.enseigne !== "tous" ? params.enseigne : null;
-        const dedans = lignes.filter((l) => l.jour >= debut && l.jour < fin && (!enseigne || l.enseigne === enseigne));
+        dansPeriode = (l) => l.jour >= debut && l.jour < fin && (!enseigne || l.enseigne === enseigne);
+        const dedans = lignes.filter(dansPeriode);
         periode = { achats: new Set(dedans.map((l) => l.ticket_id)).size, depense: arrondi(somme(dedans)) };
     }
     const auPoids = lignes.filter((l) => l.prix_ref != null).length * 2 >= lignes.length;
     const comparables = lignes.filter((l) => (l.prix_ref != null) === auPoids);
     const parMois = new Map();
-    for (const l of comparables) parMois.set(l.jour.slice(0, 7), [...(parMois.get(l.jour.slice(0, 7)) || []), prixLigne(l)]);
-    const moisCourbe = [...parMois].sort().slice(-12);
+    // La courbe suit la période et le magasin choisis sur la page Stats (tout l'historique sans filtre).
+    for (const l of comparables.filter(dansPeriode)) parMois.set(l.jour.slice(0, 7), [...(parMois.get(l.jour.slice(0, 7)) || []), prixLigne(l)]);
+    const moisCourbe = [...parMois].sort();
     const plusieursAnnees = moisCourbe.length && moisCourbe[0][0].slice(0, 4) !== moisCourbe[moisCourbe.length - 1][0].slice(0, 4);
-    const courbe = moisCourbe.map(([m, p], i) => ({
-        mois: m,
-        // Année ajoutée au premier mois et à chaque janvier quand la courbe couvre plusieurs années.
-        etiquette: MOIS_COURTS[Number(m.slice(5)) - 1] + (plusieursAnnees && (i === 0 || m.endsWith("-01")) ? " " + m.slice(2, 4) : ""),
-        prix: arrondi(mediane(p)),
-    }));
+    const long = moisCourbe.length > 12;
+    const courbe = moisCourbe.map(([m, p], i) => {
+        const numero = Number(m.slice(5));
+        // Au-delà de 12 mois, un libellé par trimestre (le survol donne le mois exact) pour que l'axe reste lisible.
+        const libelle = !long || i === 0 || i === moisCourbe.length - 1 || (numero - 1) % 3 === 0;
+        return {
+            mois: m,
+            // Année ajoutée au premier mois et à chaque janvier quand la courbe couvre plusieurs années.
+            etiquette: libelle ? MOIS_COURTS[numero - 1] + (plusieursAnnees && (i === 0 || numero === 1) ? " " + m.slice(2, 4) : "") : "",
+            prix: arrondi(mediane(p)),
+        };
+    });
     const enseignes = new Map();
     for (const l of comparables) enseignes.set(l.enseigne, arrondi(prixLigne(l)));
     const premier = prixLigne(comparables[0]), dernier = prixLigne(comparables[comparables.length - 1]);

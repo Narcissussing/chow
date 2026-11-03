@@ -9,5 +9,6 @@ DO $$
 DECLARE n INTEGER;
 BEGIN
     SELECT count(*) INTO n FROM achats.produits WHERE article_id = 'bonbons';
-    IF n < 25 THEN RAISE EXCEPTION 'Bonbons : % produits rangés, au moins 25 attendus', n; END IF;
+    -- La production en a moins que la dev (24 contre 28) : on bloque seulement si rien n'a été rangé.
+    IF n = 0 THEN RAISE EXCEPTION 'Bonbons : aucun produit rangé'; END IF;
 END $$;

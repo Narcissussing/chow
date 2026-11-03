@@ -665,16 +665,21 @@
   gap: 8px;
 }
 
-.niveaux__entete h3 {
+/* Plus précis que .fiche h3, dont la marge basse décalait le titre du « i ». */
+.fiche .niveaux__entete h3 {
   margin: 0;
   font-size: 0.92rem;
+  line-height: 20px;
 }
 
 .niveaux__aide {
   position: relative;
+  display: flex;
 }
 
 .niveaux__aide > button {
+  display: grid;
+  place-items: center;
   width: 20px;
   height: 20px;
   padding: 0;

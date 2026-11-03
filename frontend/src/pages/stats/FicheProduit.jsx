@@ -93,8 +93,11 @@ export default function FicheProduit({ idAliment, periode, enseigne, euros, onFe
                 {fiche.variation > 0 ? "+" : ""}{fiche.variation} % depuis {fiche.depuis}
               </span>
             </div>
-            <Courbe id="fiche-courbe" largeur={400} hauteur={130} format={(v) => euros(v, 2) + unite}
-              points={fiche.courbe.map((c) => ({ valeur: c.prix, etiquette: c.etiquette, titre: new Date(c.mois + "-01T00:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) }))} />
+            {/* Courbe sur la période choisie : il faut au moins deux mois d'achats pour tracer une évolution. */}
+            {fiche.courbe.length > 1 && (
+              <Courbe id="fiche-courbe" largeur={400} hauteur={130} format={(v) => euros(v, 2) + unite}
+                points={fiche.courbe.map((c) => ({ valeur: c.prix, etiquette: c.etiquette, titre: new Date(c.mois + "-01T00:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" }) }))} />
+            )}
             {fiche.habitudes.achats12Mois > 0 && (
               <section className="habitudes">
                 <h3>Habitudes du foyer <span className="discret">· 12 derniers mois</span></h3>

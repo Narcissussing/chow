@@ -15,7 +15,8 @@ export function useClicExterieur(refs, auClic, actif = true) {
       const dedans = refs.some((ref) => ref.current && ref.current.contains(event.target));
       if (!dedans) rappel.current(event);
     }
-    document.addEventListener("click", surClic);
-    return () => document.removeEventListener("click", surClic);
+    // Écoute à la descente : une feuille qui arrête la propagation n'empêche plus la fermeture.
+    document.addEventListener("click", surClic, true);
+    return () => document.removeEventListener("click", surClic, true);
   }, [actif, refs]);
 }

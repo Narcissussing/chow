@@ -85,7 +85,9 @@ export function Courbe({ points, largeur = 600, hauteur = 180, id = "courbe", fo
         <span className={"courbe__point" + (valeurs[actif] < valeurs[Math.max(0, actif - 1)] ? " courbe__point--baisse" : "")}
           style={{ left: pourcent(actif)[0] + "%", top: pourcent(actif)[1] + "%" }} />
         {survol !== null && (
-          <span className="bulle" style={{ left: pourcent(survol)[0] + "%", top: pourcent(survol)[1] + "%" }}>
+          // Près d'un bord, la bulle part du point vers l'intérieur au lieu d'être centrée, pour ne jamais être coupée.
+          <span className="bulle" style={{ left: pourcent(survol)[0] + "%", top: pourcent(survol)[1] + "%",
+            transform: `translate(${pourcent(survol)[0] < 30 ? "-12px" : pourcent(survol)[0] > 70 ? "calc(-100% + 12px)" : "-50%"}, calc(-100% - 12px))` }}>
             {points[survol].titre || points[survol].etiquette} · <b>{format(valeurs[survol])}</b>
             {nationales[survol] !== null && <> · 🇫🇷 {format(nationales[survol])}</>}
           </span>

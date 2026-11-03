@@ -1,10 +1,31 @@
 import { act, render, renderHook } from "@testing-library/react";
 import { StrictMode } from "react";
 import { reinitialiserSessionPourTests } from "../api.js";
+import { useRef } from "react";
 import { useBodyClass } from "./useBodyClass.js";
+import { useClicExterieur } from "./useClicExterieur.js";
 import { useLocalStorage } from "./useLocalStorage.js";
 import { useMinuteurs } from "./useMinuteurs.js";
 import { usePageData } from "./usePageData.js";
+
+test("useClicExterieur ferme même dans une feuille qui arrête la propagation", () => {
+  const fermer = jest.fn();
+  function Feuille() {
+    const zone = useRef(null);
+    useClicExterieur([zone], fermer, true);
+    return (
+      <aside onClick={(e) => e.stopPropagation()}>
+        <span ref={zone}>bulle</span>
+        <p>ailleurs</p>
+      </aside>
+    );
+  }
+  const { getByText } = render(<Feuille />);
+  getByText("bulle").click();
+  expect(fermer).not.toHaveBeenCalled();
+  getByText("ailleurs").click();
+  expect(fermer).toHaveBeenCalledTimes(1);
+});
 
 test("useBodyClass retire sa classe au démontage", () => {
   function Page() {

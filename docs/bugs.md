@@ -53,6 +53,25 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-110 — Le « i » n'est pas aligné avec son titre (Économiser, Inflation)
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/stats/FeuilleTickets.css`, `frontend/src/pages/stats/StatsPage.css`
+- **Date de signalement** : 2026-10-31
+- **Date de correction** : 2026-10-31
+
+**Étapes de reproduction** :
+
+1. Stats, ouvrir les Tickets.
+2. Regarder « Économiser » et son bouton « i » ; puis « Inflation » et son ⓘ dans les Stats.
+
+**Résultat attendu** : le bouton est centré verticalement sur le titre.
+
+**Résultat obtenu** : le bouton est décalé vers le bas par rapport au texte.
+
+**Correction** : le conteneur du bouton héritait de la hauteur de ligne du texte (1,6) et posait le bouton sur la ligne de base ; il passe en flex et le bouton centre son glyphe. Dans les Tickets, la marge basse de `.fiche h3` remontait aussi le titre de 4 px : annulée.
+
 ### CHOW-109 — Spaghetti à 5,1 kg par achat (contenances mal lues sur les tickets)
 
 - **Niveau** : Majeure

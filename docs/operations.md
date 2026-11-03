@@ -45,7 +45,9 @@ Le script crée le compte ou remplace son mot de passe.
 - application Fly.io : `ch-ow` ;
 - région : `cdg` ;
 - machine : CPU partagé, 256 Mo ;
-- une machine toujours allumée (`auto_stop_machines = off`, `min_machines_running = 1`) ;
+- une machine qui s'arrête au repos et se rallume à la première visite
+  (`auto_stop_machines = stop`, `min_machines_running = 0`) : toujours allumée,
+  elle coûtait ~2,40 $ par mois, contre quelques centimes en septembre 2026 ;
 - sessions et photos persistées dans PostgreSQL.
 
 Le disque local de la machine n’est pas une source de persistance.
@@ -188,6 +190,25 @@ DELETE FROM ip_bloquees WHERE ip = '<adresse>';
 - `getaddrinfo EAI_AGAIN` au démarrage : les migrations ne trouvaient pas Neon, le
   processus sortait en erreur, Fly a relancé 10 fois puis arrêté la machine. Rien à
   corriger côté code ; après la panne, `fly machine restart -a ch-ow` ou ouvrir l'app.
+
+### 2026-10-31 — Contrôle de migration trop strict, production arrêtée
+
+- **Symptôme :** `Bonbons : 24 produits rangés, au moins 25 attendus` au démarrage ;
+  Fly a relancé 10 fois puis arrêté la machine.
+- **Cause :** le contrôle de `2026-10-31-5-bonbons.sql` reprenait le compte de la dev
+  (28) ; la production en a 24.
+- **Correctif :** le contrôle ne bloque plus que si aucun produit n'est rangé.
+- **À retenir :** un contrôle de migration vérifie une règle (total inchangé, rien de
+  perdu), jamais un compte relevé sur la dev.
+- Même jour : des aliments créés sur la dev hors migration manquaient en production
+  (Ailerons de dinde introuvable dans les Courses). `2026-10-31-7-aliments-de-la-dev.sql`
+  recopie les 238 aliments de la dev, sans toucher ceux qui existent. Tout nouvel
+  aliment passe par une migration datée.
+- 2026-11-02 : même cause pour les produits des tickets (pains et fromage à burger
+  rangés dans le bœuf haché en production : pics à 6,48 et 17,86 €/kg).
+  `2026-11-02-2-produits-comme-la-dev.sql` aligne rangement et contenance sur la dev
+  et recopie catégories et articles manquants. Toute correction de données passe par
+  une migration, jamais à la main sur une seule base.
 
 ### Déploiement
 
