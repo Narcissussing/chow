@@ -361,8 +361,8 @@ function Courses({ donnees }) {
     if (!actif) setActives(new Set(puces));
   }
 
-  const cleListe = new Set(items.map((i) => cleArticlePreset(i.food_id, i.nom)));
-  const clePreset = new Set(preset.map((a) => cleArticlePreset(a.food_id, a.nom_libre)));
+  const cleListe = new Set(items.map((i) => cleArticlePreset(i.food_id, i.nom, i.article_id)));
+  const clePreset = new Set(preset.map((a) => cleArticlePreset(a.food_id, a.nom_libre, a.article_id)));
   const presetIdentique = cleListe.size === clePreset.size && [...cleListe].every((c) => clePreset.has(c));
 
   function appliquerPreset() {
@@ -392,7 +392,7 @@ function Courses({ donnees }) {
           alert(reponse.erreur);
           return;
         }
-        setPreset(items.map((i) => (i.food_id ? { food_id: i.food_id, nom_libre: null } : { food_id: null, nom_libre: i.nom.toLowerCase() })));
+        setPreset(items.map((i) => ({ food_id: i.food_id || null, article_id: i.food_id ? null : i.article_id || null, nom_libre: i.food_id || i.article_id ? null : i.nom.toLowerCase() })));
         setPresetConfirme(true);
         planifier(() => setPresetConfirme(false), 1500);
       })

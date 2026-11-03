@@ -125,7 +125,7 @@ export default function EstimationCourses({ estimation }) {
             <span className="estimation__jauge-bornes"><span>{estimation.bas} €</span><span>{estimation.haut} €</span></span>
           </div>
           <ul className="estimation__liste">
-            {details.map((d, i) => <Ligne key={d.nom} d={d} rang={i} />)}
+            {details.map((d, i) => <Ligne key={d.nom + i} d={d} rang={i} />)}
           </ul>
         </div>,
         document.body

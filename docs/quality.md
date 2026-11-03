@@ -105,8 +105,9 @@ dans le fichier `Qualité (QA) → BFV` ; les Bugs restent dans
 
 ## Couverture actuelle
 
-Le projet ne possède ni tests automatisés, ni lint, ni navigateur headless.
-Cette dette est suivie dans Jira :
+L’interface a des tests Jest (`npx jest` dans `frontend/`). Le serveur n’a ni
+tests automatisés ni lint, et il n’y a pas de navigateur headless. Cette dette
+est suivie dans Jira :
 
 - `CHOW-48` : tests automatisés et lint ;
 - `CHOW-49` : modularisation du backend ;

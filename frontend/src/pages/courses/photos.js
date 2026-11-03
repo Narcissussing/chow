@@ -73,6 +73,6 @@ export function synchroniserPhotosLocales(idsAvecPhoto) {
   });
 }
 
-export function cleArticlePreset(foodId, nom) {
-  return foodId ? "f:" + foodId : "n:" + (nom || "").toLowerCase();
+export function cleArticlePreset(foodId, nom, articleId) {
+  return foodId ? "f:" + foodId : articleId ? "a:" + articleId : "n:" + (nom || "").toLowerCase();
 }

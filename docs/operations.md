@@ -78,16 +78,17 @@ Les tickets bruts et leurs CSV restent dans `tickets/` (ignoré par Git).
 régénèrent `achats.csv`, `promos.csv` et `correspondances.csv`. L'import
 remplit `achats.tickets`, `achats.produits`, `achats.lignes` et
 `achats.promos` ; il est rejouable (n'ajoute que les tickets absents, par
-`code` date + magasin) et s'arrête sur un magasin inconnu ou une remise sans
+`code` date + magasin, suivi du numéro de reçu pour un second passage le même
+jour ; `extraire.cjs` ne lit qu'une fois un reçu enregistré deux fois) et s'arrête sur un magasin inconnu ou une remise sans
 promo :
 
 ```bash
 node scripts/importer-tickets.js                                                                   # dev
-DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/importer-tickets.js   # production
+DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/importer-tickets.js --prod   # production
 ```
 
-Vérifier la première ligne affichée (`Base : ep-…`) avant de laisser
-continuer. Les libellés listés « À classer » n'ont pas encore d'article.
+Ces scripts, comme `executer-sql.js`, refusent toute base autre que la branche
+dev sans `--prod` en dernier argument (`scripts/garde-base.js`). Les libellés listés « À classer » n'ont pas encore d'article.
 
 Corriger le rangement d'un produit (libellé → article) après coup : modifier les règles de
 `tickets/correspondances.cjs`, relancer `node tickets/correspondances.cjs`,
@@ -96,7 +97,7 @@ comparer l'ancien et le nouveau `correspondances.csv`, mettre les lignes changé
 
 ```bash
 node scripts/corriger-libelles.js fichier.txt                       # dev
-DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/corriger-libelles.js fichier.txt   # production
+DATABASE_URL="$(grep '^DATABASE_URL=' .env.production | cut -d= -f2-)" node scripts/corriger-libelles.js fichier.txt --prod   # production
 ```
 
 Chaque correction est gardée dans `tickets/corrections/`, nommée

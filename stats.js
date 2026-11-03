@@ -86,6 +86,7 @@ export function quantile(valeurs, q) {
 // Prévision d'un article des Courses à partir de ses passages en caisse, du plus récent au plus ancien
 // ({ cout, quantite_ref, nombre, au_poids, unite, enseigne, remise }).
 // - Prix normal : passages sans remise ; une promo fait acheter plus et moins cher, elle ne dit rien des habitudes.
+//   Sans aucun passage hors promo, prix affiché avant remise.
 // - Prévision : quantité habituelle (médiane des 8 derniers) × dernier prix normal, dans le magasin choisi s'il y est connu.
 // - Fourchette : chaque achat normal passé est rejoué avec ce qui était connu avant lui ; les écarts entre prévu et
 //   payé (8 derniers) donnent la fourchette, qui se resserre à mesure que les prévisions tombent juste.
@@ -94,7 +95,8 @@ export function prevoirArticle(passages, magasin = null) {
     if (!passages.length || !passages.every((p) => p.au_poids === passages[0].au_poids && p.unite === passages[0].unite)) return null;
     const quantiteDe = (p) => (p.au_poids ? p.quantite_ref : p.nombre);
     const normaux = passages.filter((p) => !(p.remise > 0));
-    const base = normaux.length ? normaux : passages;
+    // Jamais acheté hors promo : prix affiché avant remise, pour que la promo reste une économie et pas la norme.
+    const base = normaux.length ? normaux : passages.map((p) => ({ ...p, cout: p.cout + (p.remise || 0) }));
     const prevoir = (connus, ou) => {
         const reference = (ou && connus.find((p) => p.enseigne === ou)) || connus[0];
         const quantite = quantile(connus.slice(0, 8).map(quantiteDe), 0.5);

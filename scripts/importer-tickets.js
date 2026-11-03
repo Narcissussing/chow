@@ -3,6 +3,7 @@
 import "dotenv/config";
 import fs from "fs";
 import pg from "pg";
+import { baseVisee } from "./garde-base.js";
 
 const lire = (fichier) =>
     fs.readFileSync(fichier, "utf8").trim().split("\n").slice(1).map((ligne) => ligne.split(";"));
@@ -16,7 +17,7 @@ const articleDuLibelle = new Map(lire("tickets/correspondances.csv").map(([libel
 const promos = lire("tickets/promos.csv");
 
 const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-console.log("Base :", new URL(process.env.DATABASE_URL).hostname.split(".")[0]);
+baseVisee();
 
 // Format d'une unité vendue : au poids, contenance lue sur le libellé, sinon une pièce (boîte d'œufs : nombre imprimé).
 function format(ligne, articleId) {
@@ -35,34 +36,44 @@ try {
     let nouveauxTickets = 0, nouvellesLignes = 0, nouveauxProduits = 0, nouvellesPromos = 0;
     const aClasser = new Set();
 
+    // Un ticket par reçu (colonne recu). Le plus gros reçu du jour dans un magasin garde le code date + magasin
+    // des imports d'avant ; un autre passage le même jour y ajoute son numéro de reçu.
     const tickets = new Map();
     for (const ligne of achats) {
-        const cle = ligne[0] + "|" + ligne[1];
+        const cle = ligne[0] + "|" + ligne[1] + "|" + (ligne[12] ?? "");
         if (!tickets.has(cle)) tickets.set(cle, []);
         tickets.get(cle).push(ligne);
+    }
+    const totalDe = (lignes) => lignes.reduce((s, l) => s + Number(l[7]), 0);
+    const premiersDuJour = new Map();
+    for (const lignes of tickets.values()) {
+        const jour = lignes[0][0] + "|" + lignes[0][1];
+        const premier = premiersDuJour.get(jour);
+        if (!premier || totalDe(lignes) > totalDe(premier)) premiersDuJour.set(jour, lignes);
     }
 
     for (const lignes of tickets.values()) {
         const [date, nomMagasin] = lignes[0];
+        const recu = lignes[0][12] ?? "";
         const magasin = magasins.get(nomMagasin);
         if (!magasin) throw new Error(`Magasin inconnu : ${nomMagasin} (l'ajouter dans achats.magasins)`);
-        const code = `${date}-${magasin.id}`;
+        const code = premiersDuJour.get(date + "|" + nomMagasin) === lignes ? `${date}-${magasin.id}` : `${date}-${magasin.id}-${recu}`;
         if ((await client.query("SELECT 1 FROM achats.tickets WHERE code = $1", [code])).rowCount) continue;
 
         const bancaire = lignes.every((l) => l[3] === PASSAGE_BANCAIRE);
         const paye = lignes.reduce((s, l) => s + Number(l[7]), 0);
         const montantAvantRemise = lignes.reduce((s, l) => s + Number(l[7]) + (nombre(l[11]) ?? 0), 0);
         const ticket = await client.query(
-            `INSERT INTO achats.tickets (code, magasin_id, date, source, total_articles, paye)
-             VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+            `INSERT INTO achats.tickets (code, magasin_id, date, source, total_articles, paye, numero)
+             VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
             [code, magasin.id, date,
                 bancaire ? "releve-bancaire" : magasin.enseigne_id === "marche-frais" ? "ticket-papier" : "ticket-numerique",
-                bancaire ? null : montantAvantRemise.toFixed(2), paye.toFixed(2)]
+                bancaire ? null : montantAvantRemise.toFixed(2), paye.toFixed(2), recu || null]
         );
         nouveauxTickets++;
         if (bancaire) continue;
 
-        const promosDuTicket = promos.filter((p) => p[0] === date && p[1] === nomMagasin);
+        const promosDuTicket = promos.filter((p) => p[0] === date && p[1] === nomMagasin && (p[7] ?? "") === recu);
         for (const ligne of lignes) {
             const [, , rayon, libelle, quantite, poids, prixUnitaire, total, , , , remise] = ligne;
             const correspondance = articleDuLibelle.get(libelle) ?? "";

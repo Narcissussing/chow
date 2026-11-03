@@ -53,6 +53,171 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-117 — Deux reçus du même jour fusionnés, deux reçus Leclerc comptés double
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `tickets/extraire.cjs`, `scripts/importer-tickets.js`, `db/migrations/2026-11-03-1-un-ticket-par-recu.sql`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Stats, Tickets : Leclerc Brezet le 26/11/2024 ou le 05/12/2024.
+2. Regarder un jour à deux passages (Leclerc Brezet 01/08/2025).
+
+**Résultat attendu** : un ticket par reçu, au montant du reçu.
+
+**Résultat obtenu** : les reçus 007W00D900 et 00BJA03I00, enregistrés deux fois, comptent double (142,80 € au lieu de 71,40 €, 128,14 € au lieu de 64,07 € : 135,47 € de trop) ; 15 jours à deux passages ne font qu'un ticket.
+
+**Correction** : `extraire.cjs` garde le numéro de chaque reçu (colonne `recu`) et ne lit qu'une fois un reçu en double ; l'import fait un ticket par reçu (`tickets.numero`) et le plus gros du jour garde son ancien code. La migration retire les lignes en double et sépare les 15 passages, sans toucher un ticket qui ne correspond pas au fichier.
+
+### CHOW-118 — Le modèle « Courses de la semaine » perd les articles de la maison
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `index.js`, `frontend/src/pages/courses/CoursesPage.jsx`, `frontend/src/pages/courses/photos.js`, `db/migrations/2026-11-03-2-courses-une-cible.sql`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Mettre un article de la maison dans les Courses.
+2. Enregistrer la liste comme Courses de la semaine, puis l'appliquer.
+
+**Résultat attendu** : l'article de la maison revient dans la liste.
+
+**Résultat obtenu** : il est enregistré en ligne vide, et l'application du modèle échoue (`toLowerCase` sur une valeur nulle).
+
+**Correction** : le modèle garde `article_id` ; l'application compare aliment, article ou texte libre avant d'ajouter.
+
+### CHOW-119 — Une ligne de Courses peut ne viser rien, ou deux choses
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `db/migrations/2026-11-03-2-courses-une-cible.sql`, `index.js`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Écrire en base une ligne de Courses sans aliment, article ni texte (ou aliment et texte).
+
+**Résultat attendu** : la base la refuse.
+
+**Résultat obtenu** : elle est acceptée et ne peut pas être affichée correctement.
+
+**Correction** : lignes impossibles nettoyées, puis règle « une seule cible » sur `chow.courses` et `chow.courses_modeles` ; l'ajout refuse un texte vide.
+
+### CHOW-111 — L'estimation des Courses oublie les articles de la maison et compte des prix de promo
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `index.js`, `stats.js`, `frontend/src/pages/courses/EstimationCourses.jsx`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Mettre un article de la maison (lessive, essuie-tout) déjà acheté sur un ticket dans les Courses.
+2. Ouvrir la fourchette des Courses.
+
+**Résultat attendu** : chaque article de la liste a sa ligne, avec le prix normal de ses derniers achats.
+
+**Résultat obtenu** : l'article de la maison compte « sans prix » et n'a pas de ligne ; le total d'articles ne correspond pas au détail ; un aliment acheté seulement en promo, ou sans unité commune, était estimé au prix remisé.
+
+**Correction** : l'estimation lit aussi les articles de la maison (médiane des 8 dernières lignes, hors promo d'abord, prix avant remise sauf article acheté seulement en promo), comme le panier du mode magasin. Sans passage hors promo, le prix avant remise sert de référence. Les aliments gardent leur dernier vrai prix même acheté il y a plus de 12 mois, puis le prix moyen en magasin. Chaque article compté a sa ligne, texte libre compris (« aucun prix connu »).
+
+### CHOW-112 — Une entrée Calories accepte une quantité négative
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `index.js`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Appeler `POST /api/calories/ajouter` ou `/modifier` avec une quantité de -100.
+
+**Résultat attendu** : la quantité est refusée.
+
+**Résultat obtenu** : l'entrée est enregistrée avec des calories et macros négatives.
+
+**Correction** : le serveur exige un nombre fini strictement positif à l'ajout et à la modification (400 sinon).
+
+### CHOW-113 — Les scripts de données écrivent sur la production sans garde
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `scripts/garde-base.js`, `scripts/importer-tickets.js`, `scripts/corriger-libelles.js`, `scripts/executer-sql.js`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Lancer un des scripts avec le `DATABASE_URL` de production.
+
+**Résultat attendu** : le script s'arrête sauf demande explicite.
+
+**Résultat obtenu** : il affiche la base et continue.
+
+**Correction** : les trois scripts refusent toute base autre que la branche dev sans `--prod` en dernier argument.
+
+### CHOW-114 — Modifier un article disparu répond « succès »
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `index.js`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Modifier une ligne de Stock ou une entrée Calories supprimée entre-temps (autre appareil).
+
+**Résultat attendu** : une erreur « introuvable ».
+
+**Résultat obtenu** : succès sans rien modifier ; Calories renvoie un `item` vide.
+
+**Correction** : les deux routes vérifient le nombre de lignes modifiées et renvoient 404.
+
+### CHOW-115 — « Aliments jetés » s'ouvre sur le mois précédent la nuit du 1er
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/parametres/FeuilleJetes.jsx`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Ouvrir Paramètres, Aliments jetés, le 1er du mois avant 1 h ou 2 h du matin.
+
+**Résultat attendu** : le mois en cours.
+
+**Résultat obtenu** : le mois précédent (mois calculé en UTC).
+
+**Correction** : le mois courant vient de la date locale.
+
+### CHOW-116 — Deux ajouts simultanés dans Calories prennent le même ordre
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `index.js`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Ajouter deux aliments au journal au même instant (deux appareils).
+
+**Résultat attendu** : un ordre stable.
+
+**Résultat obtenu** : même `ordre`, ordre d'affichage indéterminé.
+
+**Correction** : le journal du jour se trie aussi par identifiant, qui départage les ex æquo.
+
 ### CHOW-110 — Le « i » n'est pas aligné avec son titre (Économiser, Inflation)
 
 - **Niveau** : Mineure

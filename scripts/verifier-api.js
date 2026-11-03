@@ -108,6 +108,7 @@ try {
     r = await appel("GET", "/api/courses/estimation");
     const e = r.donnees;
     verifier("GET /api/courses/estimation", r.statut === 200 && e.bas <= e.estimation && e.estimation <= e.haut && e.sansPrix <= e.articles, JSON.stringify(e));
+    verifier("estimation : une ligne par article compté", e.details.length === e.articles, `${e.details.length} / ${e.articles}`);
     console.log("     estimation :", JSON.stringify(e));
     r = await appel("GET", "/api/calories");
     verifier("GET /api/calories", r.statut === 200 && ["journal", "aliments", "recettes"].every((k) => Array.isArray(r.donnees?.[k])));
@@ -125,9 +126,23 @@ try {
     verifier("POST /api/courses/ajouter (texte libre)", r.statut === 200 && r.donnees?.item?.nom === MARQUEUR);
     const inventaireAvant = await db.query("SELECT article_id, quantite, niveau FROM maison.inventaire WHERE article_id IN ('shampoing', 'dentifrice')");
     r = await appel("POST", "/api/courses/ajouter", { idArticle: "shampoing" });
-    const idCourseArticle = r.donnees?.item?.id;
+    let idCourseArticle = r.donnees?.item?.id;
     if (idCourseArticle) nettoyages.push(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourseArticle]));
     verifier("POST /api/courses/ajouter (article de la maison)", r.statut === 200 && r.donnees?.item?.nom === "Shampoing" && r.donnees.item.categorie === "Hygiène" && r.donnees.item.famille_id === "hygiene", JSON.stringify(r.donnees?.item));
+    // Modèle de la semaine : l'article de la maison y est gardé, puis remis dans la liste.
+    const modeleAvant = (await db.query("SELECT food_id, article_id, nom_libre FROM chow.courses_modeles")).rows;
+    nettoyages.push(async () => {
+        await db.query("DELETE FROM chow.courses_modeles");
+        for (const l of modeleAvant) await db.query("INSERT INTO chow.courses_modeles (food_id, article_id, nom_libre) VALUES ($1, $2, $3)", [l.food_id, l.article_id, l.nom_libre]);
+    });
+    r = await appel("POST", "/api/courses/preset-hebdo/enregistrer", {});
+    const dansModele = await db.query("SELECT 1 FROM chow.courses_modeles WHERE article_id = 'shampoing'");
+    verifier("modèle de la semaine : article de la maison gardé", r.donnees?.succes === true && dansModele.rowCount === 1);
+    await db.query("DELETE FROM chow.courses WHERE id = $1", [idCourseArticle]);
+    r = await appel("POST", "/api/courses/preset-hebdo", {});
+    const remis = r.donnees?.courses?.find((c) => c.article_id === "shampoing" && !c.achete);
+    if (remis) idCourseArticle = remis.id;
+    verifier("modèle de la semaine appliqué : article de la maison remis", r.statut === 200 && r.donnees?.items?.length === 1 && !!remis, JSON.stringify(r.donnees?.erreur ?? r.donnees?.items?.length));
     r = await appel("POST", "/api/courses/acheter", { idCourse: idCourseArticle });
     verifier("POST /api/courses/acheter (article au niveau → plein)", r.donnees?.succes === true);
     nettoyages.push(async () => {
@@ -180,6 +195,8 @@ try {
     verifier("POST /api/stock/ajouter", r.statut === 200 && idStock);
     r = await appel("POST", "/api/stock/modifier", { idStock, nouvelleQuantite: "2" });
     verifier("POST /api/stock/modifier", r.donnees?.quantite === "2");
+    r = await appel("POST", "/api/stock/modifier", { idStock: -1, nouvelleQuantite: "2" });
+    verifier("POST /api/stock/modifier introuvable → 404", r.statut === 404);
     await db.query("UPDATE chow.stock SET date_maj = CURRENT_DATE - 30 WHERE id = $1", [idStock]);
     r = await appel("POST", "/api/stock/verifier", { idStock, fini: false });
     let dateMaj = await db.query("SELECT quantite, date_maj = CURRENT_DATE AS jour FROM chow.stock WHERE id = $1", [idStock]);
@@ -196,6 +213,12 @@ try {
     verifier("POST /api/calories/ajouter", r.statut === 200 && idEntree);
     r = await appel("POST", "/api/calories/modifier", { idEntree, nouvelleQuantite: 50 });
     verifier("POST /api/calories/modifier", r.donnees?.item?.calories_calc !== undefined);
+    r = await appel("POST", "/api/calories/modifier", { idEntree, nouvelleQuantite: -50 });
+    verifier("POST /api/calories/modifier négatif → 400", r.statut === 400);
+    r = await appel("POST", "/api/calories/ajouter", { idAliment: horsJournal.id, quantiteG: -100 });
+    verifier("POST /api/calories/ajouter négatif → 400", r.statut === 400);
+    r = await appel("POST", "/api/calories/modifier", { idEntree: -1, nouvelleQuantite: 50 });
+    verifier("POST /api/calories/modifier introuvable → 404", r.statut === 404);
     r = await appel("POST", "/api/calories/reordonner", { ids: [] });
     verifier("POST /api/calories/reordonner invalide → 400", r.statut === 400);
     r = await appel("POST", "/api/calories/supprimer", { idEntree });

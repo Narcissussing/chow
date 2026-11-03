@@ -38,8 +38,10 @@ Lancer l’application :
 npm start
 ```
 
-Il n’y a ni build, ni watcher, ni suite de tests configurée. Après une
-modification, le serveur doit être redémarré avant vérification.
+L’interface se construit avec `npm run build` dans `frontend/` (le serveur sert
+`frontend/dist`) et ses tests se lancent avec `npx jest` dans `frontend/`. Le
+serveur n’a ni watcher ni tests : après une modification, le redémarrer avant
+vérification.
 
 ## Documentation
 

@@ -23,7 +23,8 @@ function uniteTicket(l) {
 }
 // Au poids, un quart de kilo à la fois ; sinon un par un.
 const pas = (unite) => (unite === "kg" ? 0.25 : 1);
-const moisCourant = () => new Date().toISOString().slice(0, 7);
+// Mois local (toISOString donnerait le mois UTC, encore le précédent la nuit du 1er en France).
+const moisCourant = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
 const decalerMois = (m, n) => { const d = new Date(Number(m.slice(0, 4)), Number(m.slice(5, 7)) - 1 + n, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
 const titreMois = (m) => new Date(m + "-01T00:00:00").toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 

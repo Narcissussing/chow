@@ -502,7 +502,7 @@ async function chercherJournalDuJour() {
          FROM chow.journal
          JOIN chow.aliments ON journal.food_id = aliments.id
          WHERE date_entree = CURRENT_DATE
-         ORDER BY ordre ASC`
+         ORDER BY ordre ASC, journal.id ASC`
     );
     return result.rows;
 }
@@ -536,7 +536,7 @@ async function chargerPageCourses() {
     const courses = await chercherCourses();
     const aliments = await chercherAliments();
     const stock = await chercherStock();
-    const presetHebdo = await db.query("SELECT food_id, nom_libre FROM chow.courses_modeles");
+    const presetHebdo = await db.query("SELECT food_id, article_id, nom_libre FROM chow.courses_modeles");
     const articles = await db.query(`${ARTICLES_MAISON} ORDER BY a.nom`);
     return { courses, aliments, articles: articles.rows, stock, presetHebdo: presetHebdo.rows };
 }
@@ -546,8 +546,9 @@ async function chargerPageCourses() {
 // prévu et payé. Sans unité commune, repli sur la médiane et les quartiles du coût des 8 derniers passages.
 const ENSEIGNES = ["Leclerc", "Carrefour", "Marché Frais"];
 
-// Passages en caisse des 12 derniers mois, par aliment, du plus récent au plus ancien. Quantité d'un passage dans
-// l'unité de prix : kg ou litre si la contenance est connue, sinon nombre d'articles.
+// Passages en caisse par aliment, du plus récent au plus ancien (les 20 derniers, même anciens : un aliment acheté
+// rarement garde son dernier vrai prix). Quantité d'un passage dans l'unité de prix : kg ou litre si la contenance
+// est connue, sinon nombre d'articles.
 async function passagesDesAliments(ids) {
     const historique = await db.query(
         `SELECT v.food_id, SUM(v.total)::float AS cout,
@@ -557,7 +558,7 @@ async function passagesDesAliments(ids) {
                 MAX(COALESCE(v.unite, 'u')) AS unite,
                 v.enseigne, SUM(v.remise)::float AS remise
          FROM chow.v_lignes_stats v
-         WHERE v.food_id = ANY($1) AND v.date >= CURRENT_DATE - INTERVAL '12 months'
+         WHERE v.food_id = ANY($1)
          GROUP BY v.food_id, v.ticket_id, v.date, v.enseigne
          ORDER BY v.date DESC`,
         [ids]
@@ -570,6 +571,35 @@ async function passagesDesAliments(ids) {
         passagesParAliment.set(ligne.food_id, passages);
     }
     return passagesParAliment;
+}
+
+// Coût d'un passage au prix normal (avant remise), pour les replis sans unité commune.
+const coutNormal = (p) => p.cout + (p.remise || 0);
+// Repli quand les unités ne se comparent pas : médiane et quartiles du coût normal des 8 derniers passages,
+// hors promo s'il y en a.
+function prevoirSansUnite(passages) {
+    const normaux = passages.filter((p) => !(p.remise > 0));
+    const couts = (normaux.length ? normaux : passages).slice(0, 8).map(coutNormal);
+    return { estimation: quantile(couts, 0.5), bas: quantile(couts, 0.25), haut: quantile(couts, 0.75), passages: couts.length };
+}
+
+// Articles de la maison : prix d'une ligne de ticket sur les 8 dernières, lignes hors promo d'abord, au prix affiché
+// avant remise (sauf article acheté seulement en promo : prix payé). Médiane, quartiles et prix à la pièce.
+async function prixArticlesMaison(ids) {
+    const result = await db.query(
+        `SELECT article_id, count(*)::int AS lignes,
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY prix)::float AS prevu,
+                percentile_cont(0.25) WITHIN GROUP (ORDER BY prix)::float AS bas,
+                percentile_cont(0.75) WITHIN GROUP (ORDER BY prix)::float AS haut,
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY prix / NULLIF(quantite, 0))::float AS piece
+         FROM (SELECT article_id, quantite,
+                      CASE WHEN achat_en_promo THEN paye ELSE montant END AS prix,
+                      row_number() OVER (PARTITION BY article_id ORDER BY en_promo AND NOT achat_en_promo, date DESC) AS rang
+               FROM achats.v_lignes WHERE article_id = ANY($1)) d
+         WHERE rang <= 8 GROUP BY article_id`,
+        [ids]
+    );
+    return new Map(result.rows.map((r) => [r.article_id, r]));
 }
 
 // Panier de la tournée en mode magasin : chaque article de la liste ou coché depuis le début de la tournée, avec son
@@ -587,15 +617,7 @@ async function chargerPanier() {
         [tournee?.debut ?? null]
     )).rows;
     const passages = await passagesDesAliments(lignes.filter((l) => l.food_id).map((l) => l.food_id));
-    // Articles de la maison : prix payé sur les 8 dernières lignes de ticket.
-    const maison = new Map((await db.query(
-        `SELECT article_id, percentile_cont(0.5) WITHIN GROUP (ORDER BY paye)::float AS prevu,
-                percentile_cont(0.5) WITHIN GROUP (ORDER BY paye / NULLIF(quantite, 0))::float AS piece
-         FROM (SELECT article_id, paye, quantite, row_number() OVER (PARTITION BY article_id ORDER BY date DESC) AS rang
-               FROM achats.v_lignes WHERE article_id = ANY($1)) d
-         WHERE rang <= 8 GROUP BY article_id`,
-        [lignes.filter((l) => l.article_id).map((l) => l.article_id)]
-    )).rows.map((r) => [r.article_id, r]));
+    const maison = await prixArticlesMaison(lignes.filter((l) => l.article_id).map((l) => l.article_id));
     const arrondi = (n) => (n == null ? null : Math.round(n * 100) / 100);
     return {
         tournee,
@@ -607,7 +629,7 @@ async function chargerPanier() {
                 if (prevision) {
                     prevu = prevision.estimation;
                     if (!p[0].au_poids) piece = prevision.prixUnitaire;
-                } else if (p) prevu = quantile(p.slice(0, 8).map((x) => x.cout), 0.5);
+                } else if (p) prevu = prevoirSansUnite(p).estimation;
                 else prevu = l.prix_habituel;
             } else if (l.article_id) {
                 prevu = maison.get(l.article_id)?.prevu ?? null;
@@ -624,55 +646,57 @@ async function chargerPanier() {
 
 async function estimerCourses(req) {
     const magasin = ENSEIGNES.includes(req?.query?.magasin) ? req.query.magasin : null;
-    const articles = await db.query(
-        `SELECT DISTINCT c.food_id, f.nom, f.emoji, f.prix_habituel
-         FROM chow.courses c JOIN chow.aliments f ON f.id = c.food_id
+    // Une ligne par aliment ou article de la maison (un doublon ne compte qu'une fois), une par texte libre.
+    const lignes = (await db.query(
+        `SELECT DISTINCT ON (COALESCE(c.food_id, 'a:' || c.article_id, 'c:' || c.id))
+                c.food_id, c.article_id, COALESCE(f.nom, ar.nom, c.nom_libre) AS nom,
+                CASE WHEN c.article_id IS NULL THEN COALESCE(f.emoji, '🆕') END AS emoji, f.prix_habituel
+         FROM chow.courses c
+         LEFT JOIN chow.aliments f ON f.id = c.food_id
+         LEFT JOIN achats.articles ar ON ar.id = c.article_id
          WHERE c.achete = false`
-    );
-    const libres = await db.query("SELECT count(*)::int AS n FROM chow.courses WHERE achete = false AND food_id IS NULL");
-    const passagesParAliment = await passagesDesAliments(articles.rows.map((a) => a.food_id));
+    )).rows;
+    const passagesParAliment = await passagesDesAliments(lignes.filter((l) => l.food_id).map((l) => l.food_id));
+    const maison = await prixArticlesMaison(lignes.filter((l) => l.article_id).map((l) => l.article_id));
 
-    let estimation = 0, bas = 0, haut = 0;
-    const sansPrix = [];
-    // Détail par article pour la bulle « comment c'est calculé » des Courses.
+    let estimation = 0, bas = 0, haut = 0, sansPrix = 0;
+    // Détail par article pour la bulle « comment c'est calculé » des Courses : autant de lignes que d'articles comptés.
     const details = [];
-    for (const article of articles.rows) {
-        const passages = passagesParAliment.get(article.food_id);
+    const ajouter = (ligne, prevu, detail) => {
+        estimation += prevu.estimation;
+        bas += prevu.bas;
+        haut += prevu.haut;
+        details.push({ nom: ligne.nom, emoji: ligne.emoji, estimation: Math.round(prevu.estimation * 100) / 100, ...detail });
+    };
+    for (const ligne of lignes) {
+        const passages = ligne.food_id && passagesParAliment.get(ligne.food_id);
         const prevu = passages && prevoirArticle(passages, magasin);
+        const prixMaison = ligne.article_id && maison.get(ligne.article_id);
         if (prevu) {
-            estimation += prevu.estimation;
-            bas += prevu.bas;
-            haut += prevu.haut;
-            details.push({
-                nom: article.nom, emoji: article.emoji, source: "habitudes", passages: passages.length,
-                estimation: prevu.estimation, quantite: prevu.quantite,
+            ajouter(ligne, prevu, {
+                source: "habitudes", passages: passages.length, quantite: prevu.quantite,
                 unite: passages[0].au_poids ? passages[0].unite : "pièce",
                 dernierPrix: prevu.prixUnitaire, magasin: prevu.magasin, comparaisons: prevu.comparaisons,
             });
         } else if (passages) {
-            // Unités qui ne se comparent pas (pièce puis kg…) : médiane et quartiles du coût des 8 derniers passages.
-            const couts = passages.slice(0, 8).map((p) => p.cout);
-            estimation += quantile(couts, 0.5);
-            bas += quantile(couts, 0.25);
-            haut += quantile(couts, 0.75);
-            details.push({ nom: article.nom, emoji: article.emoji, source: "habitudes", passages: couts.length, estimation: Math.round(quantile(couts, 0.5) * 100) / 100 });
-        } else if (article.prix_habituel !== null) {
-            const prix = Number(article.prix_habituel);
-            estimation += prix;
-            bas += prix * 0.8;
-            haut += prix * 1.2;
-            details.push({ nom: article.nom, emoji: article.emoji, source: "prix-habituel", estimation: prix });
+            const repli = prevoirSansUnite(passages);
+            ajouter(ligne, repli, { source: "habitudes", passages: repli.passages });
+        } else if (prixMaison) {
+            ajouter(ligne, { estimation: prixMaison.prevu, bas: prixMaison.bas, haut: prixMaison.haut }, { source: "habitudes", passages: prixMaison.lignes });
+        } else if (ligne.prix_habituel !== null && ligne.prix_habituel !== undefined) {
+            const prix = Number(ligne.prix_habituel);
+            ajouter(ligne, { estimation: prix, bas: prix * 0.8, haut: prix * 1.2 }, { source: "prix-habituel" });
         } else {
-            sansPrix.push(article.nom);
-            details.push({ nom: article.nom, emoji: article.emoji, source: "sans-prix", estimation: null });
+            sansPrix++;
+            details.push({ nom: ligne.nom, emoji: ligne.emoji, source: "sans-prix", estimation: null });
         }
     }
     return {
         estimation: Math.round(estimation),
         bas: Math.floor(bas),
         haut: Math.ceil(haut),
-        articles: articles.rows.length + libres.rows[0].n,
-        sansPrix: sansPrix.length + libres.rows[0].n,
+        articles: lignes.length,
+        sansPrix,
         details: details.sort((a, b) => (b.estimation ?? -1) - (a.estimation ?? -1)),
     };
 }
@@ -1071,7 +1095,8 @@ app.post("/api/stock/modifier", async (req, res) => {
         }
 
         // Toute modification compte comme une vérification : la date repart d'aujourd'hui.
-        await db.query("UPDATE chow.stock SET quantite = $1, date_maj = CURRENT_DATE WHERE id = $2", [nouvelleQuantite, idStock]);
+        const maj = await db.query("UPDATE chow.stock SET quantite = $1, date_maj = CURRENT_DATE WHERE id = $2", [nouvelleQuantite, idStock]);
+        if (!maj.rowCount) return res.status(404).json({ erreur: "Article introuvable." });
         res.json({ succes: true, quantite: nouvelleQuantite });
     } catch (err) {
         console.log("ERREUR:", err.message);
@@ -1115,7 +1140,7 @@ app.post("/api/stock/supprimer", async (req, res) => {
 app.post("/api/courses/ajouter", async (req, res) => {
     const idAliment = req.body.idAliment || null;
     const idArticle = idAliment ? null : req.body.idArticle || null;
-    const texteTape = req.body.rechercheAliment;
+    const texteTape = req.body.rechercheAliment?.trim();
     try {
         if (!idAliment && !idArticle && !texteTape) {
             return res.status(400).json({ erreur: "Champs requis." });
@@ -1137,32 +1162,23 @@ app.post("/api/courses/ajouter", async (req, res) => {
 
 app.post("/api/courses/preset-hebdo", async (req, res) => {
     try {
-        const presetResult = await db.query("SELECT food_id, nom_libre FROM chow.courses_modeles");
+        const presetResult = await db.query("SELECT food_id, article_id, nom_libre FROM chow.courses_modeles");
 
-        const dejaLa = await db.query("SELECT food_id, nom_libre FROM chow.courses WHERE achete = false");
-        const foodIdsDejaLa = new Set(dejaLa.rows.map(r => r.food_id).filter(Boolean));
-        const nomsLibresDejaLa = new Set(
-            dejaLa.rows.filter(r => !r.food_id && r.nom_libre).map(r => r.nom_libre.toLowerCase())
-        );
+        // Chaque ligne du modèle absente de la liste (même aliment, même article de la maison ou même texte libre).
+        const dejaLa = await db.query("SELECT food_id, article_id, nom_libre FROM chow.courses WHERE achete = false");
+        const cleDe = (l) => (l.food_id ? "f:" + l.food_id : l.article_id ? "a:" + l.article_id : "n:" + (l.nom_libre || "").toLowerCase());
+        const clesDejaLa = new Set(dejaLa.rows.map(cleDe));
 
         const nouveauxIds = [];
 
         for (const article of presetResult.rows) {
-            if (article.food_id) {
-                if (foodIdsDejaLa.has(article.food_id)) continue;
-                const insertResult = await db.query(
-                    "INSERT INTO chow.courses (food_id, nom_libre) VALUES ($1, NULL) RETURNING id",
-                    [article.food_id]
-                );
-                nouveauxIds.push(insertResult.rows[0].id);
-            } else {
-                if (nomsLibresDejaLa.has(article.nom_libre.toLowerCase())) continue;
-                const insertResult = await db.query(
-                    "INSERT INTO chow.courses (food_id, nom_libre) VALUES (NULL, $1) RETURNING id",
-                    [article.nom_libre]
-                );
-                nouveauxIds.push(insertResult.rows[0].id);
-            }
+            if (clesDejaLa.has(cleDe(article))) continue;
+            clesDejaLa.add(cleDe(article));
+            const insertResult = await db.query(
+                "INSERT INTO chow.courses (food_id, article_id, nom_libre) VALUES ($1, $2, $3) RETURNING id",
+                [article.food_id, article.article_id, article.food_id || article.article_id ? null : article.nom_libre]
+            );
+            nouveauxIds.push(insertResult.rows[0].id);
         }
 
         if (nouveauxIds.length === 0) {
@@ -1191,11 +1207,11 @@ app.post("/api/courses/preset-hebdo/enregistrer", async (req, res) => {
         await enTransaction(async (client) => {
             await client.query("DELETE FROM chow.courses_modeles");
 
-            const courant = await client.query("SELECT food_id, nom_libre FROM chow.courses WHERE achete = false");
+            const courant = await client.query("SELECT food_id, article_id, nom_libre FROM chow.courses WHERE achete = false");
             for (const article of courant.rows) {
                 await client.query(
-                    "INSERT INTO chow.courses_modeles (food_id, nom_libre) VALUES ($1, $2)",
-                    [article.food_id, article.food_id ? null : article.nom_libre]
+                    "INSERT INTO chow.courses_modeles (food_id, article_id, nom_libre) VALUES ($1, $2, $3)",
+                    [article.food_id, article.article_id, article.food_id || article.article_id ? null : article.nom_libre]
                 );
             }
         });
@@ -1372,10 +1388,13 @@ app.post("/api/courses/acheter", async (req, res) => {
 app.post("/api/calories/ajouter", async (req, res) => {
     try {
         const idAliment = req.body.idAliment;
-        const quantiteG = req.body.quantiteG || 100;
+        const quantiteG = req.body.quantiteG ?? 100;
 
         if (!idAliment) {
             return res.status(400).json({ erreur: "Champs requis." });
+        }
+        if (!quantitePositive(quantiteG)) {
+            return res.status(400).json({ erreur: "Quantité invalide." });
         }
 
         const insertResult = await db.query(
@@ -1406,6 +1425,12 @@ app.post("/api/calories/ajouter", async (req, res) => {
     }
 });
 
+// Quantité du journal : un nombre fini strictement positif (une quantité négative donnerait des calories négatives).
+function quantitePositive(valeur) {
+    const n = Number(valeur);
+    return valeur !== "" && valeur !== null && Number.isFinite(n) && n > 0;
+}
+
 function uniteValide(unite) {
     return ["g", "cafe", "soupe", "piece", "ml", "l"].includes(unite) ? unite : null;
 }
@@ -1418,11 +1443,15 @@ app.post("/api/calories/modifier", async (req, res) => {
         if (!idEntree || !nouvelleQuantite) {
             return res.status(400).json({ erreur: "Champs requis." });
         }
+        if (!quantitePositive(nouvelleQuantite)) {
+            return res.status(400).json({ erreur: "Quantité invalide." });
+        }
 
-        await db.query(
+        const maj = await db.query(
             "UPDATE chow.journal SET quantite_g = $1, unite = COALESCE($3, unite) WHERE id = $2",
             [nouvelleQuantite, idEntree, uniteValide(req.body.unite)]
         );
+        if (!maj.rowCount) return res.status(404).json({ erreur: "Entrée introuvable." });
 
         const itemResult = await db.query(
             `SELECT journal.*, aliments.nom, aliments.emoji,
