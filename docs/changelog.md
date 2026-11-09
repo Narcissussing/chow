@@ -12,6 +12,8 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 - Aliments coréens et japonais (tteok, gochujang, gochugaru, nori, wasabi,
   gingembre mariné, vinaigre de riz, radis mariné, surimi, saumon fumé) et
   recette Sushi sur 800 g de riz.
+- Yaourt à boire (Deli'UP) avec sa photo ; l'article Lubrifiant couvre aussi
+  l'huile fine multiusage.
 
 ## 2026-10
 
