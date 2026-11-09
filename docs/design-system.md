@@ -83,6 +83,10 @@ carte retirée par un filtre), construite dans le même changement.
 
 Les principales familles sont :
 
+- cartes (`styles/mouvement.css`) : entrée en cascade (Accueil ; les Stats ont
+  `useBlocsAnimes`), montée au survol à la souris (5 px les petites cartes,
+  2 px les grands blocs et les cartes Courses/Stock), enfoncement au toucher,
+  retour avec un peu de ressort ; seul le mouvement change, pas les couleurs ;
 - apparition et ajout : `fadeIn`, `popIn` ;
 - suppression ou achat : `slideOutLeft`, `popOutSuccess` ;
 - notes et panneaux : `slideDownNote`, `fadeOutNote` ;

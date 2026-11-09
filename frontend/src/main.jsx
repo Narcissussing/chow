@@ -34,6 +34,7 @@ import "./components/BadgeCompteur.css";
 import "./pages/calories/cuisine/CuisineVide.css";
 import "./pages/stock/StockSuggestions.css";
 import "./pages/courses/CoursesVide.css";
+import "./styles/mouvement.css";
 import "./styles/fin.css";
 import App from "./App.jsx";
 

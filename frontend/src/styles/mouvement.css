@@ -1,0 +1,83 @@
+/* Mouvement des cartes, partout : elles entrent en cascade (Accueil), montent au survol (souris) et s'enfoncent un peu au toucher.
+   Seul le mouvement change : couleurs, bordures et fonds restent ceux de chaque page. */
+
+/* Entrée en cascade de l'Accueil (les blocs des Stats ont déjà la leur, useBlocsAnimes). Remplissage « backwards » seulement :
+   après l'entrée, le survol garde la main sur le transform. */
+.accueil-bloc {
+  animation: carte-entree 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) backwards;
+}
+
+.accueil-bloc:nth-child(2) { animation-delay: 60ms; }
+.accueil-bloc:nth-child(3) { animation-delay: 120ms; }
+.accueil-bloc:nth-child(4) { animation-delay: 180ms; }
+.accueil-bloc:nth-child(n + 5) { animation-delay: 240ms; }
+
+@keyframes carte-entree {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+  }
+}
+
+/* Cartes qui réagissent : retour souple, un peu de ressort. */
+.stats .carte,
+.accueil-bloc,
+.prix__tuile,
+.recette-card,
+.food-card,
+.macro-card {
+  transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1), box-shadow 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Survol à la souris seulement : sur téléphone il resterait collé après un toucher. */
+@media (hover: hover) {
+  /* Petites cartes : elles montent franchement, ombre chaude qui s'étale. */
+  .stats .carte.kpi:hover,
+  .stats .carte.inflation:hover,
+  .stats .carte.courses-estimation:hover,
+  .accueil-bloc:hover,
+  .prix__tuile:hover,
+  .recette-card:hover,
+  .food-card:hover,
+  .macro-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 16px 32px rgba(92, 69, 41, 0.14), 0 3px 8px rgba(92, 69, 41, 0.06);
+  }
+
+  /* Grands blocs (graphiques, listes) : à peine, pour ne pas faire bouger toute la page. */
+  .stats .carte:not(.kpi):not(.inflation):not(.courses-estimation):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(92, 69, 41, 0.1);
+  }
+
+  /* Cartes des Courses et du Stock : elles montent un peu, en plus du contour qui change déjà. */
+  .carte-article:not(.carte-active):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px rgba(92, 69, 41, 0.1);
+  }
+}
+
+/* Toucher : la carte s'enfonce légèrement, puis remonte avec le même ressort. */
+.stats .carte.kpi:active,
+.stats .carte.courses-estimation:active,
+.accueil-bloc:active,
+.prix__tuile:active,
+.recette-card:active,
+.food-card:active {
+  transform: scale(0.98);
+  transition-duration: 0.12s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stats .carte,
+  .accueil-bloc,
+  .prix__tuile,
+  .recette-card,
+  .food-card,
+  .macro-card,
+  .carte-article {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
