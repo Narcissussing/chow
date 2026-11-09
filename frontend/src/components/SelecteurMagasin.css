@@ -1,5 +1,6 @@
 /* Trop de magasins pour la place : la rangée glisse de côté, sans barre. */
 .magasins {
+  position: relative;
   display: flex;
   gap: 2px;
   max-width: 100%;
@@ -14,6 +15,12 @@
 
 .magasins::-webkit-scrollbar {
   display: none;
+}
+
+/* Il reste des magasins à droite : le bord s'efface. */
+.magasins.deborde {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 24px), transparent);
 }
 
 .magasins button {
