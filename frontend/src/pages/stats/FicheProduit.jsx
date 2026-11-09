@@ -6,11 +6,10 @@ import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { useGlisserPourFermer } from "../../hooks/useGlisserPourFermer.js";
 import BoutonFermer from "../../components/BoutonFermer.jsx";
 import { Courbe } from "./graphiques.jsx";
-import { ENSEIGNES } from "../../components/SelecteurMagasin.jsx";
+import LogoEnseigne from "../../components/LogoEnseigne.jsx";
 import { libellePeriode } from "./Filtres.jsx";
 import { NombreAnime } from "./animations.js";
 
-const logo = (nom) => ENSEIGNES.find((e) => e.nom === nom)?.logo;
 const rythme = (j) => (j <= 1 ? "Chaque jour" : j < 7 ? `Tous les ${j} jours` : j < 11 ? "Chaque semaine" : j < 25 ? `Toutes les ${Math.round(j / 7)} sem.` : j < 45 ? "Chaque mois" : `Tous les ${Math.round(j / 30)} mois`);
 const jour = (s) => new Date(s + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 
@@ -119,7 +118,7 @@ export default function FicheProduit({ idAliment, periode, enseigne, euros, onFe
                 <h3>Par magasin</h3>
                 {fiche.parEnseigne.map((e) => (
                   <p key={e.nom} className="fiche__ligne">
-                    <img src={logo(e.nom)} alt="" />
+                    <LogoEnseigne nom={e.nom} />
                     <span>{e.nom}</span>
                     <strong className={e.nom === moinsCher && fiche.parEnseigne.length > 1 ? "moins-cher" : undefined}>{euros(e.prix, 2)}{unite}</strong>
                   </p>

@@ -75,7 +75,15 @@ démarrage. Par conséquent :
 
 Les tickets bruts et leurs CSV restent dans `tickets/` (ignoré par Git).
 `node tickets/extraire.cjs` puis `node tickets/correspondances.cjs`
-régénèrent `achats.csv`, `promos.csv` et `correspondances.csv`. L'import
+régénèrent `achats.csv`, `promos.csv` et `correspondances.csv`. Leclerc et
+Carrefour arrivent en JSON exportés ; les reçus photographiés ou en PDF se
+saisissent à la main dans `tickets/<enseigne>/tickets-<enseigne>.json`
+(`marche-frais`, `tiger-market`, `action`), un objet par reçu dont la somme
+des lignes égale le total imprimé ; `contenance` et `unite` y forcent un
+format trompeur (« 35l 20pcs » = 20 sacs). Une nouvelle enseigne s'ajoute
+aussi dans `SAISIS` (`extraire.cjs`), `ENSEIGNES` (`index.js`,
+`SelecteurMagasin.jsx`, logo dans `frontend/public/magasins/`) et, pour un
+reçu papier, `TICKETS_PAPIER` (`importer-tickets.js`). L'import
 remplit `achats.tickets`, `achats.produits`, `achats.lignes` et
 `achats.promos` ; il est rejouable (n'ajoute que les tickets absents, par
 `code` date + magasin, suivi du numéro de reçu pour un second passage le même

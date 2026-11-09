@@ -29,7 +29,7 @@ export default function StockSuggestions({ suggestions, ferme = false, onAjouter
         <ul className="stock-suggestions__liste">
           {visibles.map((s) => (
             <li key={s.food_id} className={"stock-suggestions__ligne" + (s.envoye ? " envoye" : "")} data-food={s.food_id}>
-              <span className="stock-suggestions__nom">
+              <span className="stock-suggestions__nom nom-defile">
                 {s.emoji} {s.nom}
               </span>
               <span className="stock-suggestions__niveau">{texteNiveau(s)}</span>

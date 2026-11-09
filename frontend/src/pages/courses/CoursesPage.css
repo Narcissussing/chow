@@ -62,6 +62,11 @@
   display: none;
 }
 
+/* Le tri garde sa largeur quand le compteur rejoint la barre (sinon le caddie et ses logos passent dessus). */
+.courses-controls-row .sort-wrapper {
+  flex-shrink: 0;
+}
+
 .courses-controls-row .sort-wrapper .custom-select {
   flex: 0 0 92px;
   width: 92px;

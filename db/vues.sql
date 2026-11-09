@@ -141,6 +141,28 @@ JOIN achats.magasins m ON m.id = t.magasin_id
 JOIN achats.enseignes e ON e.id = m.enseigne_id
 WHERE t.source = 'releve-bancaire';
 
+-- Enseignes où l'on achète chaque article : la liste choisie, sinon les tickets et les cases cochées en mode magasin
+-- des 3 derniers mois. Un article sans ligne ici reste visible dans tous les magasins.
+CREATE OR REPLACE VIEW chow.v_magasins_habituels AS
+WITH choisis AS (
+    SELECT h.article_id, e.nom
+    FROM achats.enseignes_habituelles h JOIN achats.enseignes e ON e.id = h.enseigne_id
+), recents AS (
+    SELECT v.article_id, v.enseigne AS nom
+    FROM achats.v_lignes v
+    WHERE v.article_id IS NOT NULL AND NOT v.fourre_tout AND v.date >= CURRENT_DATE - INTERVAL '3 months'
+    UNION
+    SELECT COALESCE(c.article_id, a.article_id), c.enseigne
+    FROM chow.courses c LEFT JOIN chow.aliments a ON a.id = c.food_id
+    WHERE c.achete AND c.enseigne IS NOT NULL AND c.date_achat >= CURRENT_DATE - INTERVAL '3 months'
+)
+SELECT article_id, array_agg(nom ORDER BY nom) AS magasins, true AS choisi FROM choisis GROUP BY article_id
+UNION ALL
+SELECT r.article_id, array_agg(DISTINCT r.nom ORDER BY r.nom), false
+FROM recents r
+WHERE r.article_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM choisis c WHERE c.article_id = r.article_id)
+GROUP BY r.article_id;
+
 -- Catégorie d'achat d'un aliment Chow, d'après sa catégorie Chow (sert à créer son article).
 CREATE OR REPLACE FUNCTION chow.categorie_achat(categorie TEXT) RETURNS TEXT LANGUAGE sql IMMUTABLE AS $$
     SELECT CASE categorie
@@ -183,6 +205,7 @@ COMMENT ON COLUMN achats.choix.preference IS 'Ce qu''on préfère malgré un pri
 COMMENT ON TABLE chow.jetes IS 'Aliments jetés : quantité d''un article jetée sur un mois, saisie dans Paramètres.';
 COMMENT ON COLUMN chow.jetes.mois IS 'Premier jour du mois concerné.';
 COMMENT ON COLUMN achats.articles.a_reduire IS 'Niveau d''économie proposé dans les Tickets : 1 = superflu à arrêter (chips), 2 = dessert qu''on peut enlever ; vide sinon.';
+COMMENT ON COLUMN achats.articles.enseigne_prix_id IS 'Enseigne dont le prix fait le prix attendu (épices et herbes séchées : Leclerc) ; vide = toutes.';
 COMMENT ON TABLE achats.produits IS 'Un article tel que vendu dans une enseigne, avec le libellé imprimé sur le ticket et le format du paquet.';
 COMMENT ON COLUMN achats.produits.libelle IS 'Texte imprimé sur le ticket, tel quel.';
 COMMENT ON COLUMN achats.produits.article_id IS 'Article correspondant ; vide = à classer.';
@@ -208,6 +231,9 @@ COMMENT ON COLUMN achats.promos.type IS 'remise immédiate, 2e à prix réduit o
 COMMENT ON COLUMN achats.promos.montant IS 'Montant déduit, en euros.';
 COMMENT ON VIEW achats.v_lignes IS 'Chaque ligne avec son contexte, la remise, le payé et les prix comparables (prix_ref en euros par unite_ref) ; prix_ref_attendu = prix payé pour un article acheté seulement en promo, sinon prix normal.';
 COMMENT ON VIEW achats.v_prix IS 'Prix médian attendu par article, enseigne et mois (hors promo, sauf articles achetés seulement en promo) : série de base de la prévision.';
+COMMENT ON COLUMN achats.articles.prix_habituel IS 'Coût d''un achat habituel d''un article de la maison, pour l''estimation tant qu''aucun ticket ne le connaît.';
+COMMENT ON TABLE achats.enseignes_habituelles IS 'Enseignes où le foyer achète un article, choisies à la main ; un article listé ici n''est attendu que dans ces enseignes.';
+COMMENT ON VIEW chow.v_magasins_habituels IS 'Enseignes de chaque article pour le mode magasin des Courses : liste choisie (choisi = true), sinon tickets et cases cochées des 3 derniers mois.';
 COMMENT ON VIEW chow.v_lignes_stats IS 'Achats au format lu par les pages Stats et Courses ; statut : chow, hors-chow, non-alimentaire, non-detaille ou a-classer.';
 COMMENT ON FUNCTION chow.categorie_achat(TEXT) IS 'Catégorie d''achat (achats.categories) d''une catégorie Chow.';
 COMMENT ON VIEW achats.v_economies IS 'Chaque achat remisé : prix affiché, payé, économie ; achat_en_lot = au moins 2 unités d''un coup.';

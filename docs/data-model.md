@@ -33,16 +33,21 @@ chow.aliments ──┬── chow.stock
 
 Tout ce que le foyer achète. Chaîne : ligne → produit → article → catégorie.
 
-- `enseignes` : `leclerc`, `carrefour`, `marche-frais`.
+- `enseignes` : `leclerc`, `carrefour`, `marche-frais`, `tiger-market`
+  (produits asiatiques), `action` (papier, sacs).
 - `magasins` : un magasin d'une enseigne (`leclerc-meaux`), avec sa ville.
+- `enseignes_habituelles` : enseignes où l'on achète un article, choisies à la
+  main (plusieurs possibles) ; un article listé n'est attendu que là.
 - `categories` : arbre unique à deux niveaux. Alimentation et Boissons
   reprennent les catégories Chow ; le reste en neuf familles (Hygiène,
   Entretien, Cuisine, Électronique, Bébé, Santé, Maison, Animaux, Divers) et
   leurs types, `consommable` ou équipement.
 - `articles` : besoin générique (`tomate`, `papier-toilette`, `piles-aaa`),
   `unite_ref` (`kg`, `l`, `piece`) pour comparer les prix, `suivi` (`nombre`,
-  `niveau`, vide) pour l'inventaire, `achat_en_promo`, `a_reduire` (1 superflu,
-  2 dessert : niveaux d'économie des Tickets). Un article par aliment
+  `niveau`, vide) pour l'inventaire, `achat_en_promo`, `enseigne_prix_id`
+  (enseigne dont le prix fait le prix attendu ; vide = toutes), `a_reduire`
+  (1 superflu, 2 dessert : niveaux d'économie des Tickets), `prix_habituel`
+  (article de la maison sans ticket ; un aliment le garde dans `chow.aliments`). Un article par aliment
   Chow (même identifiant) ; les fourre-tout (`fourre_tout`) gardent ce qui
   n'est pas encore détaillé ou n'est acheté qu'une fois.
 - `produits` : un libellé imprimé dans une enseigne, son `article_id` (vide =
@@ -74,12 +79,14 @@ Vues :
 - `v_bon_prix` : prix payé comparé au prix médian payé pour le même article
   sur les 12 mois d'avant.
 - `v_panier_habituel` : articles achetés au moins 6 mois sur 12.
+- `chow.v_magasins_habituels` : enseignes de chaque article pour le mode
+  magasin (liste choisie, sinon tickets et cases cochées des 3 derniers mois).
 
 ## `chow`
 
 - `aliments` : référentiel Chow (`id` slug), nutrition pour 100 g ou 100 ml,
   `tracking_type` (`unite`, `pack`, `cl`), conversions (cuillères, poids à la
-  pièce), `pas_achat`, `prix_habituel`, `magasin`, `article_id`.
+  pièce), `pas_achat`, `prix_habituel`, `article_id`.
   `fibres`, `sucres`, `graisses_saturees` et `sel` ne sont lus par aucune
   route.
 - `stock` : `food_id`, `quantite` (nombre ou état textuel), `unite`,
@@ -107,8 +114,8 @@ Vues :
 Les colonnes `food_id` gardent leur nom anglais tant que l'API et le
 frontend ne sont pas renommés ensemble.
 
-`aliments.magasin` : magasin habituel choisi ; à défaut, `GET /api/courses` le
-déduit des achats des 12 derniers mois. `GET /api/courses/estimation`
+`GET /api/courses` renvoie `magasins` (liste, vide = partout) depuis
+`chow.v_magasins_habituels`. `GET /api/courses/estimation`
 estime les Courses non achetées (`prevoirArticle` dans `stats.js`) : quantité
 habituelle hors remise × dernier prix normal ; sans historique,
 `prix_habituel` ±20 %.

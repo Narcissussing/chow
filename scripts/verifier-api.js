@@ -124,6 +124,14 @@ try {
     const idCourse = r.donnees?.item?.id;
     if (idCourse) nettoyages.push(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourse]));
     verifier("POST /api/courses/ajouter (texte libre)", r.statut === 200 && r.donnees?.item?.nom === MARQUEUR);
+    // Épice achetée aussi à Marché Frais : le prix attendu reste celui de Leclerc, même en magasin Marché Frais.
+    const idCourseEpice = (await db.query("INSERT INTO chow.courses (food_id) VALUES ('origan') RETURNING id")).rows[0].id;
+    nettoyages.push(() => db.query("DELETE FROM chow.courses WHERE id = $1", [idCourseEpice]));
+    r = await appel("GET", "/api/courses/estimation?magasin=" + encodeURIComponent("Marché Frais"));
+    const origan = r.donnees?.details?.find((d) => d.nom === "Origan");
+    verifier("estimation : épice au prix de Leclerc", origan?.magasin === "Leclerc", JSON.stringify(origan));
+    console.log("     origan :", JSON.stringify(origan));
+    await db.query("DELETE FROM chow.courses WHERE id = $1", [idCourseEpice]);
     const inventaireAvant = await db.query("SELECT article_id, quantite, niveau FROM maison.inventaire WHERE article_id IN ('shampoing', 'dentifrice')");
     r = await appel("POST", "/api/courses/ajouter", { idArticle: "shampoing" });
     let idCourseArticle = r.donnees?.item?.id;

@@ -1,11 +1,8 @@
+import { ENSEIGNES } from "./enseignes.js";
+import LogoEnseigne from "./LogoEnseigne.jsx";
 import "./SelecteurMagasin.css";
 
-// Les trois enseignes du foyer, avec leur logo : filtre des Stats et magasin du mode magasin des Courses.
-export const ENSEIGNES = [
-  { nom: "Leclerc", logo: "/magasins/leclerc.png" },
-  { nom: "Carrefour", logo: "/magasins/carrefour.png" },
-  { nom: "Marché Frais", logo: "/magasins/marche-frais.png" },
-];
+export { ENSEIGNES };
 
 export default function SelecteurMagasin({ enseigne, onChange }) {
   return (
@@ -17,7 +14,7 @@ export default function SelecteurMagasin({ enseigne, onChange }) {
       </button>
       {ENSEIGNES.map((e) => (
         <button key={e.nom} type="button" className={enseigne === e.nom ? "actif" : undefined} aria-pressed={enseigne === e.nom} aria-label={e.nom} onClick={() => onChange(e.nom)}>
-          <img src={e.logo} alt="" />
+          <LogoEnseigne nom={e.nom} />
         </button>
       ))}
     </div>

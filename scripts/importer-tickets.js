@@ -10,6 +10,8 @@ const lire = (fichier) =>
 const nombre = (valeur) => (valeur === undefined || valeur === "" ? null : Number(valeur));
 const PASSAGE_BANCAIRE = "PASSAGE NON DÉTAILLÉ (relevé bancaire)";
 // Statuts de correspondances.csv sans aliment Chow : rangés dans un article d'attente jusqu'au catalogue.
+// Enseignes dont les tickets sont des photos de reçus papier ; les autres sont des tickets numériques.
+const TICKETS_PAPIER = ["marche-frais", "tiger-market"];
 const ARTICLES_ATTENTE = { "hors-chow": "alimentation-a-detailler", "non-alimentaire": "non-alimentaire-a-classer" };
 
 const achats = lire("tickets/achats.csv");
@@ -57,7 +59,8 @@ try {
         const recu = lignes[0][12] ?? "";
         const magasin = magasins.get(nomMagasin);
         if (!magasin) throw new Error(`Magasin inconnu : ${nomMagasin} (l'ajouter dans achats.magasins)`);
-        const code = premiersDuJour.get(date + "|" + nomMagasin) === lignes ? `${date}-${magasin.id}` : `${date}-${magasin.id}-${recu}`;
+        // Un passage sans numéro de reçu (prix donné sans ticket) prend le suffixe « sans-recu ».
+        const code = premiersDuJour.get(date + "|" + nomMagasin) === lignes ? `${date}-${magasin.id}` : `${date}-${magasin.id}-${recu || "sans-recu"}`;
         if ((await client.query("SELECT 1 FROM achats.tickets WHERE code = $1", [code])).rowCount) continue;
 
         const bancaire = lignes.every((l) => l[3] === PASSAGE_BANCAIRE);
@@ -67,7 +70,7 @@ try {
             `INSERT INTO achats.tickets (code, magasin_id, date, source, total_articles, paye, numero)
              VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
             [code, magasin.id, date,
-                bancaire ? "releve-bancaire" : magasin.enseigne_id === "marche-frais" ? "ticket-papier" : "ticket-numerique",
+                bancaire ? "releve-bancaire" : TICKETS_PAPIER.includes(magasin.enseigne_id) ? "ticket-papier" : "ticket-numerique",
                 bancaire ? null : montantAvantRemise.toFixed(2), paye.toFixed(2), recu || null]
         );
         nouveauxTickets++;

@@ -43,6 +43,14 @@ Les boutons constitués uniquement d’une icône conservent un libellé accessi
 dans le HTML. Les illustrations multicolores et le favicon ne sont pas
 utilisés comme masques.
 
+Logos des magasins (`frontend/public/magasins/<enseigne>.png`) : recadrés au
+logo puis une marge de 10 % environ, carré 256 px sur fond blanc ; les
+fichiers d'origine restent dans `frontend/sources/magasins/` (non servis).
+Toujours affichés par `LogoEnseigne` : sans fichier, initiales sur une tuile
+à la couleur de l'enseigne (`components/enseignes.js`). Une rangée de logos
+trop longue glisse de côté ; le tiroir des Courses en montre 3, les autres en
+glissant.
+
 ## États
 
 | État | Traitement |

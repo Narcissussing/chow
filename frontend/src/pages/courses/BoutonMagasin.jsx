@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import LogoEnseigne from "../../components/LogoEnseigne.jsx";
 import { ENSEIGNES } from "../../components/SelecteurMagasin.jsx";
 import "./BoutonMagasin.css";
 
@@ -53,7 +54,7 @@ export default function BoutonMagasin({ actif, enseigne, onBasculer, onChoisirMa
     setSens("aller");
     onBasculer();
   }
-  const logo = actif && ENSEIGNES.find((e) => e.nom === enseigne)?.logo;
+  const logo = actif && ENSEIGNES.some((e) => e.nom === enseigne);
 
   const classes = ["btn-magasin"];
   if (actif) classes.push("actif");
@@ -97,7 +98,7 @@ export default function BoutonMagasin({ actif, enseigne, onBasculer, onChoisirMa
           <circle className="trait" cx="33" cy="39" r="2.8" />
         </g>
       </svg>
-      {logo && <img key={logo} className="btn-magasin__logo" src={logo} alt="" />}
+      {logo && <LogoEnseigne key={enseigne} nom={enseigne} taille={20} className="btn-magasin__logo" />}
     </button>
   );
 }

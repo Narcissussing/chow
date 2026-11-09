@@ -1,12 +1,24 @@
+/* Trop de magasins pour la place : la rangée glisse de côté, sans barre. */
 .magasins {
   display: flex;
   gap: 2px;
+  max-width: 100%;
   padding: 3px;
   border-radius: 999px;
   background: var(--sable);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.magasins::-webkit-scrollbar {
+  display: none;
 }
 
 .magasins button {
+  flex: none;
+  scroll-snap-align: start;
   display: grid;
   place-items: center;
   width: 32px;

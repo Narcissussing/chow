@@ -8,6 +8,7 @@ import { ListeTriable } from "../../../components/Triable.jsx";
 import { useClicExterieur } from "../../../hooks/useClicExterieur.js";
 import { useMinuteurs } from "../../../hooks/useMinuteurs.js";
 import { afficherToast } from "../../../toast.js";
+import { gererErreurReseau } from "../../courses/reseau.js";
 import { BALANCE, lancerDansLaMarmite, lancerVers, relancerClasse } from "../../../utils/animation.js";
 import { normaliserTexte } from "../../../utils/texte.js";
 import CuisineItem, { equivalencesEntree } from "./CuisineItem.jsx";
@@ -58,7 +59,13 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   }, [aAmenerEnVue, planifier]);
 
   const termes = normaliserTexte(texte.toLowerCase());
-  const suggestions = aliments.map((a) => ({ ...a, visible: normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes) }));
+  // 5 résultats au plus pendant la recherche.
+  let trouves = 0;
+  const suggestions = aliments.map((a) => {
+    const visible = trouves < 5 && normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes);
+    if (visible) trouves++;
+    return { ...a, visible };
+  });
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
 
   function choisir(aliment, ligne) {
@@ -108,19 +115,38 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
     return true;
   }
 
+  // Unité et ordre changent tout de suite à l'écran ; si le serveur refuse ou ne répond pas, l'état d'avant revient.
   function changerUnite(entree, unite) {
+    const remettre = () => setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, unite: entree.unite } : e)));
     setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, unite } : e)));
-    api("/calories/modifier", { method: "POST", body: { idEntree: String(entree.id), nouvelleQuantite: parseFloat(entree.quantite_g), unite } }).catch(() => {});
+    api("/calories/modifier", { method: "POST", body: { idEntree: String(entree.id), nouvelleQuantite: parseFloat(entree.quantite_g), unite } })
+      .then(({ statut, donnees }) => {
+        if (statut >= 400 || donnees?.erreur) {
+          remettre();
+          afficherToast(donnees?.erreur || "Une erreur est survenue.");
+        }
+      })
+      .catch((err) => {
+        remettre();
+        gererErreurReseau(err);
+      });
   }
 
   function deplacer(depuis, vers) {
+    const avant = entrees;
     const suivantes = arrayMove(entrees, depuis, vers);
     setEntrees(suivantes);
     api("/calories/reordonner", { method: "POST", body: { ids: suivantes.map((e) => e.id) } })
-      .then(({ donnees }) => {
-        if (donnees?.erreur) alert(donnees.erreur);
+      .then(({ statut, donnees }) => {
+        if (statut >= 400 || donnees?.erreur) {
+          setEntrees(avant);
+          afficherToast(donnees?.erreur || "Une erreur est survenue.");
+        }
       })
-      .catch(() => {});
+      .catch((err) => {
+        setEntrees(avant);
+        gererErreurReseau(err);
+      });
   }
 
   function basculerAjoute(entree) {

@@ -76,9 +76,6 @@
 
 .stock-suggestions__nom {
   grid-area: nom;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .stock-suggestions__niveau {

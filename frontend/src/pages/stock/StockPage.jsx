@@ -11,6 +11,7 @@ import { useLocalStorage } from "../../hooks/useLocalStorage.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
+import { gererErreurReseau } from "../courses/reseau.js";
 import { correspondFiltres, suggestionsARacheter, trierStock } from "../../utils/stock.js";
 import StockSuggestions, { BoutonRacheter } from "./StockSuggestions.jsx";
 import BadgeCompteur from "../../components/BadgeCompteur.jsx";
@@ -113,8 +114,7 @@ function Stock({ donnees }) {
         majItem(id, (i) => ({ ...i, quantite: String(reponse.quantite), effets: { ...i.effets, fondu: true, majFlash: true } }));
         planifier(() => majEffets(id, { majFlash: false }), 600);
       })
-      .catch(() => {
-      });
+      .catch(gererErreurReseau);
   }
 
   function fermerItemOuvert() {
@@ -178,7 +178,10 @@ function Stock({ donnees }) {
         majItem(item.id, (i) => ({ ...i, dejaEnCourses: true, effets: { ...i.effets, coursesSortant: true } }));
         planifier(() => majEffets(item.id, { coursesVisible: false }), 200);
       })
-      .catch(() => {});
+      .catch((err) => {
+        majEffets(item.id, { coursesEnvoi: false });
+        gererErreurReseau(err);
+      });
   }
 
   function ajouterSuggestion(suggestion) {
@@ -210,7 +213,7 @@ function Stock({ donnees }) {
         majEffets(item.id, { disparait: true });
         planifier(() => setItems((liste) => liste.filter((i) => i.id !== item.id)), 300);
       })
-      .catch(() => {});
+      .catch(gererErreurReseau);
   }
 
   function ouvrirAjout() {

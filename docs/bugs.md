@@ -53,6 +53,99 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-124 — Courses défilées : le caddie et ses logos passent sur le bouton de tri
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/courses/TiroirMagasins.jsx`, `frontend/src/pages/courses/CoursesPage.css`
+- **Date de signalement** : 2026-11-09
+- **Date de correction** : 2026-11-09
+
+**Étapes de reproduction** :
+
+1. Courses sur téléphone, mode magasin, faire défiler la liste (le compteur rejoint la barre).
+2. Deux touchers sur le caddie pour sortir les logos (ou les sortir en haut de page, puis faire défiler).
+
+**Résultat attendu** : le caddie et les logos tiennent entre « Nom » et « + », les logos glissent de côté.
+
+**Résultat obtenu** : le caddie se place sur le bouton « Nom ».
+
+**Correction** : le tiroir se place d'après le bouton de tri lui-même, la zone de tri ne rétrécit plus quand le compteur rejoint la barre, et la place est recalculée quand la barre change (tiroir ouvert puis page défilée), d'après la place du caddie au repos (sinon il partait jusqu'au tri avant de revenir).
+
+### CHOW-120 — Calories garde une unité ou un ordre que le serveur n'a pas enregistré
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/calories/cuisine/Cuisine.jsx`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Calories, couper le réseau.
+2. Changer l'unité d'une ligne, ou glisser une ligne.
+
+**Résultat attendu** : un message, et l'état d'avant revient.
+
+**Résultat obtenu** : l'écran garde le changement sans rien dire ; au rechargement, l'ancien revient.
+
+**Correction** : en cas d'échec (réseau ou refus du serveur), l'unité ou l'ordre d'avant est remis et un message s'affiche.
+
+### CHOW-121 — Stock : l'envoi aux Courses échoue en silence et bloque le bouton
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/stock/StockPage.jsx`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Stock, couper le réseau.
+2. Toucher le chariot d'un article, ou supprimer un article.
+
+**Résultat attendu** : un message, et le bouton reste utilisable.
+
+**Résultat obtenu** : rien ne s'affiche ; le chariot reste désactivé jusqu'au rechargement.
+
+**Correction** : l'échec réseau affiche « Connexion instable » et rend le bouton ; même message pour la suppression et la modification de quantité.
+
+### CHOW-122 — Noms de recettes et de suggestions du Stock coupés par « … »
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/calories/recettes/Recettes.css`, `frontend/src/pages/stock/StockSuggestions.css`, `frontend/src/pages/stock/StockSuggestions.jsx`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Recettes en vue liste, ou suggestions « À racheter » du Stock, avec un nom long.
+
+**Résultat attendu** : le nom défile sur une ligne, fondu à droite.
+
+**Résultat obtenu** : le nom est coupé par « … ».
+
+**Correction** : les deux noms utilisent `.nom-defile` ; la règle qui forçait l'ellipse est retirée.
+
+### CHOW-123 — La recherche Calories montre tout le catalogue
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/calories/cuisine/Cuisine.jsx`
+- **Date de signalement** : 2026-11-03 (audit `docs/audits/2026-11-03-audit-donnees-comportements.md`)
+- **Date de correction** : 2026-11-03
+
+**Étapes de reproduction** :
+
+1. Calories, taper « a » dans la recherche.
+
+**Résultat attendu** : 5 résultats au plus.
+
+**Résultat obtenu** : presque tous les aliments.
+
+**Correction** : seuls les 5 premiers aliments trouvés s'affichent.
+
 ### CHOW-117 — Deux reçus du même jour fusionnés, deux reçus Leclerc comptés double
 
 - **Niveau** : Majeure

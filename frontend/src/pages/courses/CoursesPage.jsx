@@ -335,12 +335,12 @@ function Courses({ donnees }) {
     }
   }
 
-  const estIci = (item) => !enseigneActive || !item.magasin || item.magasin === enseigneActive;
+  const estIci = (item) => !enseigneActive || !item.magasins?.length || item.magasins.includes(enseigneActive);
   const estVisible = (item) => (!puces.includes(categorieDe(item)) || actives.has(categorieDe(item))) && estIci(item);
 
   // Panier filtré par le magasin choisi : ce qui y a été coché, et ce qui reste à y prendre.
   const lignesPanier = (panier?.lignes || []).filter((l) =>
-    l.achete ? !enseigneActive || l.enseigne === enseigneActive : !enseigneActive || !l.magasin || l.magasin === enseigneActive
+    l.achete ? !enseigneActive || l.enseigne === enseigneActive : estIci(l)
   );
 
   function terminerTournee() {
@@ -482,7 +482,7 @@ function Courses({ donnees }) {
   async function envoyer(item, type, quantiteAchetee) {
     const corps = { idCourse: String(item.id) };
     if (type === "achat" && quantiteAchetee !== undefined) corps.quantiteAchetee = quantiteAchetee;
-    // Acheté dans ce magasin : l'aliment y est rattaché pour les prochaines fois.
+    // Acheté dans ce magasin : la ligne garde l'enseigne, qui rejoint les magasins habituels de l'article.
     if (type === "achat" && enseigneActive) corps.magasin = enseigneActive;
     const numero = ++sequence.current;
     let reponse;

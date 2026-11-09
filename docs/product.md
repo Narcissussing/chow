@@ -30,11 +30,13 @@ dernier), Stock (aliments encore présents, dont ceux à vérifier) et Courses
 
 ### Dépenses et estimation des Courses
 
-Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais) importé
+Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais, Tiger
+Market, Action) importé
 dans `tickets`, `achats` et `libelles`. L’estimation des Courses ne demande
 aucune quantité : quantité habituelle × dernier prix normal, dans le magasin
 choisi en mode magasin. Les achats en promo ne comptent ni dans la quantité ni
-dans le prix (le foyer achète plus quand c'est en promo). La fourchette vient
+dans le prix (le foyer achète plus quand c'est en promo). Épices et herbes
+séchées : prix attendu de Leclerc, quel que soit le magasin. La fourchette vient
 des écarts passés entre prévu et payé : elle se resserre à chaque nouveau
 ticket. Sans historique, `foods.prix_habituel`. La fourchette
 s'affiche à côté du titre des Courses ; un clic montre le détail par article.
@@ -83,10 +85,13 @@ Liste de courses utilisable avant et pendant les achats.
 - filtres et regroupement par rayon ;
 - preset hebdomadaire modifiable ;
 - mode magasin : un toucher sur le caddie = tous les magasins ; deux touchers
-  sortent les logos (Leclerc, Carrefour, Marché Frais) pour choisir le magasin,
-  qui s'affiche en pastille sur le caddie. Ses articles restent (et ceux sans
-  magasin connu), les autres sont masqués ; cocher un article
-  le rattache à ce magasin ; la liste est relue toutes les 15 s et un article
+  sortent les logos (Leclerc, Carrefour, Marché Frais, Tiger Market, Action)
+  pour choisir le magasin, qui s'affiche en pastille sur le caddie. Un article
+  peut être dans plusieurs magasins : liste choisie (oignons et patate douce
+  à Marché Frais, pommes de terre à Leclerc, papier toilette et essuie-tout à
+  Leclerc et Action, rayon asiatique à Tiger Market), sinon tickets et cases
+  cochées des 3 derniers mois. Les articles du magasin restent (et ceux sans
+  magasin connu), les autres sont masqués ; la liste est relue toutes les 15 s et un article
   ajouté ailleurs fait sortir du filtre pour le voir arriver ;
 - panier de la tournée en mode magasin, à la place du titre : barre par rayon
   (piste = toute la liste prévue, parts = ce qui est au chariot, +1/+2/+5

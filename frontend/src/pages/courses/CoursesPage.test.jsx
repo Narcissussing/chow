@@ -15,8 +15,8 @@ const ALIMENTS = [
 const ARTICLES = [{ id: "shampoing", nom: "Shampoing", famille: "Hygiène", famille_id: "hygiene" }];
 
 const PANIER = { tournee: { id: 1, debut: "2026-10-30T10:00:00Z" }, lignes: [
-  { id: 1, nom: "Lait", rayon: "Laitiers", achete: true, prevu: 8, valeur: 8, enseigne: "Leclerc", magasin: "Leclerc" },
-  { id: 2, nom: "Riz", rayon: "Féculents", achete: false, prevu: 4, valeur: null, magasin: null },
+  { id: 1, nom: "Lait", rayon: "Laitiers", achete: true, prevu: 8, valeur: 8, enseigne: "Leclerc", magasins: ["Leclerc"] },
+  { id: 2, nom: "Riz", rayon: "Féculents", achete: false, prevu: 4, valeur: null, magasins: [] },
 ] };
 
 let requetes;
@@ -460,11 +460,11 @@ test("article de la maison : +1/+2/+5 au nombre, rien au niveau ou sans suivi ; 
   expect(requetes).toContainEqual({ chemin: "/courses/acheter", corps: { idCourse: "7", quantiteAchetee: "2" } });
 });
 
-test("mode magasin : un magasin garde ses articles, les autres sont masqués ; l'achat apprend le magasin", async () => {
+test("mode magasin : un magasin garde ses articles, les autres sont masqués ; l'achat garde le magasin", async () => {
   const courses = [
-    { ...COURSES[0], magasin: "Carrefour" },
-    { ...COURSES[1], magasin: "Leclerc" },
-    { ...COURSES[2], magasin: null },
+    { ...COURSES[0], magasins: ["Carrefour", "Leclerc"] },
+    { ...COURSES[1], magasins: ["Leclerc"] },
+    { ...COURSES[2], magasins: [] },
   ];
   ouvrirCourses({}, { courses });
   await attendrePage();
@@ -472,6 +472,7 @@ test("mode magasin : un magasin garde ses articles, les autres sont masqués ; l
   await logoRentre();
   expect(document.body).toHaveClass("mode-magasin");
   expect(document.getElementById("toggleMagasin")).toHaveAccessibleName("Quitter le mode magasin (Carrefour)");
+  // Un article de plusieurs magasins reste visible dans chacun.
   expect(carte("Lait")).not.toHaveClass("hidden");
   expect(carte("Riz")).toHaveClass("hidden");
   // Sans magasin connu, l'article reste visible partout.
@@ -511,9 +512,9 @@ test("hors du magasin, deux touchers entrent en mode magasin et sortent les logo
 
 test("mode magasin : un toucher = tous les magasins ; le magasin choisi se combine aux rayons", async () => {
   const courses = [
-    { ...COURSES[0], magasin: "Carrefour" },
-    { ...COURSES[1], magasin: "Carrefour" },
-    { ...COURSES[2], magasin: "Leclerc" },
+    { ...COURSES[0], magasins: ["Carrefour"] },
+    { ...COURSES[1], magasins: ["Carrefour"] },
+    { ...COURSES[2], magasins: ["Leclerc"] },
   ];
   ouvrirCourses({}, { courses });
   await attendrePage();
@@ -545,16 +546,16 @@ test("tri par catégorie : un rayon filtré n'affiche plus son titre", async () 
 
 test("mode magasin : la liste est relue toutes les 15 s ; un nouvel article fait sortir du filtre de magasin", async () => {
   jest.useFakeTimers();
-  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false, magasin: "Leclerc" };
+  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false, magasins: ["Leclerc"] };
   let appels = 0;
-  ouvrirCourses({}, { courses: COURSES.map((c) => ({ ...c, magasin: "Carrefour" })) });
+  ouvrirCourses({}, { courses: COURSES.map((c) => ({ ...c, magasins: ["Carrefour"] })) });
   await act(async () => jest.runOnlyPendingTimers());
   await attendrePage();
   const simule = global.fetch;
   global.fetch = jest.fn((url, o) => {
     if (url === "/api/courses") {
       appels++;
-      return Promise.resolve({ status: 200, ok: true, json: async () => ({ courses: [...COURSES.map((c) => ({ ...c, magasin: "Carrefour" })), pain], aliments: ALIMENTS, stock: [], presetHebdo: [] }) });
+      return Promise.resolve({ status: 200, ok: true, json: async () => ({ courses: [...COURSES.map((c) => ({ ...c, magasins: ["Carrefour"] })), pain], aliments: ALIMENTS, stock: [], presetHebdo: [] }) });
     }
     return simule(url, o);
   });

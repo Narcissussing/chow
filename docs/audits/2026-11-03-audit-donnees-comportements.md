@@ -1,5 +1,16 @@
 # Audit des données et comportements — 2026-11-03
 
+## Vérification exécutée — 2026-11-03
+
+- `npm test -- --runInBand` dans `frontend/` : 18 suites, 161 tests réussis.
+- `npm run build` dans `frontend/` : réussi ; avertissements sur les images résolues à l'exécution et un bundle supérieur à 500 ko.
+- Endpoint contrôlé avant écriture : Neon dev `ep-spring-truth-b9vjj7sz`.
+- `node scripts/verifier-api.js` : tous les contrôles réussis, serveur de test arrêté et nettoyage déclaré terminé par le script.
+- Routes vérifiées : authentification, Courses et estimation, modèle hebdomadaire avec article maison, inventaire, Stock, quantités Calories, Stats, plan, aliments jetés et recettes transactionnelles.
+- Courses présentes sur dev : 17 lignes, 16 estimées ; seul le texte libre « Pain burger » reste sans prix. L'aliment « Pain (burger) » est estimé depuis les achats.
+- Aucun contrôle navigateur ou appareil réel effectué ; BFV utilisateur toujours en attente.
+- Aucune migration ni correction de données ajoutée pendant cette vérification ; aucune opération de production exécutée.
+
 ## Périmètre et limites
 
 Revue statique des parcours React, routes Express, calculs métier, vues SQL, migrations et scripts de données. Je n’ai pas interrogé Neon, exécuté de tests ni contrôlé l’interface dans un navigateur. Les constats portent sur les comportements déductibles du code ; l’état réel des lignes en base reste à vérifier séparément.
@@ -73,6 +84,45 @@ La séparation `achats.articles` (besoin générique), `achats.produits` (libell
 ## Vérification
 
 Constats issus du code et des documents locaux. Aucun test, appel à la base ou contrôle navigateur n’a été effectué ; les comportements et l’état des données doivent être confirmés avant toute correction ou clôture de bug.
+
+## Interface et cohérence d’affichage — audit statique du 2026-11-03
+
+### Mineure — Une erreur réseau peut laisser Calories différent de la base
+
+Le changement d’unité et le réordonnancement modifient l’état visible avant la réponse serveur ; en cas d’échec réseau, les erreurs sont ignorées et l’état local n’est pas restauré ([Cuisine.jsx](../../frontend/src/pages/calories/cuisine/Cuisine.jsx#L111), [Cuisine.jsx](../../frontend/src/pages/calories/cuisine/Cuisine.jsx#L116)). Après navigation ou rechargement, l’unité ou l’ordre enregistré réapparaît. Afficher l’échec et restaurer l’état serveur/local précédent.
+
+### Mineure — L’ajout rapide au Stock peut échouer sans retour visible
+
+L’envoi d’un article du Stock vers Courses et sa suppression ignorent l’échec réseau ([StockPage.jsx](../../frontend/src/pages/stock/StockPage.jsx#L166), [StockPage.jsx](../../frontend/src/pages/stock/StockPage.jsx#L203)). L’interface ne confirme alors pas si l’action a abouti et ne propose pas de nouvel essai explicite.
+
+### Mineure — Le libellé « New » reste en anglais dans l’ajout Courses
+
+Le champ d’ajout affiche « New » alors que l’interface est en français ([PanneauAjout.jsx](../../frontend/src/pages/courses/PanneauAjout.jsx#L78)). Le badge paraît conditionnel au texte saisi ; employer un libellé français ou une icône comprise et accessible.
+
+### À vérifier visuellement — Des noms restent tronqués malgré la règle de défilement
+
+La règle personnelle demande de faire défiler les noms longs dans les lignes. Plusieurs vues utilisent encore `text-overflow: ellipsis` (ex. [StockItem.css](../../frontend/src/pages/stock/StockItem.css#L69), [CuisineItem.css](../../frontend/src/pages/calories/cuisine/CuisineItem.css#L43), [Recettes.css](../../frontend/src/pages/calories/recettes/Recettes.css#L223)). Certains champs compacts (sélecteurs et filtres) peuvent légitimement rester ellipsés ; il faut vérifier les éléments concernés sur téléphone avant de traiter chaque occurrence comme un défaut.
+
+### Couverture de recherche à confirmer — Les suggestions Calories ne sont pas limitées à cinq
+
+La recherche Calories filtre toutes les suggestions, mais rend une entrée `<li>` par aliment et masque seulement les non-correspondances ([Cuisine.jsx](../../frontend/src/pages/calories/cuisine/Cuisine.jsx#L208)). Avec une recherche large ou vide, le menu peut donc contenir tout le catalogue au lieu d’un maximum de cinq résultats. À confirmer sur l’interface et à limiter côté rendu si le comportement est visible.
+
+### Cohérence des titres
+
+Les tokens globaux utilisent actuellement DM Sans pour `--font-display` et `--font-body` ([base.css](../../frontend/src/styles/base.css#L10)). Les pages qui consomment `--font-display` suivent donc la préférence actuelle ; les anciennes mentions de Playfair dans le nom du token ne chargent pas cette police.
+
+## État des constats — 2026-11-03
+
+Tous les constats ci-dessus sont corrigés (détail dans `docs/bugs.md`), sauf deux :
+
+- estimation, articles maison, nombre d'articles, prix de promo : CHOW-111 ;
+- quantité négative Calories : CHOW-112 ; scripts sur la production : CHOW-113 ;
+- écriture « succès » sans ligne modifiée : CHOW-114 ; mois d'« Aliments jetés » : CHOW-115 ; ordre Calories : CHOW-116 ;
+- reçus du même jour et reçus en double : CHOW-117 ; modèle de la semaine : CHOW-118 ; une cible par ligne de Courses : CHOW-119 ;
+- Calories après une erreur réseau : CHOW-120 ; Stock sans retour : CHOW-121 ; noms coupés : CHOW-122 ; recherche à 5 résultats : CHOW-123 ;
+- aliments sans prix de référence : l'estimation prend le dernier vrai prix payé, même ancien, puis le prix moyen en magasin ; les autres restent visibles « aucun prix connu » ;
+- **non retenu** : le badge « New » des Courses reste en anglais, voulu par Olumide ;
+- sans objet : titres (DM Sans partout).
 
 ## État des constats du 2026-10-31
 

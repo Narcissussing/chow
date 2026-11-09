@@ -435,16 +435,13 @@ async function chercherCourses() {
                 -- Un article de la maison se compte comme un aliment à l'unité (nombre) ou au niveau (cl).
                 COALESCE(aliments.tracking_type, CASE articles.suivi WHEN 'nombre' THEN 'unite' WHEN 'niveau' THEN 'cl' END) AS tracking_type,
                 COALESCE(stock.quantite, inventaire.quantite::text, inventaire.niveau) AS quantite_stock,
-                COALESCE(aliments.magasin, (
-                    SELECT v.enseigne FROM chow.v_lignes_stats v
-                    WHERE v.food_id = courses.food_id AND v.date >= CURRENT_DATE - INTERVAL '12 months'
-                    GROUP BY v.enseigne ORDER BY count(DISTINCT v.ticket_id) DESC LIMIT 1
-                )) AS magasin
+                COALESCE(habituels.magasins, '{}') AS magasins
          FROM chow.courses
          LEFT JOIN chow.aliments ON courses.food_id = aliments.id
          LEFT JOIN (${ARTICLES_MAISON}) articles ON articles.id = courses.article_id
          LEFT JOIN maison.inventaire ON inventaire.article_id = courses.article_id
          LEFT JOIN chow.stock ON stock.food_id = courses.food_id
+         LEFT JOIN chow.v_magasins_habituels habituels ON habituels.article_id = COALESCE(courses.article_id, aliments.article_id)
          WHERE achete = false`
     );
     return result.rows
@@ -544,7 +541,7 @@ async function chargerPageCourses() {
 // Estimation des Courses sans saisir de quantité, article par article (prevoirArticle de stats.js) : quantité
 // habituelle × dernier prix normal, dans le magasin choisi (mode magasin) ; fourchette tirée des écarts passés entre
 // prévu et payé. Sans unité commune, repli sur la médiane et les quartiles du coût des 8 derniers passages.
-const ENSEIGNES = ["Leclerc", "Carrefour", "Marché Frais"];
+const ENSEIGNES = ["Leclerc", "Carrefour", "Marché Frais", "Tiger Market", "Action"];
 
 // Passages en caisse par aliment, du plus récent au plus ancien (les 20 derniers, même anciens : un aliment acheté
 // rarement garde son dernier vrai prix). Quantité d'un passage dans l'unité de prix : kg ou litre si la contenance
@@ -556,15 +553,21 @@ async function passagesDesAliments(ids) {
                 SUM(COALESCE(v.quantite, 1))::float AS nombre,
                 bool_and(v.contenance IS NOT NULL) AS au_poids,
                 MAX(COALESCE(v.unite, 'u')) AS unite,
-                v.enseigne, SUM(v.remise)::float AS remise
+                v.enseigne, SUM(v.remise)::float AS remise, ep.nom AS enseigne_prix
          FROM chow.v_lignes_stats v
+         JOIN chow.aliments al ON al.id = v.food_id
+         JOIN achats.articles ar ON ar.id = al.article_id
+         LEFT JOIN achats.enseignes ep ON ep.id = ar.enseigne_prix_id
          WHERE v.food_id = ANY($1)
-         GROUP BY v.food_id, v.ticket_id, v.date, v.enseigne
+         GROUP BY v.food_id, v.ticket_id, v.date, v.enseigne, ep.nom
          ORDER BY v.date DESC`,
         [ids]
     );
+    // Épices et herbes séchées : seuls les passages de l'enseigne de référence comptent, si elle en a.
+    const chezReference = new Set(historique.rows.filter((l) => l.enseigne === l.enseigne_prix).map((l) => l.food_id));
     const passagesParAliment = new Map();
     for (const ligne of historique.rows) {
+        if (chezReference.has(ligne.food_id) && ligne.enseigne !== ligne.enseigne_prix) continue;
         const passages = passagesParAliment.get(ligne.food_id) || [];
         // 20 passages : assez d'historique pour rejouer les prévisions passées (la quantité n'en garde que 8).
         if (passages.length < 20) passages.push(ligne);
@@ -609,10 +612,12 @@ async function chargerPanier() {
     const tournee = (await db.query("SELECT id, debut FROM chow.tournees WHERE fin IS NULL")).rows[0] || null;
     const lignes = (await db.query(
         `SELECT c.id, c.food_id, c.article_id, c.achete, c.enseigne, c.quantite_achetee::float AS quantite_achetee,
-                COALESCE(a.nom, ar.nom, c.nom_libre) AS nom, a.categorie, a.prix_habituel::float AS prix_habituel, a.magasin
+                COALESCE(a.nom, ar.nom, c.nom_libre) AS nom, a.categorie, COALESCE(a.prix_habituel, ar.prix_habituel)::float AS prix_habituel,
+                COALESCE(h.magasins, '{}') AS magasins
          FROM chow.courses c
          LEFT JOIN chow.aliments a ON a.id = c.food_id
          LEFT JOIN achats.articles ar ON ar.id = c.article_id
+         LEFT JOIN chow.v_magasins_habituels h ON h.article_id = COALESCE(c.article_id, a.article_id)
          WHERE c.achete = false OR ($1::timestamptz IS NOT NULL AND c.date_achat >= $1)`,
         [tournee?.debut ?? null]
     )).rows;
@@ -632,13 +637,13 @@ async function chargerPanier() {
                 } else if (p) prevu = prevoirSansUnite(p).estimation;
                 else prevu = l.prix_habituel;
             } else if (l.article_id) {
-                prevu = maison.get(l.article_id)?.prevu ?? null;
+                prevu = maison.get(l.article_id)?.prevu ?? l.prix_habituel;
                 piece = maison.get(l.article_id)?.piece ?? null;
             }
             const valeur = l.achete ? (l.quantite_achetee && piece ? l.quantite_achetee * piece : prevu) : null;
             return {
                 id: l.id, nom: l.nom, rayon: l.article_id ? "Maison" : l.categorie || "Autres", achete: l.achete,
-                enseigne: l.enseigne, magasin: l.magasin, prevu: arrondi(prevu), valeur: arrondi(valeur),
+                enseigne: l.enseigne, magasins: l.magasins, prevu: arrondi(prevu), valeur: arrondi(valeur),
             };
         }),
     };
@@ -650,7 +655,8 @@ async function estimerCourses(req) {
     const lignes = (await db.query(
         `SELECT DISTINCT ON (COALESCE(c.food_id, 'a:' || c.article_id, 'c:' || c.id))
                 c.food_id, c.article_id, COALESCE(f.nom, ar.nom, c.nom_libre) AS nom,
-                CASE WHEN c.article_id IS NULL THEN COALESCE(f.emoji, '🆕') END AS emoji, f.prix_habituel
+                CASE WHEN c.article_id IS NULL THEN COALESCE(f.emoji, '🆕') END AS emoji,
+                COALESCE(f.prix_habituel, ar.prix_habituel) AS prix_habituel
          FROM chow.courses c
          LEFT JOIN chow.aliments f ON f.id = c.food_id
          LEFT JOIN achats.articles ar ON ar.id = c.article_id
@@ -1306,7 +1312,7 @@ app.post("/api/courses/acheter", async (req, res) => {
         let quantiteEntiere = null;
         const idCourse = req.body.idCourse;
         const quantiteAchetee = req.body.quantiteAchetee;
-        // Coché en mode magasin : l'aliment est désormais rattaché à ce magasin.
+        // Coché en mode magasin : la ligne garde l'enseigne, qui compte ensuite dans ses magasins habituels.
         const magasin = ENSEIGNES.includes(req.body.magasin) ? req.body.magasin : null;
 
         if (!idCourse) {
@@ -1353,9 +1359,6 @@ app.post("/api/courses/acheter", async (req, res) => {
                         quantite = COALESCE(inventaire.quantite, 0) + EXCLUDED.quantite, niveau = EXCLUDED.niveau, date_maj = CURRENT_DATE`,
                     [articleId, suivi === "nombre" ? quantiteEntiere : null, suivi === "niveau" ? "plein" : null]
                 );
-            }
-            if (achatResult.rows.length > 0 && foodId && magasin) {
-                await client.query("UPDATE chow.aliments SET magasin = $2 WHERE id = $1", [foodId, magasin]);
             }
             if (achatResult.rows.length > 0 && foodId) {
                 if (trackingType === 'cl') {

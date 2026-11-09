@@ -1,0 +1,15 @@
+/* span.… : passe devant le fond blanc des cadres de logo (tickets, pastille du caddie). */
+span.logo-initiales {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: var(--taille);
+  height: var(--taille);
+  border-radius: calc(var(--taille) * 0.3);
+  background: color-mix(in srgb, var(--couleur) 16%, #fff);
+  color: var(--couleur);
+  font-size: calc(var(--taille) * 0.45);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}

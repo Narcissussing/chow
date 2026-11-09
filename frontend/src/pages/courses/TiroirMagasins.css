@@ -19,6 +19,8 @@
 }
 
 
+/* Largeur bornée par TiroirMagasins (place entre le caddie et le +) : au-delà, les logos glissent de côté.
+   Marge verticale pour que le saut du logo choisi ne soit pas coupé par le défilement. */
 .tiroir-magasins {
   position: absolute;
   left: calc(100% + 4px);
@@ -26,20 +28,37 @@
   z-index: 5;
   display: flex;
   gap: 6px;
-  padding: 3px 4px;
-  border-radius: 999px;
-  background: var(--surface);
+  padding: 10px 4px;
+  /* Sans fond : la marge verticale du saut dépasse la barre, un fond y ferait une bosse blanche. */
+  background: none;
   transform: translateY(-50%);
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.tiroir-magasins::-webkit-scrollbar {
+  display: none;
+}
+
+/* Il reste des logos à droite : le bord s'efface. */
+.tiroir-magasins.deborde {
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
+  mask-image: linear-gradient(to right, #000 calc(100% - 28px), transparent);
 }
 
 .tiroir-magasins__logo {
+  flex: none;
+  scroll-snap-align: start;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  /* À l'échelle du caddie (dessin de 30 px environ) : une tuile plus grande l'écrase. */
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 1.5px solid var(--border);
-  border-radius: 11px;
+  border-radius: 9px;
   background: #fff;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
@@ -49,8 +68,8 @@
 }
 
 .tiroir-magasins__logo img {
-  width: 22px;
-  height: 22px;
+  width: 20px;
+  height: 20px;
   object-fit: contain;
 }
 

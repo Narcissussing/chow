@@ -219,9 +219,6 @@
 .vue-liste .recette-nom {
   grid-area: nom;
   margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .vue-liste .recette-ingr {

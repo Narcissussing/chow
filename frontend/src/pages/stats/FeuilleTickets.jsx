@@ -4,6 +4,7 @@ import { api } from "../../api.js";
 import BoutonFermer from "../../components/BoutonFermer.jsx";
 import IconeFamille from "../../components/IconeFamille.jsx";
 import SelecteurMagasin from "../../components/SelecteurMagasin.jsx";
+import LogoEnseigne from "../../components/LogoEnseigne.jsx";
 import { useVerrouDefilement } from "../../hooks/useVerrouDefilement.js";
 import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { useGlisserPourFermer } from "../../hooks/useGlisserPourFermer.js";
@@ -338,7 +339,7 @@ export default function FeuilleTickets({ periodeInitiale, refInitiale, enseigneI
                   return (
                     <li key={t.id} className="tickets__ligne tickets__ligne--ticket" style={{ "--i": i % 10 }}>
                       <button type="button" disabled={!t.detaille} onClick={() => setTicket(t.id)}>
-                        <img className="tickets__logo" src={`/magasins/${t.enseigne === "Marché Frais" ? "marche-frais" : t.enseigne.toLowerCase()}.png`} alt="" />
+                        <LogoEnseigne nom={t.enseigne} taille={36} className="tickets__logo" />
                         <span className="tickets__nom"><b className="nom-defile">{t.enseigne}</b><span className="discret nom-defile">{jourCourt(t.jour)} · {t.detaille ? `${t.nbArticles} articles` : "montant seul"}</span></span>
                         <span className="tickets__valeur"><b>{euros(t.paye, 2)}</b>{gain > 0 && <span className="tickets__gain">−{euros(gain, 2)}</span>}</span>
                       </button>

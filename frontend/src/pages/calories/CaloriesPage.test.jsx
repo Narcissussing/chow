@@ -127,6 +127,14 @@ test("glisser : ordre local immédiat et POST de l'ordre complet", async () => {
   expect(requetes).toEqual([{ chemin: "/calories/reordonner", corps: { ids: [2, 1] } }]);
 });
 
+test("glisser refusé par le serveur : l'ordre d'avant revient", async () => {
+  mockFinsDeGlisse.clear();
+  ouvrir({ "/calories/reordonner": [500, { erreur: "Ordre invalide." }] });
+  await attendrePage();
+  await act(async () => mockFinsDeGlisse.forEach((finir) => finir({ active: { id: 2 }, over: { id: 1 } })));
+  expect([...document.querySelectorAll(".journal-nom")].map((n) => n.textContent.trim())).toEqual(["🫒 Huile", "🥚 Oeuf"]);
+});
+
 test("retrait : totaux immédiats, ligne retirée à 300 ms ; « Tout effacer » demande confirmation", async () => {
   jest.useFakeTimers();
   ouvrir();

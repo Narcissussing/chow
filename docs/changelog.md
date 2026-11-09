@@ -4,6 +4,15 @@ Synthèse issue de l’historique Git, qui reste la source détaillée. Le trava
 futur appartient à Jira ; les choix structurants sont indexés dans
 [Décisions](decisions.md).
 
+## 2026-11
+
+- Tiger Market et Action à Meaux : tickets importés, logos, mode magasin ;
+  un article peut être dans plusieurs magasins (liste choisie, sinon tickets
+  des 3 derniers mois) ; cocher en mode magasin ne le rattache plus à un seul.
+- Aliments coréens et japonais (tteok, gochujang, gochugaru, nori, wasabi,
+  gingembre mariné, vinaigre de riz, radis mariné, surimi, saumon fumé) et
+  recette Sushi sur 800 g de riz.
+
 ## 2026-10
 
 - Tickets dans les Stats (jour, semaine, mois, par magasin) avec trois niveaux
