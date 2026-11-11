@@ -18,7 +18,8 @@ Référentiel des aliments connus et de leurs informations nutritionnelles.
   faute tolérée dès 4 lettres ; classement : noms qui commencent par le
   texte, puis ce que le foyer utilise le plus (tickets, ajouts aux Courses,
   repas, Stock à la maison ; poids divisé par deux tous les 4 mois environ,
-  `popularite` calculée par le serveur), puis l'ordre alphabétique ;
+  `popularite` calculée par le serveur), puis l'ordre alphabétique ; tous
+  les résultats dans une liste haute de 5 lignes et demie qui défile ;
 - filtres par catégorie et tri par nom ou nutrition ;
 - fiche détaillée ;
 - équivalences propres à chaque aliment pour cuillère à café, cuillère à

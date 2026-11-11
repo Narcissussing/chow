@@ -224,6 +224,8 @@ Correction :
 
 **Correction** : seuls les 5 premiers aliments trouvés s'affichent.
 
+**Remplacé le 2026-11-11** (demande d'Olumide) : tous les résultats, classés par usage, dans une liste haute de 5 lignes qui défile.
+
 ### CHOW-117 — Deux reçus du même jour fusionnés, deux reçus Leclerc comptés double
 
 - **Niveau** : Majeure

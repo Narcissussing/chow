@@ -60,8 +60,8 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   }, [aAmenerEnVue, planifier]);
 
   const termes = normaliserTexte(texte.toLowerCase());
-  // 5 résultats au plus pendant la recherche, les plus utilisés d'abord.
-  const suggestions = classerRecherche(aliments, texte, { limite: 5 });
+  // Tous les résultats, les plus utilisés d'abord ; la liste en montre 5 et défile pour la suite.
+  const suggestions = classerRecherche(aliments, texte);
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
 
   function choisir(aliment, ligne) {
