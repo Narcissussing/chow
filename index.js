@@ -394,9 +394,30 @@ function exigerAdmin(req, res, next) {
 
 const uniteParType = { unite: 'unités', pack: 'packs', cl: 'cl' };
 
+// Ce que le foyer utilise le plus, pour classer les recherches : chaque passage en caisse, ajout aux Courses et
+// repas compte 1, un aliment à la maison compte 2 ; le poids baisse de moitié tous les 4 mois environ (récent d'abord).
+const POIDS_RECENT = "exp(-GREATEST(CURRENT_DATE - jour, 0) / 180.0)";
+const POPULARITE_ALIMENTS = `
+    SELECT id, SUM(poids * ${POIDS_RECENT})::float AS popularite
+    FROM (SELECT food_id AS id, MAX(date)::date AS jour, 1 AS poids FROM chow.v_lignes_stats
+          WHERE food_id IS NOT NULL GROUP BY food_id, ticket_id
+          UNION ALL SELECT food_id, date_ajout, 1 FROM chow.courses WHERE food_id IS NOT NULL
+          UNION ALL SELECT food_id, date_entree, 1 FROM chow.journal WHERE food_id IS NOT NULL
+          UNION ALL SELECT food_id, date_maj, 2 FROM chow.stock WHERE quantite NOT IN ('0', 'vide', '')) e
+    WHERE jour IS NOT NULL GROUP BY id`;
+const POPULARITE_ARTICLES = `
+    SELECT id, SUM(${POIDS_RECENT})::float AS popularite
+    FROM (SELECT article_id AS id, MAX(date)::date AS jour FROM achats.v_lignes
+          WHERE article_id IS NOT NULL GROUP BY article_id, ticket_id
+          UNION ALL SELECT article_id, date_ajout FROM chow.courses WHERE article_id IS NOT NULL) e
+    WHERE jour IS NOT NULL GROUP BY id`;
+
 async function chercherAliments() {
-    const result = await db.query("SELECT * FROM chow.aliments");
-    return result.rows
+    const result = await db.query(
+        `SELECT a.*, COALESCE(p.popularite, 0) AS popularite
+         FROM chow.aliments a LEFT JOIN (${POPULARITE_ALIMENTS}) p ON p.id = a.id`
+    );
+    return result.rows;
 }
 
 async function chercherStock() {
@@ -534,7 +555,10 @@ async function chargerPageCourses() {
     const aliments = await chercherAliments();
     const stock = await chercherStock();
     const presetHebdo = await db.query("SELECT food_id, article_id, nom_libre FROM chow.courses_modeles");
-    const articles = await db.query(`${ARTICLES_MAISON} ORDER BY a.nom`);
+    const articles = await db.query(
+        `SELECT m.*, COALESCE(p.popularite, 0) AS popularite
+         FROM (${ARTICLES_MAISON}) m LEFT JOIN (${POPULARITE_ARTICLES}) p ON p.id = m.id ORDER BY m.nom`
+    );
     return { courses, aliments, articles: articles.rows, stock, presetHebdo: presetHebdo.rows };
 }
 

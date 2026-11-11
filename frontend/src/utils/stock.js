@@ -1,4 +1,4 @@
-import { normaliserTexte } from "./texte.js";
+import { correspondRecherche } from "./recherche.js";
 
 export const OPTIONS_CL = [
   { value: "plein", label: "Plein" },
@@ -68,7 +68,7 @@ export function correspondFiltres(item, { emplacement, type, termes }) {
   const okType =
     type === "tous" ||
     (type === "bas" ? estQuantiteBasse(item.quantite, item.tracking_type) : type === "verifier" ? estAVerifier(item) : type === "cl" ? item.tracking_type === "cl" : item.tracking_type !== "cl");
-  return okEmplacement && okType && normaliserTexte(item.nom.toLowerCase()).includes(termes);
+  return okEmplacement && okType && correspondRecherche(item.nom, termes);
 }
 
 export function suggestionsARacheter(lignes) {

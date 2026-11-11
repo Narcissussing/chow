@@ -13,6 +13,12 @@ assez simple pour être administrée sans interface dédiée.
 Référentiel des aliments connus et de leurs informations nutritionnelles.
 
 - recherche insensible aux accents ;
+- recherche d'ajout (Courses, Stock, Calories) et filtre du Stock
+  (`utils/recherche.js`) : chaque mot tapé dans n'importe quel ordre, une
+  faute tolérée dès 4 lettres ; classement : noms qui commencent par le
+  texte, puis ce que le foyer utilise le plus (tickets, ajouts aux Courses,
+  repas, Stock à la maison ; poids divisé par deux tous les 4 mois environ,
+  `popularite` calculée par le serveur), puis l'ordre alphabétique ;
 - filtres par catégorie et tri par nom ou nutrition ;
 - fiche détaillée ;
 - équivalences propres à chaque aliment pour cuillère à café, cuillère à

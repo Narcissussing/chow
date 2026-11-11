@@ -11,6 +11,7 @@ import { afficherToast } from "../../../toast.js";
 import { gererErreurReseau } from "../../courses/reseau.js";
 import { BALANCE, lancerDansLaMarmite, lancerVers, relancerClasse } from "../../../utils/animation.js";
 import { normaliserTexte } from "../../../utils/texte.js";
+import { classerRecherche } from "../../../utils/recherche.js";
 import CuisineItem, { equivalencesEntree } from "./CuisineItem.jsx";
 import CuisineVide from "./CuisineVide.jsx";
 import "./Cuisine.css";
@@ -59,13 +60,8 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   }, [aAmenerEnVue, planifier]);
 
   const termes = normaliserTexte(texte.toLowerCase());
-  // 5 résultats au plus pendant la recherche.
-  let trouves = 0;
-  const suggestions = aliments.map((a) => {
-    const visible = trouves < 5 && normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termes);
-    if (visible) trouves++;
-    return { ...a, visible };
-  });
+  // 5 résultats au plus pendant la recherche, les plus utilisés d'abord.
+  const suggestions = classerRecherche(aliments, texte, { limite: 5 });
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
 
   function choisir(aliment, ligne) {

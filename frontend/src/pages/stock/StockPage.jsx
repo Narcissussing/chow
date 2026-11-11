@@ -16,6 +16,7 @@ import { correspondFiltres, suggestionsARacheter, trierStock } from "../../utils
 import StockSuggestions, { BoutonRacheter } from "./StockSuggestions.jsx";
 import BadgeCompteur from "../../components/BadgeCompteur.jsx";
 import { normaliserTexte } from "../../utils/texte.js";
+import { classerRecherche } from "../../utils/recherche.js";
 import StockItem, { boutonCoursesVisible } from "./StockItem.jsx";
 import { jeterAuxCourses } from "../../utils/animation.js";
 import "./StockPage.css";
@@ -233,7 +234,7 @@ function Stock({ donnees }) {
   useClicExterieur([zoneAjout, boutonAjout], fermerAjout, ajout.ouvert);
 
   const termesAjout = normaliserTexte(ajout.texte.toLowerCase());
-  const suggestions = donnees.aliments.map((a) => ({ ...a, visible: normaliserTexte(`${a.emoji} ${a.nom}`.toLowerCase()).includes(termesAjout) }));
+  const suggestions = classerRecherche(donnees.aliments, ajout.texte);
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
 
   function mettreEnAvant(id) {

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { normaliserTexte } from "../../utils/texte.js";
+import { classerRecherche } from "../../utils/recherche.js";
 import "./PanneauAjout.css";
 import IconeFamille from "../../components/IconeFamille.jsx";
 
@@ -20,10 +21,7 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
 
   const termes = normaliserTexte(texte.toLowerCase());
   // Aliments de Chow, puis articles de la maison (shampoing, javel) avec l'icône de leur famille.
-  const suggestions = [...aliments, ...articles.map((a) => ({ ...a, cle: `article-${a.id}` }))].map((a) => ({
-    ...a,
-    visible: normaliserTexte(`${a.emoji || ""} ${a.nom}`.toLowerCase()).includes(termes),
-  }));
+  const suggestions = classerRecherche([...aliments, ...articles.map((a) => ({ ...a, cle: `article-${a.id}` }))], texte);
   const aUneCorrespondance = suggestions.some((s) => s.visible);
   const nouveau = termes !== "" && !aUneCorrespondance;
 
