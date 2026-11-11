@@ -109,7 +109,8 @@ Vues :
 - `recettes` (`nom`, `categorie`, `etapes` une par ligne) et
   `recette_ingredients` (`food_id`, `quantite_g`, `unite`, ordre = `id`).
 - Vue `v_lignes_stats` : achats au format lu par `stats.js` (Stats, Courses),
-  passages bancaires compris.
+  passages bancaires compris ; `pieces` = pièces achetées pour un produit à la
+  pièce (œufs par boîte, portions par sachet), prix du chariot à la pièce.
 
 Les colonnes `food_id` gardent leur nom anglais tant que l'API et le
 frontend ne sont pas renommés ensemble.

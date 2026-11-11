@@ -551,6 +551,7 @@ async function passagesDesAliments(ids) {
         `SELECT v.food_id, SUM(v.total)::float AS cout,
                 SUM(v.quantite_ref)::float AS quantite_ref,
                 SUM(COALESCE(v.quantite, 1))::float AS nombre,
+                SUM(COALESCE(v.pieces, COALESCE(v.quantite, 1)))::float AS pieces,
                 bool_and(v.contenance IS NOT NULL) AS au_poids,
                 MAX(COALESCE(v.unite, 'u')) AS unite,
                 v.enseigne, SUM(v.remise)::float AS remise, ep.nom AS enseigne_prix
@@ -586,8 +587,9 @@ function prevoirSansUnite(passages) {
     return { estimation: quantile(couts, 0.5), bas: quantile(couts, 0.25), haut: quantile(couts, 0.75), passages: couts.length };
 }
 
-// Articles de la maison : prix d'une ligne de ticket sur les 8 dernières, lignes hors promo d'abord, au prix affiché
-// avant remise (sauf article acheté seulement en promo : prix payé). Médiane, quartiles et prix à la pièce.
+// Articles de la maison : prix d'un passage en caisse (toutes ses lignes : deux adoucissants pris ensemble comptent
+// pour deux) sur les 8 derniers, passages hors promo d'abord, au prix affiché avant remise (sauf article acheté
+// seulement en promo : prix payé). Médiane, quartiles et prix à la pièce.
 async function prixArticlesMaison(ids) {
     const result = await db.query(
         `SELECT article_id, count(*)::int AS lignes,
@@ -595,10 +597,11 @@ async function prixArticlesMaison(ids) {
                 percentile_cont(0.25) WITHIN GROUP (ORDER BY prix)::float AS bas,
                 percentile_cont(0.75) WITHIN GROUP (ORDER BY prix)::float AS haut,
                 percentile_cont(0.5) WITHIN GROUP (ORDER BY prix / NULLIF(quantite, 0))::float AS piece
-         FROM (SELECT article_id, quantite,
-                      CASE WHEN achat_en_promo THEN paye ELSE montant END AS prix,
-                      row_number() OVER (PARTITION BY article_id ORDER BY en_promo AND NOT achat_en_promo, date DESC) AS rang
-               FROM achats.v_lignes WHERE article_id = ANY($1)) d
+         FROM (SELECT article_id, SUM(quantite) AS quantite,
+                      SUM(CASE WHEN achat_en_promo THEN paye ELSE montant END) AS prix,
+                      row_number() OVER (PARTITION BY article_id ORDER BY bool_or(en_promo AND NOT achat_en_promo), MAX(date) DESC) AS rang
+               FROM achats.v_lignes WHERE article_id = ANY($1)
+               GROUP BY article_id, ticket_id) d
          WHERE rang <= 8 GROUP BY article_id`,
         [ids]
     );
@@ -633,7 +636,8 @@ async function chargerPanier() {
                 const prevision = p && prevoirArticle(p);
                 if (prevision) {
                     prevu = prevision.estimation;
-                    if (!p[0].au_poids) piece = prevision.prixUnitaire;
+                    // Le chariot compte dans l'unité du Stock (œufs, portions) : prix à la pièce de la même boîte de référence.
+                    if (!p[0].au_poids) piece = prevoirArticle(p.map((x) => ({ ...x, nombre: x.pieces }))).prixUnitaire;
                 } else if (p) prevu = prevoirSansUnite(p).estimation;
                 else prevu = l.prix_habituel;
             } else if (l.article_id) {

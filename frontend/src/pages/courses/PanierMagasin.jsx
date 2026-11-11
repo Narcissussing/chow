@@ -14,6 +14,9 @@ const COULEURS = {
 const PALETTE = ["#7a8fb8", "#2f6f62", "#d9a441", "#c8472b", "#a8896b", "#b07aa1", "#4f8f9a"];
 const couleurDe = (rayon) => COULEURS[rayon] || PALETTE[[...rayon].reduce((s, c) => s + c.charCodeAt(0), 0) % PALETTE.length];
 const euros = (n) => Math.round(n).toLocaleString("fr-FR") + " €";
+// Montant d'un rayon dans la bulle : au centime sous 10 €, sinon à l'euro.
+const eurosRayon = (n) =>
+  n < 10 ? n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : euros(n);
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 // Total qui défile jusqu'à sa nouvelle valeur (≈ 450 ms).
@@ -168,7 +171,10 @@ export default function PanierMagasin({ lignes, reduit = false, onTerminer }) {
         >
           <b>{rayonTouche.rayon}</b>
           <span>
-            {euros(rayonTouche.valeur)} sur {euros(rayonTouche.prevu)} · {rayonTouche.achetes} sur {rayonTouche.articles}
+            {eurosRayon(rayonTouche.valeur)} au chariot · {eurosRayon(rayonTouche.prevu)} prévus
+          </span>
+          <span>
+            {rayonTouche.achetes} article{rayonTouche.achetes > 1 ? "s" : ""} sur {rayonTouche.articles}
           </span>
         </span>
       )}

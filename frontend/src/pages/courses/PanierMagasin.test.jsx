@@ -34,7 +34,7 @@ test("dépassé : repère du prévu, pastille +N €, prévu effacé", () => {
 test("toucher une part : bulle avec le rayon, les autres s'estompent", () => {
   render(<PanierMagasin lignes={LIGNES} />);
   fireEvent.click(screen.getByRole("button", { name: "Laitiers : 23 €" }));
-  expect(screen.getByRole("status")).toHaveTextContent("Laitiers23 € sur 11 € · 2 sur 2");
+  expect(screen.getByRole("status")).toHaveTextContent("Laitiers23 € au chariot · 11 € prévus2 articles sur 2");
 });
 
 test("deux touchers font entrer le ✓ ; Oui termine la tournée", async () => {

@@ -53,6 +53,84 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-130 — Recette en modification : le menu des unités se ferme aussitôt ouvert
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/components/CustomSelect.jsx`
+- **Date de signalement** : 2026-11-11
+- **Date de correction** : 2026-11-11
+
+**Étapes de reproduction** :
+
+1. Calories, Recettes, ouvrir Tteokbokki, modifier.
+2. Toucher l'unité d'un ingrédient au nom long (« Galettes de poisson (eomuk) »).
+
+**Résultat attendu** : la liste des unités reste ouverte jusqu'au choix.
+
+**Résultat obtenu** : la liste s'ouvre puis disparaît aussitôt.
+
+**Correction** : les noms trop longs défilent seuls à chaque image, et la liste se fermait à tout défilement ; le défilement des `.nom-defile` est ignoré. Test ajouté (échoue sans la correction).
+
+### CHOW-129 — Petit pot de crème au chocolat en double dans les Courses
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `db/migrations/2026-11-11-2-aliments-relies-article.sql`
+- **Date de signalement** : 2026-11-11
+- **Date de correction** : 2026-11-11
+- **Environnement** : production seulement
+
+**Étapes de reproduction** :
+
+1. Courses, toucher « + ».
+2. Taper « petit pot de crème ».
+
+**Résultat attendu** : un seul Petit pot de crème (chocolat).
+
+**Résultat obtenu** : deux, l'aliment et un article de la maison du même nom ; 20 autres aliments dans le même cas (ailerons de dinde, pain burger, chorizo…), leurs achats absents des Stats.
+
+**Correction** : en production, 21 aliments n'avaient pas d'`article_id` ; la migration relie chacun à l'article de même identifiant (appliquée en production et en dev, 0 doublon restant).
+
+### CHOW-126 — Panier en magasin : espaces entre les parts de la barre
+
+- **Niveau** : Mineure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/courses/PanierMagasin.css`
+- **Date de signalement** : 2026-11-11
+- **Date de correction** : 2026-11-11
+
+**Étapes de reproduction** :
+
+1. Courses sur téléphone, mode magasin, plusieurs rayons dans la liste.
+2. Mettre au chariot des articles de quelques rayons seulement.
+
+**Résultat attendu** : les parts colorées se suivent en une seule barre.
+
+**Résultat obtenu** : des espaces séparent les parts, plus larges quand des rayons n'ont encore rien au chariot.
+
+**Correction** : la piste n'a plus d'écart entre les parts (chaque rayon, même vide, en ajoutait un) et les parts ne sont plus arrondies une à une ; seuls les bouts de la barre restent arrondis.
+
+### CHOW-125 — Panier en magasin : les œufs comptés au prix d'une boîte chacun
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `index.js`, `db/vues.sql`
+- **Date de signalement** : 2026-11-11
+- **Date de correction** : 2026-11-11
+
+**Étapes de reproduction** :
+
+1. Courses, mode magasin, œufs dans la liste.
+2. Prendre les œufs avec +10 / +20 (24 œufs).
+3. Toucher la part Oeufs de la barre.
+
+**Résultat attendu** : environ 5 € (21 à 25 centimes l'œuf).
+
+**Résultat obtenu** : « 60 € sur 5 € » : chaque œuf compté au prix d'une boîte (24 × 2,49 €).
+
+**Correction** : `v_lignes_stats` garde le nombre de pièces par produit (`pieces` : œufs par boîte) et le chariot prend le prix à la pièce de la même boîte de référence (0,21 € l'œuf). Vérifié sur la base dev ; vérification dans l'app à faire.
+
 ### CHOW-124 — Courses défilées : le caddie et ses logos passent sur le bouton de tri
 
 - **Niveau** : Mineure

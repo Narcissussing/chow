@@ -14,6 +14,11 @@ futur appartient à Jira ; les choix structurants sont indexés dans
   recette Sushi sur 800 g de riz.
 - Yaourt à boire (Deli'UP) avec sa photo ; l'article Lubrifiant couvre aussi
   l'huile fine multiusage.
+- Recette Tteokbokki pour deux, galettes de poisson (eomuk) au congélateur,
+  gâteaux de riz comptés en portions (+3, +6, +9), gochujang et gochugaru au
+  placard ; tickets Tiger Market, Marché Frais et Leclerc du 10 novembre.
+- Panier en magasin : œufs comptés à l'œuf (CHOW-125), barre sans espaces
+  (CHOW-126) ; adoucissant et articles de la maison estimés par passage.
 
 ## 2026-10
 

@@ -131,11 +131,12 @@ SELECT to_char(v.date, 'YYYY-MM-DD') AS jour,
             WHEN v.aliment_id IS NOT NULL THEN 'chow'
             WHEN v.categorie_racine_id IN ('alimentation', 'boissons') THEN 'hors-chow'
             ELSE 'non-alimentaire' END AS statut,
-       v.aliment_id AS food_id
+       v.aliment_id AS food_id,
+       CASE WHEN v.unite_ref = 'piece' THEN v.quantite_ref END AS pieces
 FROM achats.v_lignes v
 UNION ALL
 SELECT to_char(t.date, 'YYYY-MM-DD'), t.date, t.id, e.nom, 'PASSAGE NON DÉTAILLÉ (relevé bancaire)', t.paye,
-       1, NULL, NULL, NULL, NULL, NULL, 0, 'non-detaille', NULL
+       1, NULL, NULL, NULL, NULL, NULL, 0, 'non-detaille', NULL, NULL
 FROM achats.tickets t
 JOIN achats.magasins m ON m.id = t.magasin_id
 JOIN achats.enseignes e ON e.id = m.enseigne_id

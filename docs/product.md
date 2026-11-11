@@ -38,7 +38,8 @@ choisi en mode magasin. Les achats en promo ne comptent ni dans la quantité ni
 dans le prix (le foyer achète plus quand c'est en promo). Épices et herbes
 séchées : prix attendu de Leclerc, quel que soit le magasin. La fourchette vient
 des écarts passés entre prévu et payé : elle se resserre à chaque nouveau
-ticket. Sans historique, `foods.prix_habituel`. La fourchette
+ticket. Articles de la maison : prix d'un passage en caisse, toutes ses lignes
+comprises (deux adoucissants pris ensemble = deux). Sans historique, `foods.prix_habituel`. La fourchette
 s'affiche à côté du titre des Courses ; un clic montre le détail par article.
 
 La page Stats (maquette Figma « Chow ») suit un filtre global (période et
@@ -94,8 +95,9 @@ Liste de courses utilisable avant et pendant les achats.
   magasin connu), les autres sont masqués ; la liste est relue toutes les 15 s et un article
   ajouté ailleurs fait sortir du filtre pour le voir arriver ;
 - panier de la tournée en mode magasin, à la place du titre : barre par rayon
-  (piste = toute la liste prévue, parts = ce qui est au chariot, +1/+2/+5
-  comptés à la pièce), total, prévu effacé quand le chariot l'atteint, repère
+  (piste = toute la liste prévue, parts = ce qui est au chariot, collées
+  sans espace, +1/+2/+5 comptés dans l'unité du Stock : un œuf au prix d'une
+  boîte ÷ ses œufs, une portion de tteok au prix d'un sachet ÷ 3), total, prévu effacé quand le chariot l'atteint, repère
   et « +N € » au-delà ; toucher une part donne son rayon ; filtré par le magasin
   choisi ; version fine sous la barre d'outils quand on descend ;
 - tournée sur un ou plusieurs magasins et jours : ouverte par le mode magasin,

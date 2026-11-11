@@ -84,6 +84,18 @@ test("fermeture instantanée : clic ailleurs, Échap, défilement de la page ; p
   expect(liste()).toBeNull();
 });
 
+test("un nom qui défile seul (.nom-defile) ne ferme pas la liste", () => {
+  render(
+    <>
+      <span className="nom-defile">Galettes de poisson (eomuk)</span>
+      <Exemple />
+    </>
+  );
+  fireEvent.click(screen.getByRole("button"));
+  fireEvent.scroll(document.querySelector(".nom-defile"));
+  expect(liste()).not.toBeNull();
+});
+
 test("un seul menu ouvert à la fois", () => {
   render(
     <>

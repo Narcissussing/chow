@@ -218,6 +218,12 @@ DELETE FROM ip_bloquees WHERE ip = '<adresse>';
   `2026-11-02-2-produits-comme-la-dev.sql` aligne rangement et contenance sur la dev
   et recopie catégories et articles manquants. Toute correction de données passe par
   une migration, jamais à la main sur une seule base.
+- 2026-11-11 : 21 aliments de production sans `article_id` (créés avant leur
+  article ; `ON CONFLICT DO NOTHING` de la recopie ne les a pas complétés) :
+  Petit pot de crème au chocolat en double dans les Courses, leurs achats hors
+  Chow dans les Stats. `2026-11-11-2-aliments-relies-article.sql` les relie à
+  l'article de même identifiant. Après une recopie, vérifier aussi les liens,
+  pas seulement les lignes (CHOW-129).
 
 ### Déploiement
 

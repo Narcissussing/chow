@@ -15,8 +15,9 @@ function surClicDocument() {
   fermerTousLesSelects();
 }
 
+// Les noms trop longs (.nom-defile) glissent seuls à chaque image : ce défilement-là ne ferme pas la liste.
 function surDefilement(event) {
-  if (event.target instanceof Element && event.target.closest(".custom-select__list")) return;
+  if (event.target instanceof Element && event.target.closest(".custom-select__list, .nom-defile")) return;
   fermerTousLesSelects();
 }
 
