@@ -53,6 +53,25 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-133 — Courses : la liste de recherche passe sous la barre d'outils
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/hooks/useListeDansEcran.js`
+- **Date de signalement** : 2026-11-11
+- **Date de correction** : 2026-11-11
+
+**Étapes de reproduction** :
+
+1. Courses sur téléphone, mode magasin, toucher « + ».
+2. Taper « Suc » (clavier ouvert).
+
+**Résultat attendu** : la liste entière, lisible, entre le champ et la barre du haut ou le clavier.
+
+**Résultat obtenu** : la liste s'ouvre au-dessus du champ et son milieu passe sous la barre « Nom / magasin / + ».
+
+**Correction** : la place au-dessus s'arrête sous les barres collées (pas seulement l'en-tête) ; si aucun côté n'a la place de 3 lignes, la page remonte une fois pour coller le champ sous la barre et la liste s'ouvre dessous, jusqu'au clavier. Vérifié dans Chrome en iPhone 13 sur un écran réduit à 330 px : liste à 139–295 px sous la barre (127 px), défilement 0 → 87 px.
+
 ### CHOW-132 — Courses : la liste de recherche ne défile pas
 
 - **Niveau** : Majeure

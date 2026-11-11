@@ -152,8 +152,11 @@ Les animations décoratives doivent respecter `prefers-reduced-motion`.
 Les listes sous un champ de recherche (Courses, Stock, Calories) passent par
 `hooks/useListeDansEcran.js` : 5 lignes et demie, ouvertes au-dessus du champ
 quand le clavier ou le bas de l'écran les cacheraient, hauteur réduite à la
-place visible (`visualViewport`, sous l'en-tête), replacées quand le clavier
-bouge ou que la page défile.
+place visible (`visualViewport`, sous les barres collées : en-tête, barre des
+Courses, filtres du Stock, totaux des Calories), replacées quand le clavier
+bouge ou que la page défile. Si aucun côté n'a la place de 3 lignes, la page
+remonte une fois pour coller le champ sous ces barres et la liste s'ouvre
+dessous, jusqu'au clavier.
 
 Limites : pas de navigation par flèches et pas de repositionnement après une
 modification de mise en page pendant l’ouverture.
