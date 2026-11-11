@@ -6,6 +6,7 @@ import CustomSelect from "../../components/CustomSelect.jsx";
 import Page from "../../components/Page.jsx";
 import { useCartesQuiGlissent } from "../../hooks/useCartesQuiGlissent.js";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
+import { useListeDansEcran } from "../../hooks/useListeDansEcran.js";
 import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { useLocalStorage } from "../../hooks/useLocalStorage.js";
 import { useMinuteurs } from "../../hooks/useMinuteurs.js";
@@ -48,6 +49,7 @@ function Stock({ donnees }) {
   const planifier = useMinuteurs();
   const champRecherche = useRef(null);
   const champAjout = useRef(null);
+  const listeAjout = useRef(null);
   const zoneAjout = useRef(null);
   const boutonAjout = useRef(null);
   const cartes = useRef({});
@@ -236,6 +238,7 @@ function Stock({ donnees }) {
   const termesAjout = normaliserTexte(ajout.texte.toLowerCase());
   const suggestions = classerRecherche(donnees.aliments, ajout.texte);
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
+  useListeDansEcran(listeAjout, ajout.ouvert && termesAjout !== "", ajout.texte);
 
   function mettreEnAvant(id) {
     if (emplacement !== "tous" || type !== "tous") {
@@ -358,7 +361,7 @@ function Stock({ donnees }) {
               />
               <BoutonEffacer cible="rechercheAliment" valeur={ajout.texte} onEffacer={() => setAjout((a) => ({ ...a, texte: "" }))} champ={champAjout} />
             </div>
-            <ul id="listeAliments" hidden={termesAjout === ""}>
+            <ul id="listeAliments" ref={listeAjout} hidden={termesAjout === ""}>
               {suggestions.map((s) => (
                 <li key={s.id} hidden={!s.visible} onClick={() => choisirSuggestion(s)}>
                   {s.emoji} {s.nom}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import BoutonEffacer from "../../components/BoutonEffacer.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
+import { useListeDansEcran } from "../../hooks/useListeDansEcran.js";
 import { normaliserTexte } from "../../utils/texte.js";
 import { classerRecherche } from "../../utils/recherche.js";
 import "./PanneauAjout.css";
@@ -8,6 +9,7 @@ import IconeFamille from "../../components/IconeFamille.jsx";
 
 export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliments, articles = [], onChoisir, onAjouterTexte }) {
   const zone = useRef(null);
+  const liste = useRef(null);
   const [texte, setTexte] = useState("");
   const [listeVisible, setListeVisible] = useState(false);
 
@@ -24,6 +26,7 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
   const suggestions = classerRecherche([...aliments, ...articles.map((a) => ({ ...a, cle: `article-${a.id}` }))], texte);
   const aUneCorrespondance = suggestions.some((s) => s.visible);
   const nouveau = termes !== "" && !aUneCorrespondance;
+  useListeDansEcran(liste, listeVisible && !nouveau, texte);
 
   function tenterAjout() {
     const libre = texte.trim();
@@ -80,7 +83,7 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
                   +
                 </button>
               </div>
-              <ul id="listeAlimentsCourses" hidden={!listeVisible || nouveau}>
+              <ul id="listeAlimentsCourses" ref={liste} hidden={!listeVisible || nouveau}>
                 {suggestions.map((s) => (
                   <li key={s.cle || s.id} hidden={!s.visible} onClick={() => onChoisir(s)}>
                     {s.famille_id ? <IconeFamille famille={s.famille_id} /> : s.emoji} {s.nom}

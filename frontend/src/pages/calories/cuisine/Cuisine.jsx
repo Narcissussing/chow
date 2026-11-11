@@ -6,6 +6,7 @@ import BoutonOutil from "../../../components/BoutonOutil.jsx";
 import CustomSelect from "../../../components/CustomSelect.jsx";
 import { ListeTriable } from "../../../components/Triable.jsx";
 import { useClicExterieur } from "../../../hooks/useClicExterieur.js";
+import { useListeDansEcran } from "../../../hooks/useListeDansEcran.js";
 import { useMinuteurs } from "../../../hooks/useMinuteurs.js";
 import { afficherToast } from "../../../toast.js";
 import { gererErreurReseau } from "../../courses/reseau.js";
@@ -41,6 +42,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   const verrous = useRef(new Set());
   const [texte, setTexte] = useState("");
   const [listeVisible, setListeVisible] = useState(false);
+  const listeSuggestions = useRef(null);
   const [valeursSelects, setValeursSelects] = useState({ plat: "", fraicheur: "" });
   const [aAmenerEnVue, setAAmenerEnVue] = useState(null);
 
@@ -62,6 +64,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   const termes = normaliserTexte(texte.toLowerCase());
   // Tous les résultats, les plus utilisés d'abord ; la liste en montre 5 et défile pour la suite.
   const suggestions = classerRecherche(aliments, texte);
+  useListeDansEcran(listeSuggestions, listeVisible, texte);
   const nbSuggestions = suggestions.filter((s) => s.visible).length;
 
   function choisir(aliment, ligne) {
@@ -239,7 +242,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
               champ={champ}
             />
           </div>
-          <ul id="listeAlimentsCalories" hidden={!listeVisible}>
+          <ul id="listeAlimentsCalories" ref={listeSuggestions} hidden={!listeVisible}>
             {suggestions.map((s) => (
               <li key={s.id} hidden={!s.visible} onClick={(e) => choisir(s, e.currentTarget)}>
                 {s.emoji} {s.nom}

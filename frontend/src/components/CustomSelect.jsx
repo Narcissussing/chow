@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { placeDansEcran } from "../hooks/useListeDansEcran.js";
 import "./CustomSelect.css";
 
 const fermeturesInstantanees = new Set();
@@ -94,7 +95,7 @@ export default function CustomSelect({
     fermerTousLesSelects(refFermeture.current);
     clearTimeout(minuteurFermeture.current);
     const rect = bouton.current.getBoundingClientRect();
-    setPosition({ top: rect.bottom + 6, left: rect.left, minWidth: rect.width });
+    setPosition({ top: rect.bottom + 6, left: rect.left, minWidth: rect.width, ancre: rect });
     setOuvert(true);
     setListeMontee(true);
   }
@@ -103,6 +104,13 @@ export default function CustomSelect({
     const element = liste.current;
     if (!ouvert || !element) return;
     void element.offsetWidth;
+    // Sous le bouton s'il y a la place, sinon au-dessus ; jamais coupée par l'écran ou le clavier, elle défile.
+    if (position.ancre) {
+      const { auDessus, hauteur } = placeDansEcran(position.ancre, element.scrollHeight);
+      element.style.maxHeight = `${hauteur}px`;
+      element.style.top = `${auDessus ? position.ancre.top - 6 - Math.min(hauteur, element.scrollHeight) : position.ancre.bottom + 6}px`;
+      element.classList.toggle("custom-select__list--dessus", auDessus);
+    }
     element.classList.add("custom-select__list--ouverte");
     const largeur = element.getBoundingClientRect().width;
     const gaucheMax = window.innerWidth - largeur - MARGE_ECRAN;

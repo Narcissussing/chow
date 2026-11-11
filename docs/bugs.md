@@ -53,6 +53,26 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-132 — Courses : la liste de recherche ne défile pas
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/hooks/useListeDansEcran.js`, `frontend/src/components/CustomSelect.jsx`, `frontend/src/components/CustomSelect.css`, `PanneauAjout.jsx`, `StockPage.jsx`, `Cuisine.jsx`
+- **Date de signalement** : 2026-11-11
+- **Date de correction** : 2026-11-11
+
+**Étapes de reproduction** :
+
+1. Courses sur téléphone, toucher « + ».
+2. Taper une lettre (« a »).
+3. Faire glisser la liste des résultats.
+
+**Résultat attendu** : la liste défile et montre les résultats suivants.
+
+**Résultat obtenu** : rien ne défile ; la liste s'ouvre sous le champ, en bas de page, sous le clavier (779 à 1000 px sur un écran de 844 px).
+
+**Correction** : la liste s'ouvre au-dessus du champ quand la place manque dessous, avec une hauteur limitée à l'écran visible (clavier exclu) ; même chose pour Stock, Calories et les menus des unités, qui défilent aussi désormais. Vérifié dans Chrome en iPhone 13 : liste à 508–729 px, défilement 0 → 150 px ; écran réduit à 480 px : liste à 215–436 px, défilement 0 → 153 px.
+
 ### CHOW-130 — Recette en modification : le menu des unités se ferme aussitôt ouvert
 
 - **Niveau** : Majeure

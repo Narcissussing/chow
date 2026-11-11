@@ -142,7 +142,18 @@ Les animations décoratives doivent respecter `prefers-reduced-motion`.
 - liste d’options placée sous `body` pour éviter les coupures ;
 - valeur synchronisée avec le `select` natif et événement `change` ;
 - observation des options et de l’état `disabled` ;
-- fermeture au clic extérieur, au défilement ou avec Échap.
+- fermeture au clic extérieur, au défilement ou avec Échap (pas au défilement
+  automatique des `.nom-defile`) ;
+- ouverte au-dessus du bouton quand la place manque dessous, hauteur limitée à
+  l'écran visible, défile à l'intérieur.
+
+### Listes de suggestions
+
+Les listes sous un champ de recherche (Courses, Stock, Calories) passent par
+`hooks/useListeDansEcran.js` : 5 lignes et demie, ouvertes au-dessus du champ
+quand le clavier ou le bas de l'écran les cacheraient, hauteur réduite à la
+place visible (`visualViewport`, sous l'en-tête), replacées quand le clavier
+bouge ou que la page défile.
 
 Limites : pas de navigation par flèches et pas de repositionnement après une
 modification de mise en page pendant l’ouverture.
