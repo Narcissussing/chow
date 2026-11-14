@@ -38,6 +38,11 @@
   min-height: 0;
 }
 
+/* Une fois ouvert, plus de grille ni de découpe : sur iPhone, la liste qui en déborde ne défilait pas au doigt. */
+.panneau-ajout.ouvert.pret {
+  display: block;
+}
+
 .panneau-ajout.ouvert.pret .panneau-ajout__piege {
   overflow: visible;
 }
@@ -97,6 +102,8 @@ body.mode-magasin .panneau-ajout__interieur {
   overflow-y: auto;
   overflow-x: hidden;
   overscroll-behavior: contain;
+  touch-action: pan-y;
+  transform: translateZ(0);
 }
 
 #listeAlimentsCourses li {

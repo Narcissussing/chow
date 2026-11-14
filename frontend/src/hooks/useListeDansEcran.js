@@ -2,8 +2,6 @@ import { useLayoutEffect, useRef } from "react";
 
 const ECART = 6;
 const MARGE = 12;
-// Hauteur d'environ 3 lignes : en dessous, la liste est trop écrasée pour servir.
-const HAUTEUR_UTILE = 120;
 // Barres qui restent collées en haut de l'écran et cacheraient la liste.
 const BARRES_COLLEES = ".header, .courses-controls-row, .filters, .journal-totaux";
 
@@ -36,19 +34,18 @@ export function placeDansEcran(rect, hauteurVoulue, ancre = null) {
 
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-// Liste de suggestions en position absolue sous son champ (Courses, Stock, Calories) : ouverte au-dessus du champ quand
-// le clavier ou le bas de l'écran la cacheraient, replacée quand le clavier bouge ou que la page défile. Si aucun côté
-// n'a la place de 3 lignes, la page remonte une fois pour coller le champ sous les barres du haut, et la liste s'ouvre
-// dessous, jusqu'au clavier.
+// Liste de suggestions en position absolue sous son champ (Courses, Stock, Calories) : toujours dessous, collée au champ.
+// Quand le clavier ou le bas de l'écran la couperaient, la page remonte juste assez (jamais au point de cacher le champ
+// sous les barres du haut) ; ce qui manque encore se gagne en faisant défiler la liste.
 export function useListeDansEcran(liste, visible, contenu) {
-  // Remontée et marge sous la page : une fois par ouverture, rendues quand la liste se ferme (pas à chaque lettre).
-  const ouverture = useRef({ remontee: false, margeAvant: null });
+  // Marge sous la page posée à l'ouverture, rendue quand la liste se ferme.
+  const ouverture = useRef({ margeAvant: null });
   useLayoutEffect(() => {
     if (!visible) return;
     const etat = ouverture.current;
     return () => {
       if (etat.margeAvant !== null) document.body.style.paddingBottom = etat.margeAvant;
-      ouverture.current = { remontee: false, margeAvant: null };
+      ouverture.current = { margeAvant: null };
     };
   }, [visible]);
 
@@ -57,31 +54,44 @@ export function useListeDansEcran(liste, visible, contenu) {
     if (!visible || !el) return;
     if (!el.dataset.hauteurVoulue) el.dataset.hauteurVoulue = parseFloat(getComputedStyle(el).maxHeight) || 220;
     const etat = ouverture.current;
+    let doigtSurListe = false;
     const placer = (event) => {
-      if (event?.target === el || !el.offsetParent) return;
+      // Clavier ouvert, l'iPhone déplace l'écran pendant le glissé : redimensionner la liste à ce moment-là arrête
+      // son défilement. Elle est replacée quand le doigt se lève.
+      if (doigtSurListe || event?.target === el || !el.offsetParent) return;
       const ancre = el.offsetParent;
       const rect = ancre.getBoundingClientRect();
       const besoin = Math.min(Number(el.dataset.hauteurVoulue), el.scrollHeight + 4);
-      const { auDessus, hauteur, haut } = placeDansEcran(rect, besoin, ancre);
-      if (!etat.remontee && hauteur < Math.min(besoin, HAUTEUR_UTILE) && rect.top - haut > MARGE) {
-        etat.remontee = true;
-        // De la place sous la page pour pouvoir remonter le champ même en bas de liste.
-        etat.margeAvant = document.body.style.paddingBottom;
-        document.body.style.paddingBottom = `${window.innerHeight}px`;
-        window.scrollBy({ top: rect.top - haut - ECART, behavior: mouvementReduit() ? "auto" : "smooth" });
+      const { haut, bas } = zoneVisible(ancre);
+      const dessous = bas - rect.bottom - ECART - MARGE;
+      // Pas de remontée pendant un défilement : elle relancerait le défilement en boucle.
+      const manque = Math.min(besoin - dessous, rect.top - haut - ECART);
+      if (event?.type !== "scroll" && manque > 2) {
+        if (etat.margeAvant === null) {
+          // De la place sous la page pour pouvoir remonter le champ même en bas de liste.
+          etat.margeAvant = document.body.style.paddingBottom;
+          document.body.style.paddingBottom = `${window.innerHeight}px`;
+        }
+        window.scrollBy({ top: manque, behavior: mouvementReduit() ? "auto" : "smooth" });
       }
-      el.style.maxHeight = `${hauteur}px`;
-      el.style.top = auDessus ? "auto" : "";
-      el.style.bottom = auDessus ? `calc(100% + ${ECART}px)` : "";
-      el.classList.toggle("liste-au-dessus", auDessus);
+      const hauteur = `${Math.max(0, Math.round(Math.min(besoin, dessous)))}px`;
+      if (el.style.maxHeight !== hauteur) el.style.maxHeight = hauteur;
     };
+    const poser = () => { doigtSurListe = true; };
+    const lever = () => { doigtSurListe = false; placer(); };
     placer();
+    el.addEventListener("touchstart", poser, { passive: true });
+    el.addEventListener("touchend", lever);
+    el.addEventListener("touchcancel", lever);
     const vv = window.visualViewport;
     vv?.addEventListener("resize", placer);
     vv?.addEventListener("scroll", placer);
     window.addEventListener("resize", placer);
     window.addEventListener("scroll", placer, true);
     return () => {
+      el.removeEventListener("touchstart", poser);
+      el.removeEventListener("touchend", lever);
+      el.removeEventListener("touchcancel", lever);
       vv?.removeEventListener("resize", placer);
       vv?.removeEventListener("scroll", placer);
       window.removeEventListener("resize", placer);

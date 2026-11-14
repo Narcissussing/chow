@@ -53,6 +53,44 @@ l’exécute et renseigne son résultat.
 Correction :
 -->
 
+### CHOW-135 — Courses : la liste de recherche ne défile pas au doigt
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/pages/courses/PanneauAjout.css`, `frontend/src/hooks/useListeDansEcran.js`
+- **Date de signalement** : 2026-11-14
+- **Date de correction** : 2026-11-14
+
+**Étapes de reproduction** :
+
+1. Courses sur iPhone, toucher « + », taper « Cot ».
+2. Glisser le doigt sur la liste des résultats.
+
+**Résultat attendu** : la liste défile jusqu'au dernier résultat, clavier ouvert.
+
+**Résultat obtenu** : la liste ne bouge pas tant que le clavier est ouvert.
+
+**Correction** : clavier ouvert, l'iPhone déplace l'écran pendant le glissé ; la liste, bornée par la place au-dessus du clavier (champ en bas de page, pas en haut comme dans Stock), était redimensionnée à chaque déplacement, ce qui arrête son défilement. Sa hauteur ne bouge plus tant que le doigt est dessus. Aussi : panneau ouvert sans grille ni découpe, liste sur son propre calque, glissé vertical permis. Vérifié dans Chrome (émulation iPhone), pas sur iPhone.
+
+### CHOW-134 — Courses : la liste de recherche saute au-dessus du champ
+
+- **Niveau** : Majeure
+- **Statut** : Corrigé (BFV en attente)
+- **Fichiers concernés** : `frontend/src/hooks/useListeDansEcran.js`
+- **Date de signalement** : 2026-11-14
+- **Date de correction** : 2026-11-14
+
+**Étapes de reproduction** :
+
+1. Courses sur iPhone, toucher « + » en bas de liste, taper « Cot ».
+2. Fermer le clavier.
+
+**Résultat attendu** : la liste reste collée sous le champ.
+
+**Résultat obtenu** : la liste passe au-dessus du champ et recouvre les articles.
+
+**Correction** : la liste s'ouvre toujours sous le champ ; si le clavier ou le bas de l'écran la coupent, la page remonte juste assez (sans cacher le champ sous la barre du haut), le reste défile dans la liste. Vaut aussi pour Stock et Calories. Tests et build passés ; non vérifié sur iPhone.
+
 ### CHOW-133 — Courses : la liste de recherche passe sous la barre d'outils
 
 - **Niveau** : Majeure

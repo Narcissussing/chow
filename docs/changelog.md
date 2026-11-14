@@ -20,6 +20,8 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 - Recherches classées comme celles d'Amazon : ce que le foyer achète, ajoute,
   mange et garde le plus d'abord ; mots dans n'importe quel ordre, une faute
   tolérée.
+- Actimel, épices fajitas et sauce chipotle (valeurs moyennes) ; coton-tiges
+  (0,77 € la boîte) ; listes de recherche toujours sous le champ (CHOW-134).
 - Panier en magasin : œufs comptés à l'œuf (CHOW-125), barre sans espaces
   (CHOW-126) ; adoucissant et articles de la maison estimés par passage.
 
