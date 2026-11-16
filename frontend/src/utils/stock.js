@@ -26,6 +26,11 @@ export function estVide(valeur, trackingType) {
   return !(Number(valeur) > 0);
 }
 
+// Reste d'un achat ponctuel : le marquage reste en base, mais un aliment vide n'est plus un reste (ni bol, ni filtre).
+export function estResteDePonctuel(item) {
+  return Boolean(item.ponctuel) && !estVide(item.quantite, item.tracking_type);
+}
+
 // Encore présent mais pas mis à jour depuis 3 semaines : la quantité affichée n'est peut-être plus vraie.
 // Fruits et légumes hors congélateur et restes ponctuels : redemandés après 4 jours, le reste après 3 semaines
 // (même règle que JOURS_AVANT_VERIFICATION côté serveur).
@@ -79,7 +84,7 @@ export function correspondFiltres(item, { emplacement, type, termes }) {
       : type === "verifier"
         ? estAVerifier(item)
         : type === "ponctuel"
-          ? Boolean(item.ponctuel)
+          ? estResteDePonctuel(item)
           : type === "cl"
             ? item.tracking_type === "cl"
             : item.tracking_type !== "cl");

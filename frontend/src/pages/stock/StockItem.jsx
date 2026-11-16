@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import CustomSelect from "../../components/CustomSelect.jsx";
-import { OPTIONS_CL, classeNiveauCL, estQuantiteBasse, texteEmplacement, texteJours } from "../../utils/stock.js";
+import { OPTIONS_CL, classeNiveauCL, estQuantiteBasse, estResteDePonctuel, texteEmplacement, texteJours } from "../../utils/stock.js";
 import "./StockItem.css";
 
 function AffichageStatique({ item }) {
@@ -123,7 +123,7 @@ export default function StockItem({ item, visible, edition, setValeurEdition, on
             <span className="stock-emplacement">{texteEmplacement(item.emplacement)}</span>
             <span className="stock-separateur">|</span>
             <span className="stock-jours">{texteJours(Number(item.jours_depuis))}</span>
-            {item.ponctuel && <span className="chip-ponctuel" title="Ponctuel" aria-label="Ponctuel" role="img" />}
+            {estResteDePonctuel(item) && <span className="chip-ponctuel" title="Ponctuel" aria-label="Ponctuel" role="img" />}
           </div>
         </div>
 

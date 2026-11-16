@@ -13,7 +13,7 @@ import { useMinuteurs } from "../../hooks/useMinuteurs.js";
 import { usePageData } from "../../hooks/usePageData.js";
 import { afficherToast } from "../../toast.js";
 import { gererErreurReseau } from "../courses/reseau.js";
-import { correspondFiltres, suggestionsARacheter, trierStock } from "../../utils/stock.js";
+import { correspondFiltres, estResteDePonctuel, suggestionsARacheter, trierStock } from "../../utils/stock.js";
 import StockSuggestions, { BoutonRacheter } from "./StockSuggestions.jsx";
 import BadgeCompteur from "../../components/BadgeCompteur.jsx";
 import { normaliserTexte } from "../../utils/texte.js";
@@ -298,7 +298,7 @@ function Stock({ donnees }) {
             {FILTRES.map((f) => {
               const actif = f.emplacement !== undefined ? type === "tous" && emplacement === f.emplacement : type === f.type;
               // « Ponctuel » n'apparaît que s'il reste un achat ponctuel (ou si le filtre est déjà choisi).
-              if (f.type === "ponctuel" && !actif && !items.some((i) => i.ponctuel)) return null;
+              if (f.type === "ponctuel" && !actif && !items.some(estResteDePonctuel)) return null;
               return (
                 <button
                   key={f.texte}
