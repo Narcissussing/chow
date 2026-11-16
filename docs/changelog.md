@@ -22,6 +22,14 @@ futur appartient à Jira ; les choix structurants sont indexés dans
   tolérée.
 - Actimel, épices fajitas et sauce chipotle (valeurs moyennes) ; coton-tiges
   (0,77 € la boîte) ; listes de recherche toujours sous le champ (CHOW-134).
+- Achats ponctuels (CHOW-136) : bol sur la ligne de Courses, filtre dans
+  Courses et Stock, hors habitudes et « À racheter » ; recette → Courses par
+  liste cochable (Stock comme dans Courses, quantité en note, lignes déjà là
+  fusionnées sans changer leur état) ;
+  double tap sur + pour le mode ponctuel.
+  Fruits, légumes et restes ponctuels redemandés après 4 jours (CHOW-137).
+- Café en grains (Lavazza 1 kg, Starbucks 450 g), café moulu et Nescafé, reliés
+  à leurs tickets.
 - Panier en magasin : œufs comptés à l'œuf (CHOW-125), barre sans espaces
   (CHOW-126) ; adoucissant et articles de la maison estimés par passage.
 

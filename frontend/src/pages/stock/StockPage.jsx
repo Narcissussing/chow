@@ -31,6 +31,7 @@ const FILTRES = [
   { type: "autre", texte: "Pièces", icone: "pieces" },
   { type: "bas", texte: "Bas", icone: "bas" },
   { type: "verifier", texte: "À vérifier", icone: "oeil" },
+  { type: "ponctuel", texte: "Ponctuel", icone: "ponctuel", iconeSeule: true },
 ];
 
 const OPTIONS_TRI = [
@@ -296,11 +297,15 @@ function Stock({ donnees }) {
           <div className="filter-buttons">
             {FILTRES.map((f) => {
               const actif = f.emplacement !== undefined ? type === "tous" && emplacement === f.emplacement : type === f.type;
+              // « Ponctuel » n'apparaît que s'il reste un achat ponctuel (ou si le filtre est déjà choisi).
+              if (f.type === "ponctuel" && !actif && !items.some((i) => i.ponctuel)) return null;
               return (
                 <button
                   key={f.texte}
                   type="button"
-                  className={"filter-btn" + (f.type === "bas" ? " filter-btn--bas" : "") + (actif ? " active" : "")}
+                  aria-label={f.iconeSeule ? f.texte : undefined}
+                  title={f.iconeSeule ? f.texte : undefined}
+                  className={"filter-btn" + (f.type === "bas" ? " filter-btn--bas" : "") + (f.iconeSeule ? " filter-btn--icone-seule" : "") + (actif ? " active" : "")}
                   onClick={() => {
                     if (f.emplacement !== undefined) {
                       setEmplacement(f.emplacement);
@@ -312,7 +317,7 @@ function Stock({ donnees }) {
                   }}
                 >
                   {f.icone && <span className="filter-btn__icone" style={{ "--icone": `url("/images/svg/${f.icone}.svg")` }} aria-hidden="true" />}
-                  {f.texte}
+                  {!f.iconeSeule && f.texte}
                 </button>
               );
             })}

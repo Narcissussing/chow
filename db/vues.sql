@@ -245,7 +245,19 @@ COMMENT ON VIEW achats.v_panier_habituel IS 'Articles achetés au moins 6 mois s
 COMMENT ON TABLE chow.aliments IS 'Aliment suivi par Chow (valeurs nutritionnelles pour 100 g ou 100 ml), relié à son article d''achat.';
 COMMENT ON COLUMN chow.aliments.article_id IS 'Article d''achat correspondant.';
 COMMENT ON TABLE chow.stock IS 'Ce qu''il reste à la maison, un aliment par ligne.';
+-- Jours où un aliment n'a été acheté qu'en ponctuel (aucune ligne normale cochée le même jour) : les passages en caisse
+-- de ces jours-là (à un jour près) sont retirés des habitudes et des estimations.
+CREATE OR REPLACE VIEW chow.v_achats_ponctuels AS
+SELECT c.food_id, c.date_achat::date AS jour
+FROM chow.courses c
+WHERE c.achete AND c.food_id IS NOT NULL AND c.date_achat IS NOT NULL
+GROUP BY c.food_id, c.date_achat::date
+HAVING bool_and(c.ponctuel);
+COMMENT ON VIEW chow.v_achats_ponctuels IS 'Jours d''achat ponctuel par aliment, exclus des passages qui font les habitudes.';
+
 COMMENT ON TABLE chow.courses IS 'Liste de courses (aliment, article du catalogue maison ou texte libre).';
+COMMENT ON COLUMN chow.courses.ponctuel IS 'Achat ponctuel (recette, événement) : ne compte ni dans les habitudes ni dans « À racheter ».';
+COMMENT ON COLUMN chow.stock.ponctuel IS 'Reste d''un achat ponctuel : pas reproposé aux Courses une fois épuisé.';
 COMMENT ON COLUMN chow.courses.quantite_achetee IS 'Nombre pris au magasin (+1, +2, +5) ; vide pour un article au niveau ou acheté sans quantité.';
 COMMENT ON COLUMN chow.courses.enseigne IS 'Enseigne où l''article a été coché, en mode magasin.';
 COMMENT ON TABLE chow.tournees IS 'Tournée de courses : ouverte au premier passage en mode magasin, fermée par « Terminer » ; une seule ouverte à la fois.';

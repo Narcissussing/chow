@@ -422,7 +422,7 @@ async function chercherAliments() {
 
 async function chercherStock() {
     const result = await db.query(
-        `SELECT stock.*, aliments.nom, aliments.emoji, aliments.image, aliments.tracking_type, aliments.emplacement,
+        `SELECT stock.*, aliments.nom, aliments.emoji, aliments.image, aliments.tracking_type, aliments.emplacement, aliments.categorie,
                 EXISTS(
                     SELECT 1 FROM chow.courses
                     WHERE courses.food_id = stock.food_id AND courses.achete = false
@@ -448,7 +448,7 @@ const ARTICLES_MAISON = `
 async function chercherCourses() {
     const result = await db.query(
         `SELECT courses.id, courses.food_id, courses.article_id, courses.nom_libre, courses.commentaire, courses.achete,
-                courses.date_ajout,
+                courses.date_ajout, courses.ponctuel,
                 (courses.photo IS NOT NULL) AS has_photo,
                 COALESCE(aliments.nom, articles.nom, courses.nom_libre) AS nom,
                 CASE WHEN courses.article_id IS NULL THEN COALESCE(aliments.emoji, '🆕') END AS emoji, articles.famille_id,
@@ -539,7 +539,7 @@ async function chercherSuggestions() {
          FROM chow.courses c
          JOIN chow.aliments f ON f.id = c.food_id
          LEFT JOIN chow.stock s ON s.food_id = c.food_id
-         WHERE c.achete = true
+         WHERE c.achete = true AND NOT c.ponctuel
            AND NOT EXISTS (SELECT 1 FROM chow.courses p WHERE p.food_id = c.food_id AND p.achete = false)
          GROUP BY f.id, f.nom, f.emoji, f.tracking_type, s.quantite`
     );
@@ -584,6 +584,8 @@ async function passagesDesAliments(ids) {
          JOIN achats.articles ar ON ar.id = al.article_id
          LEFT JOIN achats.enseignes ep ON ep.id = ar.enseigne_prix_id
          WHERE v.food_id = ANY($1)
+           -- Achat ponctuel (recette, événement) : ni dans les habitudes ni dans les prix attendus.
+           AND NOT EXISTS (SELECT 1 FROM chow.v_achats_ponctuels p WHERE p.food_id = v.food_id AND p.jour BETWEEN v.date - 1 AND v.date + 1)
          GROUP BY v.food_id, v.ticket_id, v.date, v.enseigne, ep.nom
          ORDER BY v.date DESC`,
         [ids]
@@ -684,10 +686,11 @@ async function estimerCourses(req) {
         `SELECT DISTINCT ON (COALESCE(c.food_id, 'a:' || c.article_id, 'c:' || c.id))
                 c.food_id, c.article_id, COALESCE(f.nom, ar.nom, c.nom_libre) AS nom,
                 CASE WHEN c.article_id IS NULL THEN COALESCE(f.emoji, '🆕') END AS emoji,
-                COALESCE(f.prix_habituel, ar.prix_habituel) AS prix_habituel
+                COALESCE(f.prix_habituel, ar.prix_habituel) AS prix_habituel, m.famille_id
          FROM chow.courses c
          LEFT JOIN chow.aliments f ON f.id = c.food_id
          LEFT JOIN achats.articles ar ON ar.id = c.article_id
+         LEFT JOIN (${ARTICLES_MAISON}) m ON m.id = c.article_id
          WHERE c.achete = false`
     )).rows;
     const passagesParAliment = await passagesDesAliments(lignes.filter((l) => l.food_id).map((l) => l.food_id));
@@ -700,7 +703,7 @@ async function estimerCourses(req) {
         estimation += prevu.estimation;
         bas += prevu.bas;
         haut += prevu.haut;
-        details.push({ nom: ligne.nom, emoji: ligne.emoji, estimation: Math.round(prevu.estimation * 100) / 100, ...detail });
+        details.push({ nom: ligne.nom, emoji: ligne.emoji, famille_id: ligne.famille_id, estimation: Math.round(prevu.estimation * 100) / 100, ...detail });
     };
     for (const ligne of lignes) {
         const passages = ligne.food_id && passagesParAliment.get(ligne.food_id);
@@ -722,7 +725,7 @@ async function estimerCourses(req) {
             ajouter(ligne, { estimation: prix, bas: prix * 0.8, haut: prix * 1.2 }, { source: "prix-habituel" });
         } else {
             sansPrix++;
-            details.push({ nom: ligne.nom, emoji: ligne.emoji, source: "sans-prix", estimation: null });
+            details.push({ nom: ligne.nom, emoji: ligne.emoji, famille_id: ligne.famille_id, source: "sans-prix", estimation: null });
         }
     }
     return {
@@ -981,10 +984,14 @@ app.get("/api/stats/produit/:idAliment", lectureApi(async (req) => {
 
 // Un aliment encore présent : niveau autre que « vide », ou nombre supérieur à 0.
 const STOCK_NON_VIDE = "quantite IS NOT NULL AND quantite NOT IN ('vide', '0')";
+// Jours sans mise à jour avant de redemander si l'aliment est encore là : 4 pour les fruits et légumes hors congélateur
+// et les restes ponctuels (CHOW-137), 21 pour le reste. Même règle que estAVerifier côté interface.
+const JOURS_AVANT_VERIFICATION = `(CASE WHEN (aliments.categorie IN ('Fruits', 'Légumes') AND aliments.emplacement <> 'fz') OR stock.ponctuel THEN 4 ELSE 21 END)`;
 app.get("/api/accueil", lectureApi(async () => {
     const resume = await db.query(
         `SELECT (SELECT count(*)::int FROM chow.stock WHERE ${STOCK_NON_VIDE}) AS stock,
-                (SELECT count(*)::int FROM chow.stock WHERE ${STOCK_NON_VIDE} AND date_maj < CURRENT_DATE - 21) AS stock_a_verifier,
+                (SELECT count(*)::int FROM chow.stock JOIN chow.aliments ON aliments.id = stock.food_id
+                 WHERE ${STOCK_NON_VIDE.replaceAll("quantite", "stock.quantite")} AND stock.date_maj <= CURRENT_DATE - ${JOURS_AVANT_VERIFICATION}) AS stock_a_verifier,
                 (SELECT count(*)::int FROM chow.courses WHERE achete = false) AS courses,
                 (SELECT COALESCE(SUM(paye), 0)::float FROM achats.tickets WHERE date >= date_trunc('month', CURRENT_DATE)) AS depense_mois,
                 (SELECT COALESCE(SUM(paye), 0)::float FROM achats.tickets WHERE date >= date_trunc('week', CURRENT_DATE)) AS depense_semaine,
@@ -1000,8 +1007,9 @@ app.get("/api/accueil", lectureApi(async () => {
     const aVerifier = await db.query(
         `SELECT stock.id, aliments.nom, aliments.emoji, stock.quantite, stock.unite, aliments.tracking_type, (CURRENT_DATE - stock.date_maj)::int AS jours
          FROM chow.stock JOIN chow.aliments ON aliments.id = stock.food_id
-         WHERE ${STOCK_NON_VIDE.replaceAll("quantite", "stock.quantite")} AND stock.date_maj < CURRENT_DATE - 21
-         ORDER BY stock.date_maj LIMIT 5`
+         WHERE ${STOCK_NON_VIDE.replaceAll("quantite", "stock.quantite")} AND stock.date_maj <= CURRENT_DATE - ${JOURS_AVANT_VERIFICATION}
+         -- Produits frais et restes ponctuels d'abord, puis le plus ancien sans mise à jour.
+         ORDER BY ${JOURS_AVANT_VERIFICATION}, stock.date_maj LIMIT 5`
     );
     return { ...resume.rows[0], semaines: semaines.rows, aVerifier: aVerifier.rows, estimation: await estimerCourses() };
 }));
@@ -1181,8 +1189,8 @@ app.post("/api/courses/ajouter", async (req, res) => {
         }
 
         const insertResult = await db.query(
-            "INSERT INTO chow.courses (food_id, article_id, nom_libre) VALUES ($1, $2, $3) RETURNING id",
-            [idAliment, idArticle, idAliment || idArticle ? null : texteTape]
+            "INSERT INTO chow.courses (food_id, article_id, nom_libre, ponctuel) VALUES ($1, $2, $3, $4) RETURNING id",
+            [idAliment, idArticle, idAliment || idArticle ? null : texteTape, req.body.ponctuel === true]
         );
         const nouvelId = insertResult.rows[0].id;
         const courses = await chercherCourses();
@@ -1335,6 +1343,20 @@ app.post("/api/courses/supprimer", async (req, res) => {
     }
 });
 
+// Le Stock reste « ponctuel » seulement si l'achat l'est et que rien d'habituel n'y était déjà (stock vide ou déjà ponctuel).
+const PONCTUEL_APRES_ACHAT = "(EXCLUDED.ponctuel AND (stock.ponctuel OR stock.quantite IS NULL OR stock.quantite IN ('vide', '0')))";
+
+app.post("/api/courses/ponctuel", async (req, res) => {
+    try {
+        const r = await db.query("UPDATE chow.courses SET ponctuel = $2 WHERE id = $1 AND achete = false", [req.body.idCourse, req.body.ponctuel === true]);
+        if (!r.rowCount) return res.status(404).json({ erreur: "Article introuvable." });
+        res.json({ succes: true, courses: await chercherCourses() });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
+
 app.post("/api/courses/acheter", async (req, res) => {
     try {
         let quantiteEntiere = null;
@@ -1348,7 +1370,7 @@ app.post("/api/courses/acheter", async (req, res) => {
         }
 
         const courseResult = await db.query(
-            `SELECT courses.food_id, courses.article_id, articles.suivi
+            `SELECT courses.food_id, courses.article_id, courses.ponctuel, articles.suivi
              FROM chow.courses LEFT JOIN achats.articles ON articles.id = courses.article_id
              WHERE courses.id = $1`,
             [idCourse]
@@ -1356,7 +1378,7 @@ app.post("/api/courses/acheter", async (req, res) => {
         if (courseResult.rows.length === 0) {
             return res.status(400).json({ erreur: "Article introuvable." });
         }
-        const { food_id: foodId, article_id: articleId, suivi } = courseResult.rows[0];
+        const { food_id: foodId, article_id: articleId, ponctuel, suivi } = courseResult.rows[0];
 
         let trackingType = null;
         if (foodId) {
@@ -1391,19 +1413,20 @@ app.post("/api/courses/acheter", async (req, res) => {
             if (achatResult.rows.length > 0 && foodId) {
                 if (trackingType === 'cl') {
                     await client.query(
-                        "INSERT INTO chow.stock (food_id, quantite, date_maj) VALUES ($1, 'plein', NOW()) ON CONFLICT (food_id) DO UPDATE SET quantite = 'plein', date_maj = NOW()",
-                        [foodId]
+                        `INSERT INTO chow.stock (food_id, quantite, date_maj, ponctuel) VALUES ($1, 'plein', NOW(), $2)
+                         ON CONFLICT (food_id) DO UPDATE SET quantite = 'plein', date_maj = NOW(), ponctuel = ${PONCTUEL_APRES_ACHAT}`,
+                        [foodId, ponctuel]
                     );
                 } else {
                     await client.query(
-                        `INSERT INTO chow.stock (food_id, quantite, date_maj) VALUES ($1, $2, NOW())
+                        `INSERT INTO chow.stock (food_id, quantite, date_maj, ponctuel) VALUES ($1, $2, NOW(), $3)
                          ON CONFLICT (food_id) DO UPDATE SET
                             quantite = (
                                 CASE WHEN stock.quantite ~ '^[0-9]+$' THEN stock.quantite::integer ELSE 0 END
                                 + $2::integer
                             )::text,
-                            date_maj = NOW()`,
-                        [foodId, quantiteEntiere]
+                            date_maj = NOW(), ponctuel = ${PONCTUEL_APRES_ACHAT}`,
+                        [foodId, quantiteEntiere, ponctuel]
                     );
                 }
             }
@@ -1714,9 +1737,12 @@ app.get("/api/recettes/:id", async (req, res) => {
         const ingredientsResult = await db.query(
             `SELECT aliments.id AS food_id, aliments.nom, aliments.emoji, recette_ingredients.quantite_g, recette_ingredients.unite,
                     aliments.grammes_par_cuil_a_cafe, aliments.grammes_par_cuil_a_soupe,
-                    aliments.poids_unite_g, aliments.unite AS unite_piece, aliments.tracking_type
+                    aliments.poids_unite_g, aliments.unite AS unite_piece, aliments.tracking_type,
+                    stock.quantite AS stock_quantite,
+                    EXISTS(SELECT 1 FROM chow.courses c WHERE c.food_id = aliments.id AND NOT c.achete) AS sur_liste
              FROM chow.recette_ingredients
              JOIN chow.aliments ON aliments.id = recette_ingredients.food_id
+             LEFT JOIN chow.stock ON stock.food_id = aliments.id
              WHERE recette_ingredients.recette_id = $1
              ORDER BY recette_ingredients.id`,
             [idRecette]
@@ -1727,6 +1753,44 @@ app.get("/api/recettes/:id", async (req, res) => {
             recette: recetteResult.rows[0],
             ingredients: ingredientsResult.rows
         });
+    } catch (err) {
+        console.log("ERREUR:", err.message);
+        res.status(500).json({ erreur: err.message });
+    }
+});
+
+// Ingrédients d'une recette envoyés aux Courses en ponctuel : seulement ceux qui manquent au Stock et ne sont pas déjà
+// sur la liste ; ceux déjà sur la liste ne changent pas.
+app.post("/api/recettes/:id/courses", async (req, res) => {
+    try {
+        // Ingrédients cochés dans la recette, sauf ceux déjà sur la liste. Ceux déjà sur la liste et choisis sont
+        // « fusionnés » : leur ligne garde son état (ponctuel ou non) et reçoit la quantité de la recette en note.
+        const liste = (v) => (Array.isArray(v) ? v.map(String) : []);
+        const choisis = liste(req.body.foodIds);
+        const aFusionner = liste(req.body.fusions);
+        if (choisis.length === 0 && aFusionner.length === 0) return res.status(400).json({ erreur: "Aucun ingrédient choisi." });
+        // Quantité de la recette (« 166 g ») mise en note de la ligne de Courses.
+        const quantites = JSON.stringify(req.body.quantites && typeof req.body.quantites === "object" ? req.body.quantites : {});
+        const fusions = await db.query(
+            `UPDATE chow.courses SET commentaire = CASE
+                 WHEN NULLIF(commentaire, '') IS NULL THEN left($3::jsonb ->> food_id, 60)
+                 WHEN position(($3::jsonb ->> food_id) IN commentaire) > 0 THEN commentaire
+                 ELSE left(commentaire || ' · ' || ($3::jsonb ->> food_id), 120) END
+             WHERE NOT achete AND food_id = ANY($2) AND NULLIF($3::jsonb ->> food_id, '') IS NOT NULL
+               AND food_id IN (SELECT food_id FROM chow.recette_ingredients WHERE recette_id = $1)
+             RETURNING food_id`,
+            [req.params.id, aFusionner, quantites]
+        );
+        const ajout = await db.query(
+            `INSERT INTO chow.courses (food_id, ponctuel, commentaire)
+             SELECT DISTINCT i.food_id, true, NULLIF(left($3::jsonb ->> i.food_id, 60), '')
+             FROM chow.recette_ingredients i
+             WHERE i.recette_id = $1 AND i.food_id = ANY($2)
+               AND NOT EXISTS (SELECT 1 FROM chow.courses c WHERE c.food_id = i.food_id AND NOT c.achete)
+             RETURNING food_id`,
+            [req.params.id, choisis, quantites]
+        );
+        res.json({ succes: true, ajoutes: ajout.rows.map((r) => r.food_id), fusionnes: [...new Set(fusions.rows.map((r) => r.food_id))] });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });

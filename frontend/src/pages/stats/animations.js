@@ -36,7 +36,7 @@ export function useBlocsAnimes(conteneur) {
   });
 }
 
-// Nombre qui défile jusqu'à sa nouvelle valeur (≈ 500 ms).
+// Nombre qui défile jusqu'à sa nouvelle valeur (environ 500 ms).
 export function useNombreAnime(valeur) {
   const [affiche, setAffiche] = useState(valeur);
   const actuel = useRef(valeur);

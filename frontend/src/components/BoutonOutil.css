@@ -26,6 +26,10 @@
   background: url("/images/svg/cuisiner.svg") center / contain no-repeat;
 }
 
+.btn-outil--courses .btn-outil__icone {
+  background: url("/images/svg/caddie.svg") center / contain no-repeat;
+}
+
 .detail-header-actions .btn-outil {
   width: 30px;
   height: 30px;
@@ -76,4 +80,9 @@
       animation: none;
     }
 
+}
+
+.btn-outil.actif {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }

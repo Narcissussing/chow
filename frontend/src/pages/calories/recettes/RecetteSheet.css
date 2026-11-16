@@ -421,3 +421,248 @@
   font-size: 0.9rem;
   line-height: normal;
 }
+
+/* Choix des ingrédients à envoyer aux Courses */
+.ing-choix {
+  padding: 0 !important;
+}
+
+.recette-lecture-ingredients li:has(.ing-choix__bouton) {
+  display: block;
+}
+
+.ing-choix__bouton {
+  display: grid;
+  grid-template-columns: 24px 1fr auto 24px;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.12s ease;
+}
+
+.ing-choix__bouton:active {
+  transform: scale(0.98);
+}
+
+.recette-lecture-ing-emoji {
+  position: relative;
+}
+
+/* Stock affiché comme sur les cartes de Courses (pastille ou point de niveau), un peu plus petit. */
+.recette-lecture-ing-emoji .course-stock-indicator {
+  top: -9px;
+  left: -10px;
+  transform-origin: center;
+  animation: case-entree 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms + 60ms);
+}
+
+.recette-lecture-ing-emoji .course-stock-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.62rem;
+}
+
+.recette-lecture-ing-emoji .course-stock-dot {
+  width: 13px;
+  height: 13px;
+}
+
+/* Arrivée en cascade quand on touche le caddie de la recette ; sortie plus rapide. */
+.ing-choix .recette-lecture-ing-qte {
+  animation: qte-glisse 0.3s cubic-bezier(0.23, 1, 0.32, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+}
+
+@keyframes qte-glisse {
+  from {
+    transform: translateX(14px);
+  }
+}
+
+.case-courses {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  display: grid;
+  place-items: center;
+  animation: case-entree 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+@keyframes case-entree {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateX(6px);
+  }
+}
+
+.case-courses::after {
+  content: "";
+  width: 12px;
+  height: 12px;
+  background: white;
+  -webkit-mask: url("/images/svg/check.svg") center / contain no-repeat;
+  mask: url("/images/svg/check.svg") center / contain no-repeat;
+  transform: scale(0.6);
+  opacity: 0;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.12s ease, background-color 0.15s ease;
+}
+
+.case-courses.cochee {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.case-courses.cochee::after {
+  transform: scale(1);
+  opacity: 1;
+}
+
+/* Déjà sur la liste : caddie coché discret ; touché (quantité à noter), il prend la couleur. */
+.case-courses.sur-liste {
+  border-color: transparent;
+  background: transparent;
+}
+
+.case-courses.sur-liste::after {
+  width: 18px;
+  height: 18px;
+  background: var(--text-muted);
+  -webkit-mask-image: url("/images/svg/caddie-coche.svg");
+  mask-image: url("/images/svg/caddie-coche.svg");
+  transform: scale(1);
+  opacity: 0.55;
+}
+
+.case-courses.sur-liste.cochee {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+.case-courses.sur-liste.cochee::after {
+  background: var(--accent);
+  opacity: 1;
+  animation: case-entree 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.recette-lecture-ingredients.sortie .case-courses,
+.recette-lecture-ingredients.sortie .course-stock-indicator {
+  opacity: 0;
+  transform: scale(0.95);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.choix-courses-barre {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 0 calc(4px + env(safe-area-inset-bottom));
+  background: linear-gradient(to bottom, transparent, var(--surface) 30%);
+  animation: barre-choix-entree 0.32s cubic-bezier(0.23, 1, 0.32, 1);
+  z-index: 2;
+}
+
+.choix-courses-barre.sortie {
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+@keyframes barre-choix-entree {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.choix-courses-barre__annuler,
+.choix-courses-barre__ajouter {
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.12s ease, opacity 0.15s ease;
+}
+
+.choix-courses-barre__annuler {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+}
+
+.choix-courses-barre__ajouter {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: var(--accent);
+  color: white;
+  font-variant-numeric: tabular-nums;
+}
+
+.choix-courses-barre__ajouter:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.choix-courses-barre__annuler:active,
+.choix-courses-barre__ajouter:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.choix-courses-barre__icone {
+  width: 18px;
+  height: 18px;
+  background: currentColor;
+  -webkit-mask: url("/images/svg/caddie.svg") center / contain no-repeat;
+  mask: url("/images/svg/caddie.svg") center / contain no-repeat;
+}
+
+.choix-courses-barre__icone--fusion {
+  margin-left: 6px;
+  -webkit-mask-image: url("/images/svg/caddie-coche.svg");
+  mask-image: url("/images/svg/caddie-coche.svg");
+}
+
+/* Le caddie de l'en-tête roule un peu quand le mode s'ouvre. */
+.btn-outil--courses.actif .btn-outil__icone {
+  animation: caddie-roule 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes caddie-roule {
+  0% {
+    transform: none;
+  }
+  35% {
+    transform: translateX(4px) rotate(-8deg);
+  }
+  70% {
+    transform: translateX(-2px) rotate(3deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .case-courses,
+  .ing-choix .recette-lecture-ing-qte,
+  .recette-lecture-ing-emoji .course-stock-indicator,
+  .choix-courses-barre,
+  .btn-outil--courses.actif .btn-outil__icone {
+    animation-duration: 0.01s;
+    animation-delay: 0s;
+  }
+}

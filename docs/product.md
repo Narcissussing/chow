@@ -81,7 +81,9 @@ Inventaire de ce qui est disponible à la maison.
 - ajout, modification, suppression et ajustements rapides ;
 - envoi vers Courses sans doublon actif ;
 - filtre « À vérifier » : aliments encore présents sans mise à jour depuis 3
-  semaines.
+  semaines, 4 jours pour les fruits et légumes hors congélateur et les restes
+  ponctuels (aussi en tête de « Encore à la maison ? » sur l'Accueil) ;
+- filtre « Ponctuel » (icône bol) quand il reste un achat ponctuel.
 
 ### Courses
 
@@ -111,6 +113,13 @@ Liste de courses utilisable avant et pendant les achats.
   fermée par deux touchers sur le panier puis ✓ et « Terminer ? » ;
 - hors magasin : fourchette prévue en petite pastille ticket à côté du titre ;
 - achat avec mise à jour du Stock ;
+- achat ponctuel (recette, événement) : bouton bol dans la ligne de note
+  (toucher l'emoji), tuile bol sur la carte, filtre bol à côté de « Semaine »
+  et en mode magasin. Acheté, il va au Stock (marqué ponctuel tant que rien
+  d'habituel n'y était) mais n'entre ni dans les habitudes, ni dans les prix
+  attendus, ni dans « À racheter » ; double tap sur + : mode ponctuel (bol
+  sur le +), chaque ajout part ponctuel jusqu'au double tap suivant, à la
+  sortie de Courses ou à la fermeture de l'app ;
 - protection contre les doubles soumissions et actions accidentelles.
 
 Un achat passe `achete` à `true` ; il ne supprime pas l’historique.
@@ -133,7 +142,15 @@ Groupes réutilisables d’aliments et de quantités.
 - consultation et modification des étapes de préparation ;
 - catégories Plat, Fraîcheur et Glace ;
 - tri et vues grille/liste indépendantes ;
-- application à la Cuisine du jour.
+- application à la Cuisine du jour ;
+- envoi aux Courses (caddie) : la liste des ingrédients devient cochable ;
+  absents du Stock cochés d'office, Stock affiché comme sur les cartes de
+  Courses (nombre, ou point vert / jaune / orange / rouge), relu toutes les
+  15 s et au retour sur l'app ; déjà sur la liste en caddie coché discret.
+  Les cochés partent en ponctuel, avec la quantité de la recette en note ;
+  un ingrédient déjà sur la liste touché est fusionné : sa ligne garde son
+  état (ponctuel ou non, seul Courses le change) et reçoit la quantité en
+  note, après une note existante et sans répéter la même quantité.
 
 Appliquer une recette remplace la Cuisine du jour. À l’inverse, appliquer le
 preset hebdomadaire ajoute uniquement les courses manquantes.

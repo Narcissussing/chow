@@ -2,7 +2,8 @@ import { useEffect, useImperativeHandle, useRef, useState } from "react";
 import { api } from "../../../api.js";
 import { arrayMove } from "@dnd-kit/sortable";
 import BoutonOutil from "../../../components/BoutonOutil.jsx";
-import { BALANCE, lancerVers, MARMITE } from "../../../utils/animation.js";
+import { BALANCE, jeterAuxCourses, lancerVers, MARMITE } from "../../../utils/animation.js";
+import { afficherToast } from "../../../toast.js";
 import BoutonEffacer from "../../../components/BoutonEffacer.jsx";
 import { ListeTriable } from "../../../components/Triable.jsx";
 import { useMinuteurs } from "../../../hooks/useMinuteurs.js";
@@ -11,6 +12,8 @@ import { useGlisserPourFermer } from "../../../hooks/useGlisserPourFermer.js";
 import BoutonFermer from "../../../components/BoutonFermer.jsx";
 import { estLiquide, grammesParUnite, optionsUnite, poidsPieceDe } from "../../../utils/unites.js";
 import { normaliserTexte } from "../../../utils/texte.js";
+import { estVide } from "../../../utils/stock.js";
+import { IndicateurStock } from "../../courses/CourseItem.jsx";
 import IngredientLigne, { changerUniteLigne } from "./IngredientLigne.jsx";
 import "./RecetteSheet.css";
 
@@ -99,6 +102,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
 
   function fermer() {
     setOuvert(false);
+    setChoix(null);
     fermerRecherche(formulaire.lignes.length);
   }
 
@@ -134,6 +138,7 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
             return;
           }
           setRecetteChargee(donnees);
+          setChoix(null);
           const etapes = (donnees.recette.etapes || "").split("\n").map((e) => e.trim()).filter(Boolean);
           setLecture({
             nom: donnees.recette.nom,
@@ -167,6 +172,112 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
         if (err.type !== "session") alert("Une erreur est survenue.");
       })
       .finally(() => setEnvoiCuisine(false));
+  }
+
+  // Bouton Courses : la liste des ingrédients devient cochable (manquants cochés d'office, Stock affiché comme dans
+  // Courses), puis les cochés partent aux Courses, marqués « Ponctuel » (hors habitudes). Un ingrédient déjà sur la
+  // liste (caddie coché) peut être « fusionné » : sa ligne garde son état et reçoit la quantité de la recette en note.
+  const [choix, setChoix] = useState(null);
+  const [fusions, setFusions] = useState(() => new Set());
+  const [choixSort, setChoixSort] = useState(false);
+  const [envoiCourses, setEnvoiCourses] = useState(false);
+  const boutonCourses = useRef(null);
+
+  function quitterChoix() {
+    if (!choix || choixSort) return;
+    setChoixSort(true);
+    planifier(() => {
+      setChoix(null);
+      setChoixSort(false);
+    }, 200);
+  }
+
+  // Relit Stock et liste ; à l'ouverture, coche les manquants. Ensuite (retour sur l'app, toutes les 15 s), garde les
+  // choix faits mais retire ce qui est arrivé sur la liste entre-temps.
+  function relireIngredients(ouverture) {
+    const idRecette = recetteChargee?.recette.id;
+    if (!idRecette) return;
+    api("/recettes/" + idRecette)
+      .then(({ donnees }) => {
+        if (donnees?.erreur || recetteChargeeRef.current?.recette.id !== idRecette) return;
+        setLecture((l) => ({ ...l, ingredients: donnees.ingredients }));
+        const surListe = new Set(donnees.ingredients.filter((i) => i.sur_liste).map((i) => i.food_id));
+        if (ouverture) {
+          setChoixSort(false);
+          setFusions(new Set());
+          setChoix(new Set(donnees.ingredients.filter((i) => !i.sur_liste && estVide(i.stock_quantite, i.tracking_type)).map((i) => i.food_id)));
+        } else {
+          setChoix((c) => (c ? new Set([...c].filter((id) => !surListe.has(id))) : c));
+          setFusions((f) => new Set([...f].filter((id) => surListe.has(id))));
+        }
+      })
+      .catch(() => {});
+  }
+  const recetteChargeeRef = useRef(recetteChargee);
+  recetteChargeeRef.current = recetteChargee;
+  const relireRef = useRef(relireIngredients);
+  relireRef.current = relireIngredients;
+  const enChoix = !!choix;
+  useEffect(() => {
+    if (!enChoix) return;
+    const relire = () => document.visibilityState === "visible" && relireRef.current(false);
+    const minuteur = setInterval(relire, 15000);
+    document.addEventListener("visibilitychange", relire);
+    window.addEventListener("focus", relire);
+    return () => {
+      clearInterval(minuteur);
+      document.removeEventListener("visibilitychange", relire);
+      window.removeEventListener("focus", relire);
+    };
+  }, [enChoix]);
+
+  function basculerChoix() {
+    if (!recetteChargee) return;
+    if (choix) return quitterChoix();
+    relireIngredients(true);
+  }
+
+  function cocher(ing) {
+    const basculer = (c) => {
+      const suivant = new Set(c);
+      if (suivant.has(ing.food_id)) suivant.delete(ing.food_id);
+      else suivant.add(ing.food_id);
+      return suivant;
+    };
+    if (ing.sur_liste) setFusions(basculer);
+    else setChoix(basculer);
+  }
+
+  function envoyerAuxCourses() {
+    if (!recetteChargee || envoiCourses || !(choix?.size + fusions.size)) return;
+    setEnvoiCourses(true);
+    const depart = boutonCourses.current;
+    const quantites = Object.fromEntries(lecture.ingredients.map((i) => [i.food_id, texteQuantite(i)]));
+    api(`/recettes/${recetteChargee.recette.id}/courses`, { method: "POST", body: { foodIds: [...choix], fusions: [...fusions], quantites } })
+      .then(({ donnees }) => {
+        if (donnees?.erreur) {
+          afficherToast("Ajout aux Courses impossible, réessayer.");
+          return;
+        }
+        // La recette se ferme et chaque aliment envoyé (ajouté ou fusionné) vole de sa ligne vers Courses dans le menu.
+        const envoyes = [...donnees.ajoutes, ...(donnees.fusionnes || [])];
+        const departs = lecture.ingredients
+          .filter((i) => envoyes.includes(i.food_id))
+          .slice(0, 6)
+          .map((ing) => {
+            const ligne = sheet.current?.querySelector(`[data-food="${CSS.escape(String(ing.food_id))}"] .recette-lecture-ing-emoji`);
+            const rect = (ligne || depart)?.getBoundingClientRect();
+            return { emoji: ing.emoji, depuis: rect && { getBoundingClientRect: () => rect } };
+          });
+        setChoix(null);
+        setChoixSort(false);
+        fermer();
+        departs.forEach(({ emoji, depuis }, n) => setTimeout(() => jeterAuxCourses(depuis, emoji), n * 110));
+      })
+      .catch((err) => {
+        if (err.type !== "session") afficherToast("Ajout aux Courses impossible, réessayer.");
+      })
+      .finally(() => setEnvoiCourses(false));
   }
 
   function ouvrirEdition() {
@@ -341,20 +452,70 @@ export default function RecetteSheet({ ref, aliments, onEnregistree, onSupprimee
                 }}
               />
               <BoutonOutil icone="cuisiner" disabled={!recetteChargee || envoiCuisine} onClick={envoyerALaCuisine} />
+              <BoutonOutil icone="courses" actif={!!choix && !choixSort} disabled={!recetteChargee || envoiCourses} onClick={basculerChoix} />
               <button type="button" id="btnModifierRecette" className="btn-modifier-recette" title="Modifier" aria-label="Modifier la recette" onClick={ouvrirEdition}></button>
               <BoutonFermer onClick={fermer} />
             </div>
           </div>
           <h3>Ingrédients</h3>
-          <ul id="recetteLectureIngredients" className="recette-lecture-ingredients">
-            {lecture.ingredients.map((ing) => (
-              <li key={ing.food_id}>
-                <span className="recette-lecture-ing-emoji">{ing.emoji || ""}</span>
-                <span className="recette-lecture-ing-nom nom-defile">{ing.nom}</span>
-                <span className="recette-lecture-ing-qte">{texteQuantite(ing)}</span>
-              </li>
-            ))}
+          <ul id="recetteLectureIngredients" className={"recette-lecture-ingredients" + (choix ? " en-choix" : "") + (choixSort ? " sortie" : "")}>
+            {lecture.ingredients.map((ing, n) => {
+              const coche = !!choix && (ing.sur_liste ? fusions.has(ing.food_id) : choix.has(ing.food_id));
+              const contenu = (
+                <>
+                  <span className="recette-lecture-ing-emoji">
+                    {ing.emoji || ""}
+                    {choix && <IndicateurStock item={{ quantite_stock: ing.stock_quantite, tracking_type: ing.tracking_type }} />}
+                  </span>
+                  <span className="recette-lecture-ing-nom nom-defile">{ing.nom}</span>
+                  <span className="recette-lecture-ing-qte">{texteQuantite(ing)}</span>
+                  {choix && <span className={"case-courses" + (coche ? " cochee" : "") + (ing.sur_liste ? " sur-liste" : "")} aria-hidden="true" />}
+                </>
+              );
+              return (
+                <li key={ing.food_id} data-food={ing.food_id} className={choix ? "ing-choix" + (ing.sur_liste ? " sur-liste" : "") : undefined} style={choix ? { "--i": n } : undefined}>
+                  {choix ? (
+                    <button
+                      type="button"
+                      role="checkbox"
+                      aria-checked={coche}
+                      title={ing.sur_liste ? "Déjà sur la liste · toucher pour y noter la quantité" : undefined}
+                      className="ing-choix__bouton"
+                      onClick={() => cocher(ing)}
+                    >
+                      {contenu}
+                    </button>
+                  ) : (
+                    contenu
+                  )}
+                </li>
+              );
+            })}
           </ul>
+          {choix && (
+            <div className={"choix-courses-barre" + (choixSort ? " sortie" : "")}>
+              <button type="button" className="choix-courses-barre__annuler" onClick={quitterChoix}>
+                Annuler
+              </button>
+              <button
+                ref={boutonCourses}
+                type="button"
+                className="choix-courses-barre__ajouter"
+                disabled={!(choix.size + fusions.size) || envoiCourses}
+                aria-label={`Ajouter ${choix.size} aux Courses` + (fusions.size ? `, quantité notée sur ${fusions.size}` : "")}
+                onClick={envoyerAuxCourses}
+              >
+                <span className="choix-courses-barre__icone" aria-hidden="true" />
+                {choix.size}
+                {fusions.size > 0 && (
+                  <>
+                    <span className="choix-courses-barre__icone choix-courses-barre__icone--fusion" aria-hidden="true" />
+                    {fusions.size}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
           <h3>Étapes</h3>
           <ol id="recetteLectureEtapes" className={"recette-lecture-etapes" + (lecture.etapes && lecture.etapes.length === 0 ? " hidden" : "")}>
             {(lecture.etapes || []).map((etape, i) => (

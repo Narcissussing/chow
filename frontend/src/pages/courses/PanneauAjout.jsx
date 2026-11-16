@@ -7,7 +7,7 @@ import { classerRecherche } from "../../utils/recherche.js";
 import "./PanneauAjout.css";
 import IconeFamille from "../../components/IconeFamille.jsx";
 
-export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliments, articles = [], onChoisir, onAjouterTexte }) {
+export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliments, articles = [], onChoisir, onAjouterTexte, ponctuel = false }) {
   const zone = useRef(null);
   const liste = useRef(null);
   const [texte, setTexte] = useState("");
@@ -54,7 +54,7 @@ export default function PanneauAjout({ ref, ouvert, pret, onPret, champ, aliment
                   type="text"
                   id="rechercheAlimentCourses"
                   name="rechercheAliment"
-                  placeholder="Recherche un article..."
+                  placeholder={ponctuel ? "Article ponctuel..." : "Recherche un article..."}
                   autoComplete="off"
                   value={texte}
                   onChange={(e) => {

@@ -5,12 +5,13 @@ import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import { useGlisserPourFermer } from "../../hooks/useGlisserPourFermer.js";
 import BoutonFermer from "../../components/BoutonFermer.jsx";
+import IconeFamille from "../../components/IconeFamille.jsx";
 import "./EstimationCourses.css";
 
 const euros = (n, d = 2) => n.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d }) + " €";
 const nombre = (n) => n.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
 
-// Valeur qui défile vers sa nouvelle cible quand la liste change (≈ 450 ms).
+// Valeur qui défile vers sa nouvelle cible quand la liste change (environ 450 ms).
 function useDefilement(cible) {
   const [valeur, setValeur] = useState(cible);
   const actuelle = useRef(cible);
@@ -38,7 +39,9 @@ function Ligne({ d, rang }) {
   const prixUnite = d.unite && d.dernierPrix != null ? ` / ${d.unite === "pièce" ? "pièce" : d.unite}` : "";
   return (
     <li className={"estimation__ligne" + (d.estimation == null ? " estimation__ligne--sans-prix" : "")} style={{ "--rang": rang }}>
-      <span className="estimation__emoji" aria-hidden="true">{d.emoji}</span>
+      <span className={"estimation__emoji" + (d.famille_id ? " estimation__emoji--famille" : "")} aria-hidden="true">
+        {d.famille_id ? <IconeFamille famille={d.famille_id} /> : d.emoji}
+      </span>
       <span className="estimation__nom">
         <b className="nom-defile">{d.nom}</b>
         {d.source === "habitudes" && d.quantite != null && (
@@ -114,7 +117,7 @@ export default function EstimationCourses({ estimation }) {
           <div className="estimation__entete" data-entete-feuille>
             <div>
               <span className="estimation__surtitre">Prochaines courses · {estimation.articles} articles</span>
-              <b className="estimation__total">≈ {euros(estimation.estimation, 0)}</b>
+              <b className="estimation__total">{euros(estimation.estimation, 0)}</b>
             </div>
             <BoutonFermer onClick={fermer} />
           </div>

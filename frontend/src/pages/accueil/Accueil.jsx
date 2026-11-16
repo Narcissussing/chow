@@ -58,7 +58,7 @@ function cartes(r) {
       icone: "courses",
       titre: "Courses",
       valeur: r.courses,
-      detail: r.courses ? `à acheter · ≈ ${euros(r.estimation.estimation)}` : "rien à acheter",
+      detail: r.courses ? `à acheter · ${euros(r.estimation.estimation)}` : "rien à acheter",
     },
   ];
 }

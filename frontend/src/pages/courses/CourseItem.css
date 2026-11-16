@@ -332,3 +332,43 @@ body.mode-magasin
 }
 
 
+
+/* Interrupteur « Ponctuel » dans la ligne de note : achat hors habitudes (CHOW-136), icône seule. */
+.btn-ponctuel {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1.5px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+
+.btn-ponctuel::before {
+  content: "";
+  width: 17px;
+  height: 17px;
+  background: currentColor;
+  -webkit-mask: url("/images/svg/ponctuel.svg") center / contain no-repeat;
+  mask: url("/images/svg/ponctuel.svg") center / contain no-repeat;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.btn-ponctuel.actif {
+  background: color-mix(in srgb, var(--accent-2) 20%, var(--surface));
+  border-color: color-mix(in srgb, var(--accent-2) 45%, var(--surface));
+  color: #8a5d0f;
+}
+
+.btn-ponctuel.actif::before {
+  transform: rotate(-12deg) scale(1.1);
+}
+
+.btn-ponctuel:active {
+  transform: scale(0.97);
+}

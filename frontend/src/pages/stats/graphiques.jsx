@@ -8,7 +8,7 @@ function teinte(t, opacite = 1) {
   return "rgba(" + a.map((x, i) => Math.round(x + (b[i] - x) * t)).join(",") + "," + opacite + ")";
 }
 
-// Fait glisser les bornes de l'axe vers leur nouvelle valeur (≈ 400 ms, ralenti à la fin).
+// Fait glisser les bornes de l'axe vers leur nouvelle valeur (environ 400 ms, ralenti à la fin).
 function useBornesAnimees([basCible, hautCible]) {
   const [bornes, setBornes] = useState([basCible, hautCible]);
   const actuelles = useRef(bornes);

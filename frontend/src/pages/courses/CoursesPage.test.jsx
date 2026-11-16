@@ -570,3 +570,19 @@ test("mode magasin : la liste est relue toutes les 15 s ; un nouvel article fait
   act(() => jest.advanceTimersByTime(5000));
   expect(carte("Pain")).not.toHaveClass("hidden");
 });
+
+test("double tap sur + : mode ponctuel, les ajouts partent ponctuels ; double tap pour revenir", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  const bouton = document.getElementById("btnToggleAjoutCourse");
+  fireEvent.click(bouton);
+  fireEvent.click(bouton);
+  expect(bouton).toHaveClass("ponctuel");
+  expect(document.getElementById("panneauAjoutCourse")).toHaveClass("ouvert");
+  fireEvent.change(document.getElementById("rechercheAlimentCourses"), { target: { value: "pomme" } });
+  await act(async () => fireEvent.click(within(document.getElementById("listeAlimentsCourses")).getByText(/Pomme/)));
+  expect(requetes).toEqual([{ chemin: "/courses/ajouter", corps: { idAliment: "pomme", rechercheAliment: null, ponctuel: true } }]);
+  fireEvent.click(bouton);
+  fireEvent.click(bouton);
+  expect(bouton).not.toHaveClass("ponctuel");
+});

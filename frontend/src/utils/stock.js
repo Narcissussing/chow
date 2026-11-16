@@ -27,8 +27,15 @@ export function estVide(valeur, trackingType) {
 }
 
 // Encore présent mais pas mis à jour depuis 3 semaines : la quantité affichée n'est peut-être plus vraie.
+// Fruits et légumes hors congélateur et restes ponctuels : redemandés après 4 jours, le reste après 3 semaines
+// (même règle que JOURS_AVANT_VERIFICATION côté serveur).
+export function joursAvantVerification(item) {
+  const frais = (item.categorie === "Fruits" || item.categorie === "Légumes") && item.emplacement !== "fz";
+  return frais || item.ponctuel ? 4 : 21;
+}
+
 export function estAVerifier(item) {
-  return !estVide(item.quantite, item.tracking_type) && Number(item.jours_depuis) >= 21;
+  return !estVide(item.quantite, item.tracking_type) && Number(item.jours_depuis) >= joursAvantVerification(item);
 }
 
 export function texteEmplacement(emplacement) {
@@ -67,7 +74,15 @@ export function correspondFiltres(item, { emplacement, type, termes }) {
   const okEmplacement = emplacement === "tous" || item.emplacement === emplacement;
   const okType =
     type === "tous" ||
-    (type === "bas" ? estQuantiteBasse(item.quantite, item.tracking_type) : type === "verifier" ? estAVerifier(item) : type === "cl" ? item.tracking_type === "cl" : item.tracking_type !== "cl");
+    (type === "bas"
+      ? estQuantiteBasse(item.quantite, item.tracking_type)
+      : type === "verifier"
+        ? estAVerifier(item)
+        : type === "ponctuel"
+          ? Boolean(item.ponctuel)
+          : type === "cl"
+            ? item.tracking_type === "cl"
+            : item.tracking_type !== "cl");
   return okEmplacement && okType && correspondRecherche(item.nom, termes);
 }
 

@@ -90,11 +90,13 @@ Vues :
   `fibres`, `sucres`, `graisses_saturees` et `sel` ne sont lus par aucune
   route.
 - `stock` : `food_id`, `quantite` (nombre ou état textuel), `unite`,
-  `date_maj`.
+  `date_maj`, `ponctuel` (reste d'un achat ponctuel).
 - `courses` : `food_id`, `article_id` (article non suivi par Chow : shampoing,
   javel) ou `nom_libre`, `commentaire`, `achete` (la ligne est gardée après
   achat), `photo` en `BYTEA`, `date_ajout`, `date_achat`, `quantite_achetee`
-  et `enseigne` (pris en mode magasin).
+  et `enseigne` (pris en mode magasin), `ponctuel` (recette, événement).
+- Vue `v_achats_ponctuels` : jours où un aliment n'a été coché qu'en
+  ponctuel ; ses passages en caisse à un jour près sortent des habitudes.
 - `tournees` : `debut`, `fin` ; une seule ouverte. Le panier
   (`GET /api/courses/panier`) = articles de la liste + cochés depuis `debut`,
   valorisés comme l'estimation.

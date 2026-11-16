@@ -123,6 +123,7 @@ export default function StockItem({ item, visible, edition, setValeurEdition, on
             <span className="stock-emplacement">{texteEmplacement(item.emplacement)}</span>
             <span className="stock-separateur">|</span>
             <span className="stock-jours">{texteJours(Number(item.jours_depuis))}</span>
+            {item.ponctuel && <span className="chip-ponctuel" title="Ponctuel" aria-label="Ponctuel" role="img" />}
           </div>
         </div>
 

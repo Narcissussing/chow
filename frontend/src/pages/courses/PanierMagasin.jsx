@@ -19,7 +19,7 @@ const eurosRayon = (n) =>
   n < 10 ? n.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €" : euros(n);
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-// Total qui défile jusqu'à sa nouvelle valeur (≈ 450 ms).
+// Total qui défile jusqu'à sa nouvelle valeur (environ 450 ms).
 function useTotalAnime(cible) {
   const [valeur, setValeur] = useState(cible);
   const actuelle = useRef(cible);

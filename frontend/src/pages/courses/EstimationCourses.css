@@ -301,3 +301,8 @@
     transform: translateY(110%);
   }
 }
+
+/* Article de la maison : icône de sa famille (comme sur la carte de Courses), sur un fond neutre. */
+.estimation__emoji--famille {
+  background: #efe9e1;
+}

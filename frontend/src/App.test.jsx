@@ -16,7 +16,7 @@ test("l'accueil connecté affiche Stats, Stock et Courses chiffrés", async () =
   rendreApp("/");
   expect(await screen.findByText("412 €")).toBeInTheDocument();
   expect(document.querySelectorAll(".home-link-card")).toHaveLength(3);
-  expect(screen.getByText("à acheter · ≈ 19 €")).toBeInTheDocument();
+  expect(screen.getByText("à acheter · 19 €")).toBeInTheDocument();
   expect(screen.getByText("52 € cette semaine")).toBeInTheDocument();
   expect(screen.getByText("545 € le mois dernier")).toBeInTheDocument();
   expect(screen.getByText("à la maison · 5 à vérifier")).toBeInTheDocument();

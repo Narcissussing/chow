@@ -11,7 +11,7 @@ export function jouerPopPanier(bouton) {
   setTimeout(() => bouton.classList.remove("vient-de-s-activer"), 350);
 }
 
-function IndicateurStock({ item }) {
+export function IndicateurStock({ item }) {
   if (item.quantite_stock === null || item.quantite_stock === undefined) return null;
   if (item.tracking_type !== "cl") {
     return (
@@ -23,7 +23,19 @@ function IndicateurStock({ item }) {
   return <span className={"course-stock-indicator course-stock-dot " + classeNiveauCL(item.quantite_stock)} title={`En stock : ${item.quantite_stock}`}></span>;
 }
 
-export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvoyer, onPhoto, onNote, refPanier, refPhoto, refCarte, onFinEntree }) {
+// Étiquette « Ponctuel » qui entre et sort en douceur quand on la met ou l'enlève.
+function ChipPonctuel({ actif }) {
+  const [affiche, setAffiche] = useState(actif);
+  const planifier = useMinuteurs();
+  useEffect(() => {
+    if (actif) setAffiche(true);
+    else if (affiche) planifier(() => setAffiche(false), 160);
+  }, [actif]);
+  if (!affiche) return null;
+  return <span className={"chip-ponctuel" + (actif ? "" : " sortie")} title="Ponctuel" aria-label="Ponctuel" role="img" />;
+}
+
+export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvoyer, onPhoto, onNote, onPonctuel, refPanier, refPhoto, refCarte, onFinEntree }) {
   const planifier = useMinuteurs();
   const champNote = useRef(null);
   const panierQuantite = useRef(null);
@@ -121,6 +133,7 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
           {item.famille_id ? <IconeFamille famille={item.famille_id} /> : item.emoji}
         </span>{" "}
         {item.nom}
+        <ChipPonctuel actif={Boolean(item.ponctuel)} />
       </span>
 
       <form
@@ -150,6 +163,18 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
           onChange={(e) => setSaisieNote(e.target.value)}
           onBlur={auBlurNote}
         />
+        {onPonctuel && (
+          <button
+            type="button"
+            className={"btn-ponctuel" + (item.ponctuel ? " actif" : "")}
+            aria-pressed={Boolean(item.ponctuel)}
+            title="Ponctuel : hors habitudes"
+            aria-label="Ponctuel"
+            // Garde le champ de note ouvert : le clic ne doit pas le faire disparaître avant d'arriver au bouton.
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => onPonctuel(!item.ponctuel)}
+          />
+        )}
         {!aPhoto && boutonPhoto}
       </div>
 

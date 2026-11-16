@@ -36,6 +36,9 @@ const OPTIONS_TRI = [
 const libelleCategorie = (categorie) => (categorie === "zzz" ? "Autres" : categorie);
 const categorieDe = (item) => item.categorie || "zzz";
 const cleTri = (item, cle) => (cle === "nom" ? item.nom.toLowerCase() : categorieDe(item));
+// Mode ponctuel du bouton + (double tap) : revient au mode normal en quittant Courses ou en fermant l'app.
+const DOUBLE_TAP_MS = 320;
+
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
 function trier(items, cle) {
@@ -107,6 +110,22 @@ function Courses({ donnees }) {
   const [actives, setActives] = useState(() => new Set(donnees.courses.map(categorieDe)));
   const [armeId, setArmeId] = useState(null);
   const [panneauEtat, setPanneauEtat] = useState({ ouvert: false, pret: false });
+  const [modePonctuel, setModePonctuel] = useState(false);
+  const dernierTapAjout = useRef(0);
+  // Un tap ouvre ou ferme le panneau ; deux taps rapprochés entrent dans le mode ponctuel ou en sortent.
+  function taperAjout() {
+    const maintenant = Date.now();
+    if (maintenant - dernierTapAjout.current < DOUBLE_TAP_MS) {
+      dernierTapAjout.current = 0;
+      const actif = !modePonctuel;
+      setModePonctuel(actif);
+      setPanneauEtat(actif ? { ouvert: true, pret: false } : { ouvert: false, pret: false });
+      afficherToast(actif ? "Mode ponctuel" : "Mode normal");
+      return;
+    }
+    dernierTapAjout.current = maintenant;
+    setPanneauEtat(panneauEtat.ouvert ? { ouvert: false, pret: false } : { ouvert: true, pret: false });
+  }
   const [estimation, setEstimation] = useState(null);
   const listeIds = items.map((i) => i.id).sort().join(",");
 
@@ -237,6 +256,18 @@ function Courses({ donnees }) {
     return () => clearInterval(minuteur);
   }, [magasin]);
 
+  // Ponctuel : l'étiquette change tout de suite, la liste du serveur suit.
+  function changerPonctuel(item, ponctuel) {
+    setItems((liste) => liste.map((i) => (i.id === item.id ? { ...i, ponctuel } : i)));
+    const numero = ++sequence.current;
+    fetchAvecRetry("/courses/ponctuel", { body: { idCourse: String(item.id), ponctuel } })
+      .then((reponse) => appliquerListe(reponse.courses, numero, [item.id]))
+      .catch((err) => {
+        setItems((liste) => liste.map((i) => (i.id === item.id ? { ...i, ponctuel: !ponctuel } : i)));
+        gererErreurReseau(err);
+      });
+  }
+
   function enregistrerNote(item, commentaire) {
     const numero = ++sequence.current;
     fetchAvecRetry("/courses/commentaire", { body: { idCourse: String(item.id), commentaire } })
@@ -319,6 +350,20 @@ function Courses({ donnees }) {
   }, [cleCategories]);
 
   const toutSelectionne = actives.size === puces.length;
+  // Filtre « Ponctuel » : en plus des catégories, ne garde que les achats ponctuels ; il disparaît quand il n'y en a plus.
+  const [ponctuelSeul, setPonctuelSeul] = useState(false);
+  const aDesPonctuels = items.some((i) => i.ponctuel && !i.effets?.sortie);
+  const [puceSort, setPuceSort] = useState(false);
+  const puceAffichee = aDesPonctuels || puceSort;
+  const dejaPonctuels = useRef(aDesPonctuels);
+  useEffect(() => {
+    if (dejaPonctuels.current && !aDesPonctuels) {
+      setPonctuelSeul(false);
+      setPuceSort(true);
+      planifier(() => setPuceSort(false), 200);
+    }
+    dejaPonctuels.current = aDesPonctuels;
+  }, [aDesPonctuels]);
 
   function cliquerPuce(categorie) {
     if (categorie === "tous") {
@@ -336,7 +381,8 @@ function Courses({ donnees }) {
   }
 
   const estIci = (item) => !enseigneActive || !item.magasins?.length || item.magasins.includes(enseigneActive);
-  const estVisible = (item) => (!puces.includes(categorieDe(item)) || actives.has(categorieDe(item))) && estIci(item);
+  const estVisible = (item) =>
+    (!puces.includes(categorieDe(item)) || actives.has(categorieDe(item))) && estIci(item) && (!ponctuelSeul || item.ponctuel);
 
   // Panier filtré par le magasin choisi : ce qui y a été coché, et ce qui reste à y prendre.
   const lignesPanier = (panier?.lignes || []).filter((l) =>
@@ -400,6 +446,7 @@ function Courses({ donnees }) {
   }
 
   function fermerPanneau() {
+    dernierTapAjout.current = 0;
     setPanneauEtat({ ouvert: false, pret: false });
   }
 
@@ -425,7 +472,7 @@ function Courses({ donnees }) {
     ajoutEnCours.current = true;
     setAjoutEnAttente(true);
     const numero = ++sequence.current;
-    fetchAvecRetry("/courses/ajouter", { body: { idAliment, rechercheAliment: texteLibre, ...(idArticle && { idArticle }) } })
+    fetchAvecRetry("/courses/ajouter", { body: { idAliment, rechercheAliment: texteLibre, ...(idArticle && { idArticle }), ...(modePonctuel && { ponctuel: true }) } })
       .then((reponse) => {
         if (reponse.erreur) {
           alert(reponse.erreur);
@@ -626,10 +673,25 @@ function Courses({ donnees }) {
         onEnvoyer={(type, quantite) => envoyer(item, type, quantite)}
         onPhoto={() => surPhoto(item)}
         onNote={(commentaire) => enregistrerNote(item, commentaire)}
+        onPonctuel={item.food_id || item.article_id || item.nom_libre ? (ponctuel) => changerPonctuel(item, ponctuel) : undefined}
         onFinEntree={() => majEffets(item.id, { entree: false })}
       />
     );
   });
+
+  // Puce « Ponctuel » : dans la rangée normale et dans les filtres du mode magasin.
+  const boutonPonctuel = puceAffichee && (
+    <button
+                type="button"
+                className={"filter-btn filter-btn--ponctuel filter-btn--icone-seule" + (ponctuelSeul ? " active" : "") + (aDesPonctuels ? "" : " sortie")}
+                aria-pressed={ponctuelSeul}
+                aria-label="Ponctuel"
+                title="Ponctuel"
+                onClick={() => setPonctuelSeul((p) => !p)}
+              >
+                <span className="filter-btn__icone" style={{ "--icone": 'url("/images/svg/ponctuel.svg")' }} aria-hidden="true" />
+              </button>
+  );
 
   return (
     <main>
@@ -672,9 +734,10 @@ function Courses({ donnees }) {
               ref={boutonAjout}
               type="button"
               id="btnToggleAjoutCourse"
-              className={"btn-ajout-icone" + (panneauEtat.ouvert ? " actif" : "")}
-              title="Ajouter un article"
-              onClick={() => (panneauEtat.ouvert ? fermerPanneau() : setPanneauEtat({ ouvert: true, pret: false }))}
+              className={"btn-ajout-icone" + (panneauEtat.ouvert ? " actif" : "") + (modePonctuel ? " ponctuel" : "")}
+              title={modePonctuel ? "Ajouter (ponctuel) · double tap pour revenir" : "Ajouter un article · double tap : ponctuel"}
+              aria-pressed={modePonctuel}
+              onClick={taperAjout}
             >
               Ajouter un article
             </button>
@@ -699,11 +762,13 @@ function Courses({ donnees }) {
             <button type="button" id="btnPresetHebdo" className="filter-btn btn-preset-hebdo" onClick={appliquerPreset}>
               🧺 Semaine
             </button>
+            {boutonPonctuel}
           </div>
           <div className="preset-hebdo-row__filtres filter-buttons" id="courseFiltresMagasin">
             <button type="button" className={"filter-btn" + (toutSelectionne ? " active" : "")} onClick={() => cliquerPuce("tous")}>
               Tous
             </button>
+            {boutonPonctuel}
             {puces.map((categorie) => (
               <button
                 key={categorie}
@@ -729,6 +794,7 @@ function Courses({ donnees }) {
             articles={donnees.articles}
             onChoisir={choisirSuggestion}
             onAjouterTexte={(texte) => ajouterArticle(null, texte)}
+            ponctuel={modePonctuel}
           />
         </div>
 

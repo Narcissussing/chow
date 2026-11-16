@@ -742,3 +742,10 @@ input.recherche-invalide:focus {
     }
 
 }
+
+/* Filtre sans texte (Ponctuel) : l'icône seule, un peu plus grande ; le nom reste dans title et aria-label. */
+.filter-btn--icone-seule .filter-btn__icone {
+  width: 18px;
+  height: 18px;
+  margin-right: 0;
+}

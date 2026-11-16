@@ -4,13 +4,15 @@ import "./BoutonOutil.css";
 const LABELS = {
   cuisiner: "Ajouter à la Cuisine",
   regle: "Adapter dans RègleX",
+  courses: "Ajouter aux Courses (ponctuel)",
 };
 
-export default function BoutonOutil({ icone, disabled, onClick }) {
+export default function BoutonOutil({ icone, actif, disabled, onClick }) {
   return (
     <button
       type="button"
-      className={"btn-outil btn-outil--" + icone}
+      className={"btn-outil btn-outil--" + icone + (actif ? " actif" : "")}
+      aria-pressed={actif === undefined ? undefined : actif}
       title={LABELS[icone]}
       aria-label={LABELS[icone]}
       disabled={disabled}
