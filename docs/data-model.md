@@ -134,6 +134,18 @@ habituelle hors remise × dernier prix normal ; sans historique,
 - `indices_prix` : indices INSEE mensuels par série (`alimentation`,
   `ensemble`), `source`.
 
+## `trafic`
+
+- `perturbations` : perturbations Ligne P relevées par Check.Da.Train, une par
+  `idfm_id`, avec `arrets` touchés, `vue_premiere` / `vue_derniere` et la
+  réponse IDFM complète (`brut`). Écrites une fois par nuit à minuit.
+- Vue `v_perturbations` : durée observée.
+- `annonces` : chaque nouvelle fin annoncée par IDFM pour une perturbation en
+  cours (`fin_annoncee`, `vue_le`).
+- `retards` : épisodes de retard à Trilport (`debut`, `fin`, `retard_max_min`,
+  `trains_supprimes`, `perturbations` liées). Vue `v_retards` : durée réelle et écart avec la
+  première et la dernière fin annoncée.
+
 ## `app`
 
 - `sessions` (`connect-pg-simple`), `ip_bloquees`, `migrations` (migrations

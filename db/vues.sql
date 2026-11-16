@@ -273,3 +273,46 @@ COMMENT ON COLUMN reference.indices_prix.mois IS 'AAAA-MM.';
 
 COMMENT ON TABLE app.sessions IS 'Sessions de connexion.';
 COMMENT ON TABLE app.ip_bloquees IS 'Adresses IP bloquées après trop d''échecs de connexion.';
+
+-- Perturbations Ligne P (Check.Da.Train) : durée calculée ici, jamais stockée.
+CREATE OR REPLACE VIEW trafic.v_perturbations AS
+SELECT p.id, p.idfm_id, p.ligne, p.titre, p.cause, p.severite, p.arrets,
+       p.vue_premiere, p.vue_derniere, p.vue_derniere - p.vue_premiere AS duree_vue
+FROM trafic.perturbations p;
+COMMENT ON SCHEMA trafic IS 'Transports en commun : perturbations relevées par Check.Da.Train.';
+COMMENT ON TABLE trafic.perturbations IS 'Une perturbation IDFM par ligne, enregistrée telle quelle chaque nuit par Check.Da.Train.';
+COMMENT ON COLUMN trafic.perturbations.idfm_id IS 'Identifiant de la perturbation chez IDFM.';
+COMMENT ON COLUMN trafic.perturbations.arrets IS 'Noms des arrêts touchés (impactedSections), pour classer par gare.';
+COMMENT ON COLUMN trafic.perturbations.vue_premiere IS 'Premier relevé où l''app l''a vue.';
+COMMENT ON COLUMN trafic.perturbations.vue_derniere IS 'Dernier relevé où l''app l''a vue.';
+COMMENT ON COLUMN trafic.perturbations.brut IS 'Réponse IDFM complète de la perturbation, dernière version vue.';
+COMMENT ON VIEW trafic.v_perturbations IS 'Perturbations avec leur durée observée.';
+
+-- Retards à Trilport comparés à la première et à la dernière fin annoncée par IDFM pendant l'épisode.
+CREATE OR REPLACE VIEW trafic.v_retards AS
+SELECT r.id, r.arret, r.debut, r.fin, r.fin - r.debut AS duree,
+       r.retard_max_min, r.trains_retardes, r.perturbations,
+       premiere.fin_annoncee AS fin_annoncee_premiere,
+       derniere.fin_annoncee AS fin_annoncee_derniere,
+       r.fin - premiere.fin_annoncee AS ecart_premiere_annonce,
+       r.fin - derniere.fin_annoncee AS ecart_derniere_annonce,
+       r.trains_supprimes
+FROM trafic.retards r
+LEFT JOIN LATERAL (
+    SELECT a.fin_annoncee FROM trafic.annonces a
+    WHERE a.idfm_id = ANY (r.perturbations) AND a.vue_le <= COALESCE(r.fin, now())
+    ORDER BY a.vue_le LIMIT 1
+) premiere ON true
+LEFT JOIN LATERAL (
+    SELECT a.fin_annoncee FROM trafic.annonces a
+    WHERE a.idfm_id = ANY (r.perturbations) AND a.vue_le <= COALESCE(r.fin, now())
+    ORDER BY a.vue_le DESC LIMIT 1
+) derniere ON true;
+COMMENT ON TABLE trafic.annonces IS 'Chaque nouvelle fin annoncée par IDFM pour une perturbation en cours (fin de la période active ou message changé).';
+COMMENT ON COLUMN trafic.annonces.vue_le IS 'Moment où l''app a vu cette annonce pour la première fois.';
+COMMENT ON COLUMN trafic.annonces.fin_annoncee IS 'Fin de la période d''application en cours, heure de Paris.';
+COMMENT ON TABLE trafic.retards IS 'Épisode de retard : de la première fois qu''un train à l''arrêt a 5 min ou plus ou est supprimé, jusqu''au premier relevé où tous sont revenus sous 5 min (confirmé au relevé suivant).';
+COMMENT ON COLUMN trafic.retards.fin IS 'Premier relevé redevenu normal ; vide si l''épisode est en cours.';
+COMMENT ON COLUMN trafic.retards.perturbations IS 'Perturbations IDFM actives touchant l''arrêt pendant l''épisode (idfm_id).';
+COMMENT ON COLUMN trafic.retards.trains_supprimes IS 'Nombre maximum de trains supprimés vus en même temps pendant l''épisode.';
+COMMENT ON VIEW trafic.v_retards IS 'Durée réelle des retards et écart avec les fins annoncées par IDFM.';
