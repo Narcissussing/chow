@@ -146,6 +146,11 @@ WHERE t.source = 'releve-bancaire';
 -- des 3 derniers mois. Un article sans ligne ici reste visible dans tous les magasins.
 CREATE OR REPLACE VIEW chow.v_magasins_habituels AS
 WITH choisis AS (
+    -- Choisis sur l'aliment (colonne chow.aliments.magasins), ou sur l'article pour ce qui n'est pas un aliment.
+    SELECT a.article_id, e.nom
+    FROM chow.aliments a CROSS JOIN LATERAL regexp_split_to_table(NULLIF(trim(a.magasins), ''), '\s*,\s*') AS m(id) JOIN achats.enseignes e ON e.id = m.id
+    WHERE a.article_id IS NOT NULL
+    UNION
     SELECT h.article_id, e.nom
     FROM achats.enseignes_habituelles h JOIN achats.enseignes e ON e.id = h.enseigne_id
 ), recents AS (
@@ -233,7 +238,8 @@ COMMENT ON COLUMN achats.promos.montant IS 'Montant déduit, en euros.';
 COMMENT ON VIEW achats.v_lignes IS 'Chaque ligne avec son contexte, la remise, le payé et les prix comparables (prix_ref en euros par unite_ref) ; prix_ref_attendu = prix payé pour un article acheté seulement en promo, sinon prix normal.';
 COMMENT ON VIEW achats.v_prix IS 'Prix médian attendu par article, enseigne et mois (hors promo, sauf articles achetés seulement en promo) : série de base de la prévision.';
 COMMENT ON COLUMN achats.articles.prix_habituel IS 'Coût d''un achat habituel d''un article de la maison, pour l''estimation tant qu''aucun ticket ne le connaît.';
-COMMENT ON TABLE achats.enseignes_habituelles IS 'Enseignes où le foyer achète un article, choisies à la main ; un article listé ici n''est attendu que dans ces enseignes.';
+COMMENT ON TABLE achats.enseignes_habituelles IS 'Enseignes choisies à la main pour un article qui n''est pas un aliment (papier toilette) ; un article listé ici n''est attendu que dans ces enseignes. Les aliments ont les leurs dans chow.aliments.magasins.';
+COMMENT ON COLUMN chow.aliments.magasins IS 'Magasins où le foyer achète cet aliment, choisis à la main, séparés par des virgules (leclerc,marche-frais) ; vide = ceux de ses achats des 3 derniers mois.';
 COMMENT ON VIEW chow.v_magasins_habituels IS 'Enseignes de chaque article pour le mode magasin des Courses : liste choisie (choisi = true), sinon tickets et cases cochées des 3 derniers mois.';
 COMMENT ON VIEW chow.v_lignes_stats IS 'Achats au format lu par les pages Stats et Courses ; statut : chow, hors-chow, non-alimentaire, non-detaille ou a-classer.';
 COMMENT ON FUNCTION chow.categorie_achat(TEXT) IS 'Catégorie d''achat (achats.categories) d''une catégorie Chow.';
@@ -256,6 +262,7 @@ HAVING bool_and(c.ponctuel);
 COMMENT ON VIEW chow.v_achats_ponctuels IS 'Jours d''achat ponctuel par aliment, exclus des passages qui font les habitudes.';
 
 COMMENT ON TABLE chow.courses IS 'Liste de courses (aliment, article du catalogue maison ou texte libre).';
+COMMENT ON TABLE chow.courses_photos IS 'Photos de référence d''une ligne de Courses (emballage, marque), dans l''ordre d''ajout ; effacées quand l''article est acheté.';
 COMMENT ON COLUMN chow.courses.ponctuel IS 'Achat ponctuel (recette, événement) : ne compte ni dans les habitudes ni dans « À racheter ».';
 COMMENT ON COLUMN chow.stock.ponctuel IS 'Reste d''un achat ponctuel : pas reproposé aux Courses une fois épuisé.';
 COMMENT ON COLUMN chow.courses.quantite_achetee IS 'Nombre pris au magasin (+1, +2, +5) ; vide pour un article au niveau ou acheté sans quantité.';

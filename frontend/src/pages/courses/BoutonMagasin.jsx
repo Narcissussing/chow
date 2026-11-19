@@ -12,8 +12,9 @@ const TRAITS = [
 
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-// Un toucher : entrer ou sortir du mode magasin (tous les magasins). Deux touchers rapprochés, en mode magasin ou non : choisir le magasin.
-export default function BoutonMagasin({ actif, enseigne, onBasculer, onChoisirMagasin }) {
+// Un toucher : entrer ou sortir du mode magasin. Deux touchers rapprochés : sortir les logos pour choisir le magasin,
+// sans toucher au mode magasin. Logos sortis, un toucher sur le caddie ne fait que les ranger (le tiroir s'en charge).
+export default function BoutonMagasin({ actif, logosSortis = false, enseigne, onBasculer, onChoisirMagasin }) {
   const svg = useRef(null);
   const [sens, setSens] = useState(null);
   const depart = useRef(actif);
@@ -25,36 +26,32 @@ export default function BoutonMagasin({ actif, enseigne, onBasculer, onChoisirMa
   }, [sens, reduit]);
 
   const dernierToucher = useRef(0);
-  const sortieEnAttente = useRef(null);
-  useEffect(() => () => clearTimeout(sortieEnAttente.current), []);
+  const basculeEnAttente = useRef(null);
+  useEffect(() => () => clearTimeout(basculeEnAttente.current), []);
   function basculer() {
+    if (logosSortis) {
+      dernierToucher.current = 0;
+      return;
+    }
     const maintenant = Date.now();
     if (maintenant - dernierToucher.current < 320) {
+      // Deux touchers : la bascule prévue au premier est annulée, seuls les logos sortent.
       dernierToucher.current = 0;
-      // Deux touchers : on reste (ou entre) en mode magasin et on sort les logos ; la sortie prévue est annulée.
-      clearTimeout(sortieEnAttente.current);
-      sortieEnAttente.current = null;
-      if (!actif) {
-        setSens("aller");
-        onBasculer();
-      }
+      clearTimeout(basculeEnAttente.current);
+      basculeEnAttente.current = null;
       onChoisirMagasin();
       return;
     }
     dernierToucher.current = maintenant;
-    if (actif) {
-      // En mode magasin, la sortie attend un éventuel 2e toucher (choix du magasin) : pas d'aller-retour de l'icône.
-      sortieEnAttente.current = setTimeout(() => {
-        sortieEnAttente.current = null;
-        setSens("retour");
-        onBasculer();
-      }, 320);
-      return;
-    }
-    setSens("aller");
-    onBasculer();
+    // La bascule attend un éventuel 2e toucher, pour ne pas entrer ou sortir du mode magasin en choisissant le magasin.
+    const versLeMagasin = !actif;
+    basculeEnAttente.current = setTimeout(() => {
+      basculeEnAttente.current = null;
+      setSens(versLeMagasin ? "aller" : "retour");
+      onBasculer();
+    }, 320);
   }
-  const logo = actif && ENSEIGNES.some((e) => e.nom === enseigne);
+  const logo = ENSEIGNES.some((e) => e.nom === enseigne);
 
   const classes = ["btn-magasin"];
   if (actif) classes.push("actif");
@@ -67,8 +64,8 @@ export default function BoutonMagasin({ actif, enseigne, onBasculer, onChoisirMa
       id="toggleMagasin"
       className={classes.join(" ")}
       aria-pressed={actif}
-      aria-label={actif ? "Quitter le mode magasin" + (logo ? " (" + enseigne + ")" : "") : "Passer en mode magasin"}
-      title={actif ? "Quitter le mode magasin · deux touchers : choisir le magasin" : "Mode magasin · deux touchers : choisir le magasin"}
+      aria-label={(actif ? "Quitter le mode magasin" : "Passer en mode magasin") + (logo ? " (" + enseigne + ")" : "")}
+      title={(actif ? "Quitter le mode magasin" : "Mode magasin") + " · deux touchers : choisir le magasin"}
       onClick={basculer}
     >
       <svg ref={svg} viewBox="0 0 48 48" aria-hidden="true">

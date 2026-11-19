@@ -35,7 +35,7 @@ function ChipPonctuel({ actif }) {
   return <span className={"chip-ponctuel" + (actif ? "" : " sortie")} title="Ponctuel" aria-label="Ponctuel" role="img" />;
 }
 
-export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvoyer, onPhoto, onNote, onPonctuel, refPanier, refPhoto, refCarte, onFinEntree }) {
+export default function CourseItem({ item, visible, arme, effets, nbPhotos = 0, onEnvoyer, onPhoto, onNote, onPonctuel, refPanier, refPhoto, refCarte, onFinEntree }) {
   const planifier = useMinuteurs();
   const champNote = useRef(null);
   const panierQuantite = useRef(null);
@@ -96,18 +96,27 @@ export default function CourseItem({ item, visible, arme, effets, aPhoto, onEnvo
     if (etaitInvalide && devientValide) jouerPopPanier(panierQuantite.current);
   }
 
+  const aPhoto = nbPhotos > 0;
   const boutonPhoto = (
     <button
       ref={refPhoto}
       type="button"
       className="btn-photo-course"
       data-a-photo={aPhoto ? "true" : "false"}
-      title="Photo de référence"
+      title={nbPhotos > 1 ? nbPhotos + " photos de référence" : "Photo de référence"}
+      aria-label={nbPhotos > 1 ? nbPhotos + " photos de référence" : aPhoto ? "Voir la photo de référence" : "Ajouter une photo de référence"}
       onClick={(e) => {
         relancerClasse(e.currentTarget, "photo-pop");
         onPhoto();
       }}
-    />
+    >
+      {/* Deux photos ou plus : leur nombre en pastille sur l'œil, qui rebondit quand il change. */}
+      {nbPhotos > 1 && (
+        <span key={nbPhotos} className="btn-photo-course__nombre" aria-hidden="true">
+          {nbPhotos}
+        </span>
+      )}
+    </button>
   );
 
   const classes = ["course-item", "carte-article"];

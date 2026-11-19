@@ -1,0 +1,89 @@
+.confirmation {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: min(300px, calc(100vw - 48px));
+  padding: 22px 20px 18px;
+  box-sizing: border-box;
+  border-radius: 22px;
+  background: var(--surface);
+  box-shadow: 0 14px 30px rgba(26, 20, 15, 0.25);
+  text-align: center;
+  transform: translate(-50%, -50%);
+  animation: confirmation-entree 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.confirmation.ferme {
+  animation: confirmation-sortie 0.2s ease-in forwards;
+}
+
+.confirmation b {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.confirmation__actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.confirmation__actions button {
+  flex: 1;
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.confirmation__actions button:active {
+  transform: scale(0.95);
+}
+
+.confirmation__annuler {
+  background: var(--sable, #efe8dc);
+  color: var(--text);
+}
+
+.confirmation__action {
+  background: #2f6f62;
+  color: #fff;
+}
+
+.confirmation__action.danger {
+  background: #c8472b;
+}
+
+@keyframes confirmation-entree {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+}
+
+@keyframes confirmation-sortie {
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirmation,
+  .confirmation.ferme {
+    animation: none;
+  }
+
+  .confirmation.ferme {
+    opacity: 0;
+  }
+}

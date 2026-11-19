@@ -19,10 +19,10 @@ import PhotoApercu from "./PhotoApercu.jsx";
 import {
   cleArticlePreset,
   compresserImage,
-  lirePhotoLocale,
   sauvegarderPhotoLocale,
   supprimerPhotoLocale,
   synchroniserPhotosLocales,
+  srcPhoto,
 } from "./photos.js";
 import CoursesVide from "./CoursesVide.jsx";
 import { fetchAvecRetry, gererErreurReseau } from "./reseau.js";
@@ -51,8 +51,11 @@ function inserer(items, nouvel, cle) {
   return [...items.slice(0, index), nouvel, ...items.slice(index)];
 }
 
+const PHOTOS_PAR_ARTICLE = 10;
+const PHOTOS_A_LA_FOIS = 5;
+
 function preparer(ligne) {
-  return { ...ligne, aPhoto: ligne.has_photo === true, effets: {} };
+  return { ...ligne, photos: ligne.photos || [], effets: {} };
 }
 
 export function fusionnerListe(liste, lignes, cle, locaux = []) {
@@ -62,7 +65,7 @@ export function fusionnerListe(liste, lignes, cle, locaux = []) {
     if (item.effets.sortie) return item;
     const ligne = serveur.get(item.id);
     if (!ligne) return { ...item, effets: { ...item.effets, sortie: "disparait-achete" } };
-    return { ...item, ...ligne, aPhoto: ligne.has_photo === true };
+    return { ...item, ...ligne, photos: ligne.photos || [] };
   });
   const nouveaux = lignes.filter((l) => !connus.has(l.id));
   nouveaux.forEach((ligne) => {
@@ -101,10 +104,10 @@ function Courses({ donnees }) {
   const [cle, setCle] = useState("nom");
   const [items, setItems] = useState(() => trier(donnees.courses.map(preparer), "nom"));
   const [magasin, setMagasin] = useLocalStorage("modeMagasin", (v) => v === "true");
-  // Magasin où l'on se trouve, choisi par deux touchers sur le caddie ; sans choix = tous les magasins.
-  // Seuls ses articles restent (et ceux sans magasin connu).
+  // Magasin choisi par deux touchers sur le caddie, en mode magasin ou non ; sans choix = tous les magasins.
+  // Seuls ses articles restent (et ceux sans magasin connu), et la fourchette ne compte que ses prix.
   const [enseigne, setEnseigne] = useLocalStorage("magasinCourses", (v) => v || "tous");
-  const enseigneActive = magasin && enseigne !== "tous" ? enseigne : null;
+  const enseigneActive = enseigne !== "tous" ? enseigne : null;
   const [choixMagasin, setChoixMagasin] = useState(false);
   const [puces, setPuces] = useState(() => [...new Set(donnees.courses.map(categorieDe))].sort());
   const [actives, setActives] = useState(() => new Set(donnees.courses.map(categorieDe)));
@@ -149,7 +152,15 @@ function Courses({ donnees }) {
     const controleur = new AbortController();
     const minuteur = setTimeout(() => {
       api("/courses/panier", { signal: controleur.signal })
-        .then(({ donnees: p }) => p && setPanier(p))
+        .then(({ donnees: p }) => {
+          // Page restée ouverte en magasin au passage de minuit : la tournée vient d'être terminée.
+          if (p?.termineeAMinuit) {
+            setPanier(null);
+            basculerMagasin();
+            return;
+          }
+          if (p) setPanier(p);
+        })
         .catch(() => {});
     }, 300);
     return () => {
@@ -157,18 +168,27 @@ function Courses({ donnees }) {
       controleur.abort();
     };
   }, [listeIds, magasin]);
-  // Le mode magasin ouvre la tournée (aucun effet si elle l'est déjà, même depuis la veille).
+  // Le mode magasin ouvre la tournée (aucun effet si elle l'est déjà) ; restée ouverte après minuit, elle est terminée
+  // par le serveur et la page sort du mode magasin.
   useEffect(() => {
     if (!magasin) return;
     api("/courses/tournee/commencer", { method: "POST", body: {} })
-      .then(({ donnees: r }) => r?.panier && setPanier(r.panier))
+      .then(({ donnees: r }) => {
+        if (r?.termineeAMinuit) {
+          setPanier(null);
+          basculerMagasin();
+          return;
+        }
+        if (r?.panier) setPanier(r.panier);
+      })
       .catch(() => {});
   }, [magasin]);
   const [preset, setPreset] = useState(donnees.presetHebdo);
   const [presetConfirme, setPresetConfirme] = useState(false);
   const [badgeEnBarre, setBadgeEnBarre] = useState(false);
   const [tailleBadge, setTailleBadge] = useState(34);
-  const [photo, setPhoto] = useState({ ouvert: false, src: null, fermeture: false, vers: null });
+  // Visionneuse : l'article ouvert, la photo affichée et celle qui s'efface pendant sa suppression.
+  const [photo, setPhoto] = useState({ ouvert: false, idCourse: null, index: 0, sortante: null, fermeture: false, vers: null });
   const [aAmenerEnVue, setAAmenerEnVue] = useState(null);
   const [popPhoto, setPopPhoto] = useState(null);
 
@@ -188,7 +208,7 @@ function Courses({ donnees }) {
       revelerNouveaux([...nouveaux].sort((a, b) => a.id - b.id));
     }
     if (retires.length > 0) {
-      retires.forEach(supprimerPhotoLocale);
+      itemsActuels.current.filter((i) => retires.includes(i.id)).forEach((i) => i.photos.forEach(supprimerPhotoLocale));
       if (retires.map(String).includes(armeId)) setArmeId(null);
       planifier(() => setItems((liste) => liste.filter((i) => !retires.includes(i.id))), 300);
     }
@@ -199,7 +219,7 @@ function Courses({ donnees }) {
   }
 
   useEffect(() => {
-    synchroniserPhotosLocales(donnees.courses.filter((c) => c.has_photo).map((c) => c.id));
+    synchroniserPhotosLocales(donnees.courses.flatMap((c) => c.photos || []));
   }, [donnees]);
 
   const [aReveler, setAReveler] = useState(0);
@@ -399,11 +419,10 @@ function Courses({ donnees }) {
       .catch(gererErreurReseau);
   }
 
-  // Entrer ou sortir du mode magasin repart de tous les magasins ; le magasin se choisit ensuite (deux touchers).
+  // Entrer ou sortir du mode magasin garde le magasin choisi : les deux se règlent séparément.
   function basculerMagasin() {
     const actif = !magasin;
     setMagasin(actif);
-    setEnseigne("tous");
     if (!actif) setActives(new Set(puces));
   }
 
@@ -530,7 +549,7 @@ function Courses({ donnees }) {
     const corps = { idCourse: String(item.id) };
     if (type === "achat" && quantiteAchetee !== undefined) corps.quantiteAchetee = quantiteAchetee;
     // Acheté dans ce magasin : la ligne garde l'enseigne, qui rejoint les magasins habituels de l'article.
-    if (type === "achat" && enseigneActive) corps.magasin = enseigneActive;
+    if (type === "achat" && magasin && enseigneActive) corps.magasin = enseigneActive;
     const numero = ++sequence.current;
     let reponse;
     try {
@@ -543,7 +562,7 @@ function Courses({ donnees }) {
       gererErreurReseau(err);
       return false;
     }
-    supprimerPhotoLocale(item.id);
+    item.photos.forEach(supprimerPhotoLocale);
     // Acheté : la carte devient son aliment, qui file dans le lien Stock changé en boîte ; l'originale se replie aussitôt.
     const envolee = type === "achat" && item.emoji && rangerAuStock(document.querySelector(`.course-item[data-id="${item.id}"]`), item.emoji);
     majEffets(item.id, { sortie: type === "achat" ? (envolee ? "disparait-achete envolee" : "disparait-achete") : "disparait-supprimer" });
@@ -563,8 +582,7 @@ function Courses({ donnees }) {
 
   function ouvrirApercu(id) {
     idPhotoActuelle.current = id;
-    const locale = lirePhotoLocale(id);
-    setPhoto({ ouvert: true, src: locale ? "data:image/jpeg;base64," + locale : `/api/courses/${id}/photo?t=${Date.now()}`, fermeture: false, vers: null });
+    setPhoto({ ouvert: true, idCourse: id, index: 0, sortante: null, fermeture: false, vers: null });
   }
 
   function fermerApercu() {
@@ -583,59 +601,95 @@ function Courses({ donnees }) {
     }
   }
 
+  function choisirPhoto() {
+    inputPhoto.current.value = "";
+    inputPhoto.current.click();
+  }
+
   function surPhoto(item) {
     idPhotoActuelle.current = item.id;
-    if (item.aPhoto) {
-      ouvrirApercu(item.id);
-    } else {
-      inputPhoto.current.value = "";
-      inputPhoto.current.click();
+    if (item.photos.length) ouvrirApercu(item.id);
+    else choisirPhoto();
+  }
+
+  // Photos choisies dans la photothèque : 5 au plus à la fois, et pas plus de 10 par article (limite du serveur).
+  async function photoChoisie(event) {
+    const idCourse = idPhotoActuelle.current;
+    const choisis = [...(event.target.files || [])];
+    if (!choisis.length || idCourse === null) return;
+    const deja = itemsActuels.current.find((i) => i.id === idCourse)?.photos.length ?? 0;
+    const place = Math.max(0, PHOTOS_PAR_ARTICLE - deja);
+    const fichiers = choisis.slice(0, Math.min(PHOTOS_A_LA_FOIS, place));
+    if (!fichiers.length) {
+      afficherToast(`${PHOTOS_PAR_ARTICLE} photos au plus par article.`);
+      return;
+    }
+    if (fichiers.length < choisis.length) {
+      afficherToast(fichiers.length === place && place < PHOTOS_A_LA_FOIS ? `${PHOTOS_PAR_ARTICLE} photos au plus : ${fichiers.length} ajoutée${fichiers.length > 1 ? "s" : ""}.` : `${PHOTOS_A_LA_FOIS} photos à la fois : les ${PHOTOS_A_LA_FOIS} premières sont ajoutées.`);
+    }
+    const dansLaVisionneuse = photo.ouvert && photo.idCourse === idCourse;
+    let premiere = true;
+    // Une à une, dans l'ordre choisi : chacune apparaît dès qu'elle est enregistrée.
+    for (const fichier of fichiers) {
+      try {
+        const base64 = await compresserImage(fichier);
+        const reponse = await fetchAvecRetry("/courses/photo", { body: { idCourse: String(idCourse), photo: base64 } });
+        if (reponse.erreur) {
+          alert(reponse.erreur);
+          return;
+        }
+        sauvegarderPhotoLocale(reponse.idPhoto, base64);
+        const avant = itemsActuels.current.find((i) => i.id === idCourse)?.photos.length ?? 0;
+        setItems((liste) => liste.map((i) => (i.id === idCourse ? { ...i, photos: [...i.photos, reponse.idPhoto] } : i)));
+        // Ajoutées depuis la visionneuse : elle glisse jusqu'à la première nouvelle. Sinon l'œil apparaît d'un bond.
+        if (premiere) {
+          if (dansLaVisionneuse) setPhoto((p) => ({ ...p, index: avant }));
+          else setPopPhoto(idCourse);
+          premiere = false;
+        }
+      } catch (err) {
+        gererErreurReseau(err);
+        return;
+      }
     }
   }
 
-  function photoChoisie(event) {
-    const fichier = event.target.files[0];
-    const idCourse = idPhotoActuelle.current;
-    if (!fichier || idCourse === null) return;
-    let base64Compressee = null;
-    compresserImage(fichier)
-      .then((base64) => {
-        base64Compressee = base64;
-        return fetchAvecRetry("/courses/photo", { body: { idCourse: String(idCourse), photo: base64 } });
-      })
-      .then((reponse) => {
-        if (reponse.erreur) {
-          alert(reponse.erreur);
-          return;
-        }
-        setItems((liste) => liste.map((i) => (i.id === idCourse ? { ...i, aPhoto: true } : i)));
-        setPopPhoto(idCourse);
-        sauvegarderPhotoLocale(idCourse, base64Compressee);
-      })
-      .catch(gererErreurReseau);
-  }
-
   function supprimerPhoto() {
-    const idCourse = idPhotoActuelle.current;
-    if (idCourse === null) return;
-    fetchAvecRetry("/courses/photo/supprimer", { body: { idCourse: String(idCourse) } })
+    const idCourse = photo.idCourse;
+    const photos = itemsActuels.current.find((i) => i.id === idCourse)?.photos || [];
+    const idPhoto = photos[photo.index];
+    if (!idPhoto) return;
+    fetchAvecRetry("/courses/photo/supprimer", { body: { idPhoto: String(idPhoto) } })
       .then((reponse) => {
         if (reponse.erreur) {
           alert(reponse.erreur);
           return;
         }
+        supprimerPhotoLocale(idPhoto);
+        const retirer = () => setItems((liste) => liste.map((i) => (i.id === idCourse ? { ...i, photos: i.photos.filter((p) => p !== idPhoto) } : i)));
+        if (photos.length > 1) {
+          // Il en reste : celle-ci s'efface, la suivante prend sa place (la précédente si c'était la dernière).
+          setPhoto((p) => ({ ...p, sortante: idPhoto }));
+          planifier(() => {
+            retirer();
+            setPhoto((p) => ({ ...p, sortante: null, index: Math.min(p.index, photos.length - 2) }));
+          }, mouvementReduit() ? 0 : 200);
+          return;
+        }
+        // C'était la seule : la visionneuse rentre dans l'œil, qui se ferme.
         fermerApercu();
-        supprimerPhotoLocale(idCourse);
         planifier(() => {
           boutonsPhoto.current[idCourse]?.classList.add("oeil-fermeture");
           planifier(() => {
             boutonsPhoto.current[idCourse]?.classList.remove("oeil-fermeture");
-            setItems((liste) => liste.map((i) => (i.id === idCourse ? { ...i, aPhoto: false } : i)));
+            retirer();
           }, 300);
         }, 300);
       })
       .catch(gererErreurReseau);
   }
+
+  const photosOuvertes = (items.find((i) => i.id === photo.idCourse)?.photos || []).map((id) => ({ id, src: srcPhoto(id) }));
 
   const enfantsListe = [];
   let derniereCategorie = null;
@@ -657,7 +711,7 @@ function Courses({ donnees }) {
         visible={estVisible(item)}
         arme={String(item.id) === armeId}
         effets={item.effets}
-        aPhoto={item.aPhoto}
+        nbPhotos={item.photos.length}
         refCarte={(el) => {
           if (el) cartes.current[item.id] = el;
           else delete cartes.current[item.id];
@@ -725,7 +779,7 @@ function Courses({ donnees }) {
               />
             </div>
             <span className={"magasin-zone" + (choixMagasin ? " ouvert" : "")}>
-              <BoutonMagasin actif={magasin} enseigne={choixMagasin ? "tous" : enseigne} onBasculer={basculerMagasin} onChoisirMagasin={() => setChoixMagasin(true)} />
+              <BoutonMagasin actif={magasin} logosSortis={choixMagasin} enseigne={choixMagasin ? "tous" : enseigne} onBasculer={basculerMagasin} onChoisirMagasin={() => setChoixMagasin(true)} />
               {choixMagasin && <TiroirMagasins enseigne={enseigne} onChoisir={setEnseigne} onFermer={() => setChoixMagasin(false)} />}
             </span>
             <span id="badgeCoursesAncre"></span>
@@ -800,15 +854,19 @@ function Courses({ donnees }) {
 
         {items.length === 0 && !panneauEtat.ouvert && !ajoutEnAttente && <CoursesVide />}
 
-        <input type="file" id="inputPhotoCourse" accept="image/*" hidden ref={inputPhoto} onChange={photoChoisie} />
+        <input type="file" id="inputPhotoCourse" accept="image/*" multiple hidden ref={inputPhoto} onChange={photoChoisie} />
 
         <PhotoApercu
           ouvert={photo.ouvert}
-          src={photo.src}
+          photos={photosOuvertes}
+          index={photo.index}
+          onIndex={(index) => setPhoto((p) => ({ ...p, index }))}
+          sortante={photo.sortante}
           fermeture={photo.fermeture}
           vers={photo.vers}
           refApercu={apercu}
           onFermer={fermerApercu}
+          onAjouter={choisirPhoto}
           onSupprimer={supprimerPhoto}
         />
       </div>

@@ -91,12 +91,18 @@ Liste de courses utilisable avant et pendant les achats.
 
 - aliments connus, articles de la maison (hygiène, entretien… avec l'icône de
   leur famille, regroupés sous la famille, sans Stock) ou texte libre ;
-- notes et photos de référence ;
+- notes et photos de référence : plusieurs par article (pastille du nombre sur
+  l'œil dès deux), on glisse ou on touche les flèches pour passer de l'une à
+  l'autre ; « Supprimer » retire celle affichée ;
 - filtres et regroupement par rayon ;
 - preset hebdomadaire modifiable ;
-- mode magasin : un toucher sur le caddie = tous les magasins ; deux touchers
-  sortent les logos (Leclerc, Carrefour, Marché Frais, Tiger Market, Action)
-  pour choisir le magasin, qui s'affiche en pastille sur le caddie. Un article
+- caddie : un toucher entre ou sort du mode magasin ; deux touchers sortent
+  « Tous » puis les logos (Leclerc, Carrefour, Marché Frais, Tiger Market,
+  Action) pour choisir le magasin, en mode magasin ou non, sans changer le
+  mode. Le magasin choisi s'affiche en pastille sur le caddie et filtre la
+  liste et la fourchette ; il reste choisi en entrant ou sortant du mode
+  magasin. Logos sortis, toucher le caddie, ailleurs, Échap ou défiler la page
+  les range sans rien changer. Un article
   peut être dans plusieurs magasins : liste choisie (oignons et patate douce
   à Marché Frais, pommes de terre à Leclerc, papier toilette et essuie-tout à
   Leclerc et Action, rayon asiatique à Tiger Market), sinon tickets et cases
@@ -109,8 +115,10 @@ Liste de courses utilisable avant et pendant les achats.
   boîte ÷ ses œufs, une portion de tteok au prix d'un sachet ÷ 3), total, prévu effacé quand le chariot l'atteint, repère
   et « +N € » au-delà ; toucher une part donne son rayon ; filtré par le magasin
   choisi ; version fine sous la barre d'outils quand on descend ;
-- tournée sur un ou plusieurs magasins et jours : ouverte par le mode magasin,
-  fermée par deux touchers sur le panier puis ✓ et « Terminer ? » ;
+- tournée sur un ou plusieurs magasins le même jour : ouverte par le mode magasin,
+  fermée par deux touchers sur le panier puis ✓ et « Terminer ? », sinon
+  terminée d'elle-même au premier minuit (heure de Paris), la page sortant alors
+  du mode magasin ;
 - hors magasin : fourchette prévue en petite pastille ticket à côté du titre ;
 - achat avec mise à jour du Stock ;
 - achat ponctuel (recette, événement) : bouton bol dans la ligne de note

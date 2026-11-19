@@ -10,7 +10,7 @@ import pg from "pg";
 const DOSSIER = process.argv[2] || path.join(os.homedir(), "Perso", "House Projects", "family-hub-data");
 const SCHEMAS = ["famille", "achats", "chow", "maison", "reference"];
 // Jamais exportés : empreintes de mot de passe et photos (binaire).
-const COLONNES_EXCLUES = { "famille.comptes": ["mot_de_passe"], "chow.courses": ["photo"] };
+const COLONNES_EXCLUES = { "famille.comptes": ["mot_de_passe"], "chow.courses_photos": ["photo"] };
 // Tables et vues qui grossissent : un fichier par année, selon la date du ticket.
 const PAR_ANNEE = {
     "achats.lignes": "SELECT x.* FROM achats.lignes x JOIN achats.tickets t ON t.id = x.ticket_id WHERE extract(year FROM t.date) = $1 ORDER BY x.id",

@@ -17,25 +17,214 @@
 }
 
 .photo-apercu {
+  --photo-largeur: min(500px, 92vw);
   position: relative;
-  max-width: min(500px, 92vw);
-  max-height: 85vh;
+  width: var(--photo-largeur);
+  max-height: 92vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
 }
 
-.photo-apercu img {
-  max-width: 100%;
-  max-height: 70vh;
-  border-radius: var(--radius);
-  object-fit: contain;
-  background: var(--surface);
+.photo-backdrop.ouvert .photo-apercu:not(.fermeture) {
+  animation: photo-entree 0.32s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes photo-entree {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
 }
 
 .btn-fermer-photo {
   position: absolute;
   top: -44px;
   right: 0;
+}
+
+/* Piste horizontale aimantée : le doigt fait glisser d'une photo à l'autre, sans librairie. */
+.photo-scene {
+  position: relative;
+  width: 100%;
+}
+
+.photo-piste {
+  display: flex;
+  width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: var(--radius);
+}
+
+.photo-piste::-webkit-scrollbar {
+  display: none;
+}
+
+.photo-diapo {
+  flex: 0 0 100%;
+  display: grid;
+  place-items: center;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.photo-diapo img {
+  max-width: 100%;
+  max-height: 64vh;
+  border-radius: var(--radius);
+  object-fit: contain;
+  background: var(--surface);
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Photo supprimée : elle s'efface avant que les suivantes ne prennent sa place. */
+.photo-diapo.sortante {
+  opacity: 0;
+  transform: scale(0.92);
+}
+
+/* Flèches posées sur la photo au téléphone, à côté d'elle sur ordinateur ; cachées en bout de série, leur place gardée. */
+.photo-fleche {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-top: -20px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 253, 248, 0.92);
+  color: var(--text);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.photo-fleche svg {
+  width: 20px;
+  height: 20px;
+}
+
+.photo-fleche--gauche {
+  left: 10px;
+}
+
+.photo-fleche--droite {
+  right: 10px;
+}
+
+.photo-fleche.cachee {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.photo-fleche:active {
+  transform: scale(0.92);
+}
+
+@media (min-width: 861px) {
+  .photo-fleche--gauche {
+    left: -60px;
+  }
+
+  .photo-fleche--droite {
+    right: -60px;
+  }
+}
+
+.photo-compteur {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: #fffdf8;
+  transition: opacity 0.2s ease;
+}
+
+/* Une seule photo : le compteur garde sa place pour que les boutons ne sautent pas quand on en ajoute une. */
+.photo-compteur.cache {
+  opacity: 0;
+}
+
+.photo-points {
+  display: flex;
+  gap: 6px;
+}
+
+.photo-point {
+  width: 6px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 253, 248, 0.45);
+  transition: width 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.25s ease;
+}
+
+.photo-point.actif {
+  width: 18px;
+  background: #fffdf8;
+}
+
+.photo-compteur__texte {
+  font-size: 0.8rem;
+  font-weight: 600;
+  opacity: 0.9;
+  font-variant-numeric: tabular-nums;
+}
+
+.photo-actions {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+}
+
+.photo-action {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 14px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.photo-action svg {
+  width: 18px;
+  height: 18px;
+}
+
+.photo-action--supprimer {
+  background: #f6dcd5;
+  color: #a8321b;
+}
+
+.photo-action:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .photo-backdrop.ouvert .photo-apercu:not(.fermeture) {
+    animation: none;
+  }
+
+  .photo-diapo,
+  .photo-point {
+    transition: none;
+  }
 }

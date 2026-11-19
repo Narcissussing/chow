@@ -25,6 +25,7 @@ export function useGlisserPourFermer(feuille, fermer, actif = true, enteteSeulem
     const el = feuille.current;
     if (!actif || !el) return;
     let depart = null;
+    let departX = 0;
     let dy = 0;
     let t0 = 0;
     let glisse = false;
@@ -35,6 +36,7 @@ export function useGlisserPourFermer(feuille, fermer, actif = true, enteteSeulem
       const surEntete = !!e.target.closest?.("[data-entete-feuille], .poignee-feuille");
       if (!surEntete && (enteteSeulement || e.target.closest?.(".courbe, [data-pas-glisser]") || contenuDescendu(e.target, el))) return;
       depart = e.touches[0].clientY;
+      departX = e.touches[0].clientX;
       t0 = Date.now();
       dy = 0;
       glisse = false;
@@ -43,6 +45,11 @@ export function useGlisserPourFermer(feuille, fermer, actif = true, enteteSeulem
       if (depart === null) return;
       dy = e.touches[0].clientY - depart;
       if (!glisse) {
+        // Geste surtout horizontal (photos qu'on fait défiler) : ce n'est pas une fermeture.
+        if (Math.abs(e.touches[0].clientX - departX) > Math.abs(dy)) {
+          if (Math.abs(dy) > 6 || Math.abs(e.touches[0].clientX - departX) > 6) depart = null;
+          return;
+        }
         if (dy < -6) depart = null;
         if (dy < 6) return;
         glisse = true;

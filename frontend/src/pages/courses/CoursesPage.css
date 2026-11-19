@@ -347,6 +347,39 @@ body.mode-magasin .course-item__shop-slot {
   mask-image: url("/images/svg/oeil.svg");
 }
 
+.btn-photo-course[data-a-photo="true"] {
+  position: relative;
+}
+
+.btn-photo-course__nombre {
+  /* Collée au coin haut-droit du dessin de l'œil, hors du flux ; un liseré d'un pixel la détache de l'œil. */
+  position: absolute;
+  top: 0;
+  right: -5px;
+  box-shadow: 0 0 0 1px var(--surface);
+  display: grid;
+  place-items: center;
+  min-width: 12px;
+  height: 12px;
+  padding: 0 2px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fffdf8;
+  font-size: 0.56rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  box-sizing: content-box;
+  animation: badgeSacPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-photo-course__nombre {
+    animation: none;
+  }
+}
+
 .btn-photo-course:active {
   transform: scale(0.92);
 }

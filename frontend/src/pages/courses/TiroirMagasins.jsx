@@ -4,13 +4,13 @@ import LogoEnseigne from "../../components/LogoEnseigne.jsx";
 import { useClicExterieur } from "../../hooks/useClicExterieur.js";
 import "./TiroirMagasins.css";
 
-// Logos visibles avant de glisser.
-const VISIBLES = 3;
+// Logos visibles avant de glisser (« Tous » compris).
+const VISIBLES = 4;
 const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 
-// Logos des magasins qui sortent du caddie vers la droite (deux touchers sur le caddie).
+// Logos des magasins qui sortent du caddie vers la droite (deux touchers sur le caddie), « Tous » en premier.
 // Choisir : le logo choisi saute, les autres rentrent dans le caddie, puis il y rentre aussi et devient sa pastille.
-// Re-choisir le magasin déjà choisi = tous les magasins. Toucher ailleurs : tout rentre.
+// Toucher ailleurs (caddie compris), Échap ou défiler la page : tout rentre, rien ne change.
 export default function TiroirMagasins({ enseigne, onChoisir, onFermer }) {
   const zone = useRef(null);
   const zones = useMemo(() => [zone], []);
@@ -23,11 +23,27 @@ export default function TiroirMagasins({ enseigne, onChoisir, onFermer }) {
     minuteur.current = setTimeout(apres, mouvementReduit() ? 0 : duree);
   }
 
-  function choisir(nom) {
+  // Amène un logo entièrement en vue dans le tiroir, centré si possible.
+  function amenerEnVue(logo, doux = true) {
+    const z = zone.current;
+    if (!z || !logo) return;
+    const cible = Math.max(0, Math.min(logo.offsetLeft - (z.clientWidth - logo.offsetWidth) / 2, z.scrollWidth - z.clientWidth));
+    if (Math.abs(cible - z.scrollLeft) < 2) return;
+    z.scrollTo({ left: cible, behavior: doux && !mouvementReduit() ? "smooth" : "auto" });
+  }
+
+  // Les logos sortent depuis la gauche, puis le tiroir glisse jusqu'au magasin en cours s'il est plus loin.
+  useEffect(() => {
+    const minuteurDefile = setTimeout(() => amenerEnVue(zone.current?.querySelector(".actuel")), mouvementReduit() ? 0 : 480);
+    return () => clearTimeout(minuteurDefile);
+  }, []);
+
+  function choisir(nom, logo) {
     if (phase.etat !== "ouvert") return;
+    amenerEnVue(logo);
     setPhase({ etat: "choisi", choix: nom });
     finir(560, () => {
-      onChoisir(nom === enseigne ? "tous" : nom);
+      onChoisir(nom);
       onFermer();
     });
   }
@@ -38,6 +54,20 @@ export default function TiroirMagasins({ enseigne, onChoisir, onFermer }) {
     finir(260, onFermer);
   }
   useClicExterieur(zones, rentrer, phase.etat === "ouvert");
+  const rentrerActuel = useRef(rentrer);
+  rentrerActuel.current = rentrer;
+  useEffect(() => {
+    // Un petit glissé du doigt en touchant un logo ne compte pas : la page doit vraiment défiler.
+    const depuis = window.scrollY;
+    const surTouche = (e) => e.key === "Escape" && rentrerActuel.current();
+    const surDefilement = () => Math.abs(window.scrollY - depuis) > 24 && rentrerActuel.current();
+    document.addEventListener("keydown", surTouche);
+    window.addEventListener("scroll", surDefilement, { passive: true });
+    return () => {
+      document.removeEventListener("keydown", surTouche);
+      window.removeEventListener("scroll", surDefilement);
+    };
+  }, []);
 
   // Le caddie et ses logos se centrent ensemble entre le tri et le + (avec ou sans compteur dans la barre) ;
   // sans assez de place, le tiroir prend celle qui reste et ses logos glissent de côté. La place est recalculée
@@ -110,17 +140,23 @@ export default function TiroirMagasins({ enseigne, onChoisir, onFermer }) {
         if (auBout !== defile.auBout) setDefile((d) => ({ ...d, auBout }));
       }}
     >
-      {ENSEIGNES.map((e, i) => (
+      {[{ nom: "tous" }, ...ENSEIGNES].map((e, i) => (
         <button
           key={e.nom}
           type="button"
-          className={"tiroir-magasins__logo" + (enseigne === e.nom ? " actuel" : "") + (phase.choix === e.nom ? " choisi" : "")}
+          className={"tiroir-magasins__logo" + (e.nom === "tous" ? " tous" : "") + ((phase.choix ?? enseigne) === e.nom ? " actuel" : "") + (phase.choix === e.nom ? " choisi" : "")}
           style={{ "--i": i, "--depart": `${(i + 1) * 34 + 4}px` }}
-          aria-label={e.nom}
+          aria-label={e.nom === "tous" ? "Tous les magasins" : e.nom}
           aria-pressed={enseigne === e.nom}
-          onClick={() => choisir(e.nom)}
+          onClick={(ev) => choisir(e.nom, ev.currentTarget)}
         >
-          <LogoEnseigne nom={e.nom} taille={20} />
+          {e.nom === "tous" ? (
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M3 9.5 4.5 4h15L21 9.5M3 9.5h18M3 9.5c0 1.4 1.1 2.5 2.5 2.5S8 10.9 8 9.5c0 1.4 1.1 2.5 2.5 2.5h3c1.4 0 2.5-1.1 2.5-2.5 0 1.4 1.1 2.5 2.5 2.5S21 10.9 21 9.5M5 12v8h14v-8M10 20v-5h4v5" />
+            </svg>
+          ) : (
+            <LogoEnseigne nom={e.nom} taille={20} />
+          )}
         </button>
       ))}
     </span>

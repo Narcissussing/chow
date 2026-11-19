@@ -3,9 +3,9 @@ import { abonnerToast } from "../../toast.js";
 import { rendreApp, simulerApi } from "../../testUtils.jsx";
 
 const COURSES = [
-  { id: 1, food_id: "lait", nom: "Lait", emoji: "🥛", categorie: "Laitiers", tracking_type: "cl", quantite_stock: "vide", commentaire: null, has_photo: false },
-  { id: 2, food_id: "riz", nom: "Riz", emoji: "🍚", categorie: "Féculents", tracking_type: "pack", quantite_stock: "1", commentaire: "Basmati", has_photo: false },
-  { id: 3, food_id: null, nom: "Puck", emoji: "🆕", categorie: null, tracking_type: null, quantite_stock: null, commentaire: null, has_photo: true },
+  { id: 1, food_id: "lait", nom: "Lait", emoji: "🥛", categorie: "Laitiers", tracking_type: "cl", quantite_stock: "vide", commentaire: null, photos: [] },
+  { id: 2, food_id: "riz", nom: "Riz", emoji: "🍚", categorie: "Féculents", tracking_type: "pack", quantite_stock: "1", commentaire: "Basmati", photos: [] },
+  { id: 3, food_id: null, nom: "Puck", emoji: "🆕", categorie: null, tracking_type: null, quantite_stock: null, commentaire: null, photos: [31] },
 ];
 const ALIMENTS = [
   { id: "lait", nom: "Lait", emoji: "🥛" },
@@ -63,6 +63,12 @@ function choisirTri(libelle) {
 
 // Plus de 320 ms entre deux touchers sur le caddie : sinon c'est un double toucher (choix du magasin).
 const pauseToucher = () => new Promise((r) => setTimeout(r, 350));
+
+// Un toucher sur le caddie entre ou sort du mode magasin, après l'attente d'un éventuel 2e toucher.
+async function basculerLeMagasin() {
+  fireEvent.click(document.getElementById("toggleMagasin"));
+  await act(pauseToucher);
+}
 
 // Deux touchers rapprochés sur le caddie sortent les logos ; le magasin est appliqué quand le logo est rentré.
 async function choisirMagasin(nom) {
@@ -223,7 +229,7 @@ test("notes : l'émoji ouvre le champ, le blur enregistre, vider supprime la not
 test("mode magasin : classe sur body, mémorisé, puces de rayon, remise à zéro en sortant", async () => {
   const { unmount } = ouvrirCourses();
   await attendrePage();
-  fireEvent.click(document.getElementById("toggleMagasin"));
+  await basculerLeMagasin();
   expect(document.body).toHaveClass("mode-magasin");
   expect(localStorage.getItem("modeMagasin")).toBe("true");
   const puces = document.getElementById("courseFiltresMagasin");
@@ -263,7 +269,7 @@ test("rayon vidé : sa puce disparaît après l'achat", async () => {
 });
 
 test("preset : « Enregistrer » caché sous 5 articles, désactivé si identique ; « Tout est déjà… »", async () => {
-  const cinq = [1, 2, 3, 4, 5].map((n) => ({ id: n, food_id: "f" + n, nom: "Article " + n, emoji: "🍎", categorie: "Fruits", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false }));
+  const cinq = [1, 2, 3, 4, 5].map((n) => ({ id: n, food_id: "f" + n, nom: "Article " + n, emoji: "🍎", categorie: "Fruits", tracking_type: "unite", quantite_stock: null, commentaire: null, photos: [] }));
   const alerte = jest.spyOn(window, "alert").mockImplementation(() => {});
   ouvrirCourses({}, { courses: cinq, preset: cinq.map((c) => ({ food_id: c.food_id, nom_libre: null })) });
   await attendrePage();
@@ -276,7 +282,7 @@ test("preset : « Enregistrer » caché sous 5 articles, désactivé si identiqu
 });
 
 test("photo : bouton œil en dernier enfant de la carte ; aperçu lu depuis le cache local", async () => {
-  localStorage.setItem("chow-photo-course-3", "QUJD");
+  localStorage.setItem("chow-photo-31", "QUJD");
   ouvrirCourses();
   await attendrePage();
   expect(carte("Puck").lastElementChild).toHaveClass("btn-photo-course");
@@ -286,11 +292,54 @@ test("photo : bouton œil en dernier enfant de la carte ; aperçu lu depuis le c
   expect(document.getElementById("imgApercuPhoto")).toHaveAttribute("src", "data:image/jpeg;base64,QUJD");
 });
 
+test("photos : pastille dès deux photos, flèches et compteur ; supprimer garde la visionneuse tant qu'il en reste", async () => {
+  jest.useFakeTimers();
+  const courses = [{ ...COURSES[2], photos: [31, 32, 33] }];
+  ouvrirCourses({ "/courses/photo/supprimer": [200, { succes: true }] }, { courses });
+  await act(async () => jest.runOnlyPendingTimers());
+  await attendrePage();
+  const oeil = carte("Puck").querySelector(".btn-photo-course");
+  expect(oeil.querySelector(".btn-photo-course__nombre")).toHaveTextContent("3");
+  expect(oeil).toHaveAccessibleName("3 photos de référence");
+  fireEvent.click(oeil);
+  expect(document.querySelector(".photo-compteur__texte")).toHaveTextContent("1 / 3");
+  expect(screen.getByRole("button", { name: "Photo précédente" })).toHaveClass("cachee");
+  fireEvent.click(screen.getByRole("button", { name: "Photo suivante" }));
+  expect(document.querySelector(".photo-compteur__texte")).toHaveTextContent("2 / 3");
+  expect(document.getElementById("imgApercuPhoto")).toHaveAttribute("src", "/api/courses/photos/32");
+  fireEvent.keyDown(document, { key: "ArrowRight" });
+  expect(document.querySelector(".photo-compteur__texte")).toHaveTextContent("3 / 3");
+  expect(screen.getByRole("button", { name: "Photo suivante" })).toHaveClass("cachee");
+
+  fireEvent.click(document.getElementById("btnSupprimerPhoto"));
+  // Rien n'est supprimé avant la confirmation ; Non ramène les boutons.
+  expect(requetes.some((q) => q.chemin === "/courses/photo/supprimer")).toBe(false);
+  expect(screen.getByRole("alertdialog", { name: "Supprimer la photo ?" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Non" }));
+  act(() => jest.advanceTimersByTime(250));
+  expect(screen.queryByRole("alertdialog")).toBeNull();
+  fireEvent.click(document.getElementById("btnSupprimerPhoto"));
+  fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Oui" }));
+  await act(async () => jest.advanceTimersByTime(250));
+  expect(requetes).toContainEqual({ chemin: "/courses/photo/supprimer", corps: { idPhoto: "33" } });
+  act(() => jest.advanceTimersByTime(250));
+  expect(document.getElementById("photoBackdrop")).toHaveClass("ouvert");
+  expect(document.querySelector(".photo-compteur__texte")).toHaveTextContent("2 / 2");
+  expect(oeil.querySelector(".btn-photo-course__nombre")).toHaveTextContent("2");
+
+  fireEvent.click(document.getElementById("btnSupprimerPhoto"));
+  fireEvent.click(within(screen.getByRole("alertdialog")).getByRole("button", { name: "Oui" }));
+  await act(async () => jest.advanceTimersByTime(250));
+  act(() => jest.advanceTimersByTime(250));
+  expect(oeil.querySelector(".btn-photo-course__nombre")).toBeNull();
+  expect(document.querySelector(".photo-compteur")).toHaveClass("cache");
+});
+
 test("achat : la liste du serveur apporte l'article ajouté ailleurs, le Stock à jour et retire celui acheté ailleurs", async () => {
   jest.useFakeTimers();
   const toasts = [];
   const desabonner = abonnerToast((m) => m && toasts.push(m));
-  const pain = { id: 20, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
+  const pain = { id: 20, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, photos: [] };
   const apres = [{ ...COURSES[0], quantite_stock: "plein" }, pain];
   ouvrirCourses({ "/courses/acheter": [200, { succes: true, courses: apres }] });
   await act(async () => jest.runOnlyPendingTimers());
@@ -310,7 +359,7 @@ test("ajout : son propre article n'est pas signalé ; une réponse plus ancienne
   const toasts = [];
   const desabonner = abonnerToast((m) => m && toasts.push(m));
   let liberer;
-  const pomme = { id: 10, food_id: "pomme", nom: "Pomme", emoji: "🍎", categorie: "Fruits", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
+  const pomme = { id: 10, food_id: "pomme", nom: "Pomme", emoji: "🍎", categorie: "Fruits", tracking_type: "unite", quantite_stock: null, commentaire: null, photos: [] };
   ouvrirCourses({
     "/courses/acheter": () => new Promise((r) => { liberer = () => r([200, { succes: true, courses: COURSES }]); }),
     "/courses/ajouter": [200, { succes: true, item: pomme, courses: [COURSES[0], COURSES[2], pomme] }],
@@ -343,8 +392,8 @@ test("suppression et note : la réponse rafraîchit la liste ; une note changée
 
 test("articles de l'autre téléphone : annonce +N vers le compteur, montrés un par un, ajoutés au compteur à la fin", async () => {
   jest.useFakeTimers();
-  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
-  const beurre = { id: 20, food_id: "beurre", nom: "Beurre", emoji: "🧈", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false };
+  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Boulangerie", tracking_type: "unite", quantite_stock: null, commentaire: null, photos: [] };
+  const beurre = { id: 20, food_id: "beurre", nom: "Beurre", emoji: "🧈", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, photos: [] };
   ouvrirCourses({ "/courses/commentaire": [200, { succes: true, courses: [...COURSES, pain, beurre] }] });
   await act(async () => jest.runOnlyPendingTimers());
   await attendrePage();
@@ -387,7 +436,7 @@ test("bouton magasin : icône seule, état annoncé, entrée puis sortie animée
   expect(bouton.textContent.trim()).toBe("");
   expect(bouton).toHaveAttribute("aria-pressed", "false");
   expect(bouton).toHaveAttribute("aria-label", "Passer en mode magasin");
-  fireEvent.click(bouton);
+  await basculerLeMagasin();
   expect(bouton).toHaveClass("actif", "entre");
   expect(bouton).toHaveAttribute("aria-label", "Quitter le mode magasin");
   expect(document.body).toHaveClass("mode-magasin");
@@ -399,7 +448,7 @@ test("bouton magasin : icône seule, état annoncé, entrée puis sortie animée
 });
 
 test("achat : quantités habituelles de l'aliment (œufs +10/+20/+30), +1/+2/+5 sinon", async () => {
-  const oeufs = { id: 4, food_id: "oeuf", nom: "Oeuf", emoji: "🥚", categorie: "Oeufs", tracking_type: "unite", quantite_stock: "2", commentaire: null, has_photo: false, pas_achat: [10, 20, 30] };
+  const oeufs = { id: 4, food_id: "oeuf", nom: "Oeuf", emoji: "🥚", categorie: "Oeufs", tracking_type: "unite", quantite_stock: "2", commentaire: null, photos: [], pas_achat: [10, 20, 30] };
   ouvrirCourses({}, { courses: [...COURSES, oeufs] });
   await attendrePage();
   const textes = (nom) => [...carte(nom).querySelectorAll(".suggestion")].map((b) => b.textContent);
@@ -449,7 +498,7 @@ test("panneau : un article de la maison (shampoing) se trouve et s'ajoute avec s
 });
 
 test("article de la maison : +1/+2/+5 au nombre, rien au niveau ou sans suivi ; icône de famille", async () => {
-  const maison = (id, nom, tracking_type) => ({ id, food_id: null, article_id: nom.toLowerCase(), nom, emoji: null, famille_id: "hygiene", categorie: "Hygiène", tracking_type, quantite_stock: null, commentaire: null, has_photo: false });
+  const maison = (id, nom, tracking_type) => ({ id, food_id: null, article_id: nom.toLowerCase(), nom, emoji: null, famille_id: "hygiene", categorie: "Hygiène", tracking_type, quantite_stock: null, commentaire: null, photos: [] });
   ouvrirCourses({}, { courses: [maison(7, "Dentifrice", "unite"), maison(8, "Shampoing", "cl"), maison(9, "Colles", null)] });
   await attendrePage();
   expect(carte("Dentifrice").querySelector(".icone-famille--hygiene")).not.toBeNull();
@@ -468,6 +517,7 @@ test("mode magasin : un magasin garde ses articles, les autres sont masqués ; l
   ];
   ouvrirCourses({}, { courses });
   await attendrePage();
+  await basculerLeMagasin();
   await choisirMagasin("Carrefour");
   await logoRentre();
   expect(document.body).toHaveClass("mode-magasin");
@@ -487,7 +537,7 @@ test("mode magasin : le panier remplace le titre, ouvre la tournée ; Terminer l
   ouvrirCourses();
   await attendrePage();
   expect(document.querySelector(".courses-titre")).not.toHaveClass("cache");
-  fireEvent.click(document.getElementById("toggleMagasin"));
+  await basculerLeMagasin();
   expect(requetes).toContainEqual({ chemin: "/courses/tournee/commencer", corps: {} });
   expect(document.querySelector(".courses-titre")).toHaveClass("cache");
   const panier = await screen.findByRole("img", { name: "8 € au chariot sur 12 € prévus" });
@@ -500,14 +550,60 @@ test("mode magasin : le panier remplace le titre, ouvre la tournée ; Terminer l
   await waitFor(() => expect(document.querySelector(".courses-titre")).not.toHaveClass("cache"));
 });
 
-test("hors du magasin, deux touchers entrent en mode magasin et sortent les logos", async () => {
+test("hors du magasin, deux touchers sortent les logos sans entrer en mode magasin ; le choix filtre quand même", async () => {
+  const courses = [
+    { ...COURSES[0], magasins: ["Carrefour"] },
+    { ...COURSES[1], magasins: ["Leclerc"] },
+    { ...COURSES[2], magasins: [] },
+  ];
+  ouvrirCourses({}, { courses });
+  await attendrePage();
+  await choisirMagasin("Carrefour");
+  await act(pauseToucher);
+  await logoRentre();
+  expect(document.body).not.toHaveClass("mode-magasin");
+  expect(document.getElementById("toggleMagasin")).toHaveAccessibleName("Passer en mode magasin (Carrefour)");
+  expect(carte("Lait")).not.toHaveClass("hidden");
+  expect(carte("Riz")).toHaveClass("hidden");
+  expect(carte("Puck")).not.toHaveClass("hidden");
+  // Entrer en mode magasin garde le magasin choisi.
+  await basculerLeMagasin();
+  expect(document.body).toHaveClass("mode-magasin");
+  expect(document.getElementById("toggleMagasin")).toHaveAccessibleName("Quitter le mode magasin (Carrefour)");
+});
+
+test("logos sortis : toucher le caddie les range sans changer le mode ni le magasin", async () => {
+  ouvrirCourses();
+  await attendrePage();
+  await basculerLeMagasin();
+  const bouton = document.getElementById("toggleMagasin");
+  fireEvent.click(bouton);
+  fireEvent.click(bouton);
+  expect(screen.getByRole("group", { name: "Choisir le magasin" })).toBeInTheDocument();
+  await act(pauseToucher);
+  fireEvent.click(bouton);
+  await act(pauseToucher);
+  await logoRentre();
+  expect(screen.queryByRole("group", { name: "Choisir le magasin" })).toBeNull();
+  expect(document.body).toHaveClass("mode-magasin");
+});
+
+test("logos sortis : « Tous » remet tous les magasins, Échap range les logos", async () => {
+  localStorage.setItem("magasinCourses", "Leclerc");
   ouvrirCourses();
   await attendrePage();
   const bouton = document.getElementById("toggleMagasin");
   fireEvent.click(bouton);
   fireEvent.click(bouton);
-  expect(document.body).toHaveClass("mode-magasin");
-  expect(screen.getByRole("group", { name: "Choisir le magasin" })).toBeInTheDocument();
+  fireEvent.keyDown(document, { key: "Escape" });
+  await logoRentre();
+  expect(screen.queryByRole("group", { name: "Choisir le magasin" })).toBeNull();
+  expect(bouton).toHaveAccessibleName("Passer en mode magasin (Leclerc)");
+  await act(pauseToucher);
+  await choisirMagasin("Tous les magasins");
+  await logoRentre();
+  expect(bouton).toHaveAccessibleName("Passer en mode magasin");
+  expect(document.body).not.toHaveClass("mode-magasin");
 });
 
 test("mode magasin : un toucher = tous les magasins ; le magasin choisi se combine aux rayons", async () => {
@@ -546,7 +642,7 @@ test("tri par catégorie : un rayon filtré n'affiche plus son titre", async () 
 
 test("mode magasin : la liste est relue toutes les 15 s ; un nouvel article fait sortir du filtre de magasin", async () => {
   jest.useFakeTimers();
-  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, has_photo: false, magasins: ["Leclerc"] };
+  const pain = { id: 21, food_id: "pain", nom: "Pain", emoji: "🍞", categorie: "Laitiers", tracking_type: "unite", quantite_stock: null, commentaire: null, photos: [], magasins: ["Leclerc"] };
   let appels = 0;
   ouvrirCourses({}, { courses: COURSES.map((c) => ({ ...c, magasins: ["Carrefour"] })) });
   await act(async () => jest.runOnlyPendingTimers());

@@ -36,8 +36,9 @@ Tout ce que le foyer achète. Chaîne : ligne → produit → article → catég
 - `enseignes` : `leclerc`, `carrefour`, `marche-frais`, `tiger-market`
   (produits asiatiques), `action` (papier, sacs).
 - `magasins` : un magasin d'une enseigne (`leclerc-meaux`), avec sa ville.
-- `enseignes_habituelles` : enseignes où l'on achète un article, choisies à la
-  main (plusieurs possibles) ; un article listé n'est attendu que là.
+- `enseignes_habituelles` : enseignes choisies à la main pour un article qui
+  n'est pas un aliment (papier toilette, essuie-tout) ; un article listé n'est
+  attendu que là. Les aliments ont les leurs dans `chow.aliments.magasins`.
 - `categories` : arbre unique à deux niveaux. Alimentation et Boissons
   reprennent les catégories Chow ; le reste en neuf familles (Hygiène,
   Entretien, Cuisine, Électronique, Bébé, Santé, Maison, Animaux, Divers) et
@@ -86,15 +87,20 @@ Vues :
 
 - `aliments` : référentiel Chow (`id` slug), nutrition pour 100 g ou 100 ml,
   `tracking_type` (`unite`, `pack`, `cl`), conversions (cuillères, poids à la
-  pièce), `pas_achat`, `prix_habituel`, `article_id`.
+  pièce), `pas_achat`, `prix_habituel`, `article_id`, `magasins` (enseignes
+  choisies à la main, texte séparé par des virgules, ex. `leclerc,marche-frais` ; vide = celles de ses achats
+  des 3 derniers mois, `v_magasins_habituels`).
   `fibres`, `sucres`, `graisses_saturees` et `sel` ne sont lus par aucune
   route.
 - `stock` : `food_id`, `quantite` (nombre ou état textuel), `unite`,
   `date_maj`, `ponctuel` (reste d'un achat ponctuel).
 - `courses` : `food_id`, `article_id` (article non suivi par Chow : shampoing,
   javel) ou `nom_libre`, `commentaire`, `achete` (la ligne est gardée après
-  achat), `photo` en `BYTEA`, `date_ajout`, `date_achat`, `quantite_achetee`
+  achat), `date_ajout`, `date_achat`, `quantite_achetee`
   et `enseigne` (pris en mode magasin), `ponctuel` (recette, événement).
+- `courses_photos` : photos de référence d'une ligne (`course_id`, `photo` en
+  `BYTEA`, `cree_le`), plusieurs par article (10 au plus), dans l'ordre d'ajout ;
+  effacées à l'achat, supprimées avec la ligne.
 - Vue `v_achats_ponctuels` : jours où un aliment n'a été coché qu'en
   ponctuel ; ses passages en caisse à un jour près sortent des habitudes.
 - `tournees` : `debut`, `fin` ; une seule ouverte. Le panier

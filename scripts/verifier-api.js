@@ -172,6 +172,8 @@ try {
     // Tournée : ouverte par le mode magasin, l'achat garde enseigne et quantité, le panier les valorise, « Terminer » la ferme.
     const tourneeAvant = (await db.query("SELECT id FROM chow.tournees WHERE fin IS NULL")).rows[0];
     r = await appel("POST", "/api/courses/tournee/commencer", {});
+    // Tournée de la dev restée ouverte depuis un autre jour : terminée à minuit, la suivante s'ouvre au toucher suivant.
+    if (r.donnees?.termineeAMinuit) r = await appel("POST", "/api/courses/tournee/commencer", {});
     const tourneeTest = (await db.query("SELECT id FROM chow.tournees WHERE fin IS NULL")).rows[0];
     nettoyages.push(async () => {
         if (tourneeAvant) await db.query("UPDATE chow.tournees SET fin = NULL WHERE id = $1", [tourneeAvant.id]);
@@ -189,12 +191,24 @@ try {
     r = await appel("POST", "/api/courses/tournee/terminer", {});
     const ouverte = (await db.query("SELECT count(*)::int AS n FROM chow.tournees WHERE fin IS NULL")).rows[0].n;
     verifier("POST /api/courses/tournee/terminer", r.donnees?.succes === true && ouverte === 0);
+    // Photos : deux par article, listées dans l'ordre, lues puis supprimées une à une.
+    const pixel = "/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==";
+    const photo1 = (await appel("POST", "/api/courses/photo", { idCourse: String(idCourse), photo: pixel })).donnees?.idPhoto;
+    const photo2 = (await appel("POST", "/api/courses/photo", { idCourse: String(idCourse), photo: pixel })).donnees?.idPhoto;
+    r = await appel("GET", "/api/courses");
+    const photosListees = r.donnees?.courses?.find((c) => c.id === idCourse)?.photos;
+    verifier("POST /api/courses/photo ×2 : les deux listées dans l'ordre", photo1 && photo2 && JSON.stringify(photosListees) === JSON.stringify([photo1, photo2]), JSON.stringify(photosListees));
+    r = await appel("GET", "/api/courses/photos/" + photo1);
+    verifier("GET /api/courses/photos/:id", r.statut === 200);
+    r = await appel("POST", "/api/courses/photo/supprimer", { idPhoto: String(photo1) });
+    r = await appel("GET", "/api/courses");
+    verifier("POST /api/courses/photo/supprimer : seule celle-ci part", JSON.stringify(r.donnees?.courses?.find((c) => c.id === idCourse)?.photos) === JSON.stringify([photo2]));
     r = await appel("POST", "/api/courses/commentaire", { idCourse, commentaire: "note de test" });
     verifier("POST /api/courses/commentaire", r.donnees?.succes === true);
     r = await appel("POST", "/api/courses/supprimer", { idCourse });
     verifier("POST /api/courses/supprimer", r.donnees?.succes === true);
-    r = await appel("GET", "/api/courses/" + idCourse + "/photo");
-    verifier("GET /api/courses/:id/photo sans photo → 404", r.statut === 404);
+    r = await appel("GET", "/api/courses/photos/" + photo2);
+    verifier("article supprimé : ses photos partent avec lui", r.statut === 404);
 
     const horsStock = aliments.find((a) => a.tracking_type !== "cl" && !stockActuel.some((s) => s.food_id === a.id));
     r = await appel("POST", "/api/stock/ajouter", { idAliment: horsStock.id, quantiteAliment: 1 });

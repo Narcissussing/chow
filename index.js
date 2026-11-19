@@ -449,7 +449,7 @@ async function chercherCourses() {
     const result = await db.query(
         `SELECT courses.id, courses.food_id, courses.article_id, courses.nom_libre, courses.commentaire, courses.achete,
                 courses.date_ajout, courses.ponctuel,
-                (courses.photo IS NOT NULL) AS has_photo,
+                ARRAY(SELECT p.id FROM chow.courses_photos p WHERE p.course_id = courses.id ORDER BY p.id) AS photos,
                 COALESCE(aliments.nom, articles.nom, courses.nom_libre) AS nom,
                 CASE WHEN courses.article_id IS NULL THEN COALESCE(aliments.emoji, '🆕') END AS emoji, articles.famille_id,
                 aliments.unite AS food_unite, COALESCE(aliments.categorie, articles.famille) AS categorie, aliments.pas_achat,
@@ -637,7 +637,18 @@ async function prixArticlesMaison(ids) {
 // Panier de la tournée en mode magasin : chaque article de la liste ou coché depuis le début de la tournée, avec son
 // prix prévu (même calcul que l'estimation) et, s'il est au chariot, sa valeur (quantité prise × prix à la pièce
 // quand il se compte, sinon le prix prévu). Les sommes par rayon et par magasin se font côté page.
+// Tournée laissée ouverte sans « Terminer » : terminée d'elle-même au premier minuit (heure de Paris) après son début.
+async function terminerTourneeDeLaVeille() {
+    const result = await db.query(
+        `UPDATE chow.tournees
+         SET fin = (date_trunc('day', debut AT TIME ZONE 'Europe/Paris') + interval '1 day') AT TIME ZONE 'Europe/Paris'
+         WHERE fin IS NULL AND (date_trunc('day', debut AT TIME ZONE 'Europe/Paris') + interval '1 day') AT TIME ZONE 'Europe/Paris' <= now()`
+    );
+    return result.rowCount > 0;
+}
+
 async function chargerPanier() {
+    const termineeAMinuit = await terminerTourneeDeLaVeille();
     const tournee = (await db.query("SELECT id, debut FROM chow.tournees WHERE fin IS NULL")).rows[0] || null;
     const lignes = (await db.query(
         `SELECT c.id, c.food_id, c.article_id, c.achete, c.enseigne, c.quantite_achetee::float AS quantite_achetee,
@@ -655,6 +666,7 @@ async function chargerPanier() {
     const arrondi = (n) => (n == null ? null : Math.round(n * 100) / 100);
     return {
         tournee,
+        termineeAMinuit,
         lignes: lignes.map((l) => {
             let prevu = null, piece = null;
             if (l.food_id) {
@@ -765,9 +777,11 @@ app.get("/api/courses", lectureApi(chargerPageCourses));
 app.get("/api/courses/estimation", lectureApi(estimerCourses));
 app.get("/api/courses/panier", lectureApi(chargerPanier));
 
-// Le mode magasin ouvre la tournée s'il n'y en a pas ; « Terminer » la ferme.
+// Le mode magasin ouvre la tournée s'il n'y en a pas ; « Terminer » la ferme, minuit aussi.
+// Une tournée de la veille vient d'être terminée : on ne la rouvre pas, la page sort du mode magasin.
 app.post("/api/courses/tournee/commencer", async (req, res) => {
     try {
+        if (await terminerTourneeDeLaVeille()) return res.json({ succes: true, termineeAMinuit: true });
         await db.query("INSERT INTO chow.tournees DEFAULT VALUES ON CONFLICT DO NOTHING");
         res.json({ succes: true, panier: await chargerPanier() });
     } catch (err) {
@@ -1282,18 +1296,26 @@ app.post("/api/courses/commentaire", async (req, res) => {
     }
 });
 
+// Photos de référence d'une ligne de Courses : plusieurs par article, dans l'ordre d'ajout.
+const PHOTOS_PAR_ARTICLE = 10;
+
 app.post("/api/courses/photo", async (req, res) => {
     try {
-        const idCourse = req.body.idCourse;
+        const idCourse = Number(req.body.idCourse);
         const photoBase64 = req.body.photo;
-
         if (!idCourse || !photoBase64) {
             return res.status(400).json({ erreur: "Photo ou article manquant." });
         }
-
-        const buffer = Buffer.from(photoBase64, "base64");
-        await db.query("UPDATE chow.courses SET photo = $1 WHERE id = $2", [buffer, idCourse]);
-        res.json({ succes: true });
+        const nombre = (await db.query("SELECT count(*)::int AS n FROM chow.courses_photos WHERE course_id = $1", [idCourse])).rows[0].n;
+        if (nombre >= PHOTOS_PAR_ARTICLE) {
+            return res.status(400).json({ erreur: `${PHOTOS_PAR_ARTICLE} photos au plus par article : supprimez-en une avant d'en ajouter.` });
+        }
+        const result = await db.query(
+            "INSERT INTO chow.courses_photos (course_id, photo) SELECT id, $2 FROM chow.courses WHERE id = $1 RETURNING id",
+            [idCourse, Buffer.from(photoBase64, "base64")]
+        );
+        if (!result.rows.length) return res.status(404).json({ erreur: "Article introuvable : la liste a peut-être changé." });
+        res.json({ succes: true, idPhoto: result.rows[0].id });
     } catch (err) {
         console.log("ERREUR:", err.message);
         res.status(500).json({ erreur: err.message });
@@ -1302,11 +1324,11 @@ app.post("/api/courses/photo", async (req, res) => {
 
 app.post("/api/courses/photo/supprimer", async (req, res) => {
     try {
-        const idCourse = req.body.idCourse;
-        if (!idCourse) {
-            return res.status(400).json({ erreur: "Aucun article sélectionné." });
+        const idPhoto = Number(req.body.idPhoto);
+        if (!idPhoto) {
+            return res.status(400).json({ erreur: "Aucune photo sélectionnée." });
         }
-        await db.query("UPDATE chow.courses SET photo = NULL WHERE id = $1", [idCourse]);
+        await db.query("DELETE FROM chow.courses_photos WHERE id = $1", [idPhoto]);
         res.json({ succes: true });
     } catch (err) {
         console.log("ERREUR:", err.message);
@@ -1314,13 +1336,14 @@ app.post("/api/courses/photo/supprimer", async (req, res) => {
     }
 });
 
-app.get("/api/courses/:id/photo", async (req, res) => {
+app.get("/api/courses/photos/:idPhoto", async (req, res) => {
     try {
-        const result = await db.query("SELECT photo FROM chow.courses WHERE id = $1", [req.params.id]);
-        if (result.rows.length === 0 || !result.rows[0].photo) {
+        const result = await db.query("SELECT photo FROM chow.courses_photos WHERE id = $1", [req.params.idPhoto]);
+        if (result.rows.length === 0) {
             return res.status(404).send("Aucune photo.");
         }
         res.set("Content-Type", "image/jpeg");
+        res.set("Cache-Control", "private, max-age=31536000, immutable");
         res.send(result.rows[0].photo);
     } catch (err) {
         console.log("ERREUR:", err.message);
@@ -1396,10 +1419,12 @@ app.post("/api/courses/acheter", async (req, res) => {
 
         await enTransaction(async (client) => {
             const achatResult = await client.query(
-                `UPDATE chow.courses SET achete = true, photo = NULL, date_achat = NOW(), quantite_achetee = $2, enseigne = $3
+                `UPDATE chow.courses SET achete = true, date_achat = NOW(), quantite_achetee = $2, enseigne = $3
                  WHERE id = $1 AND achete = false RETURNING id`,
                 [idCourse, quantiteEntiere, magasin]
             );
+            // Acheté : ses photos de référence ne servent plus.
+            if (achatResult.rows.length > 0) await client.query("DELETE FROM chow.courses_photos WHERE course_id = $1", [idCourse]);
 
             // Article de la maison : l'inventaire gagne les unités achetées, ou repasse à plein.
             if (achatResult.rows.length > 0 && articleId && suivi) {
