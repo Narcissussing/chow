@@ -140,6 +140,8 @@ jusqu'au 2026-10-01).
 - ajout d’aliments en grammes, cuillères ou pièces ;
 - calcul des calories et macronutriments à partir des valeurs pour 100 g ;
 - modification, suppression, réordonnancement et vidage ;
+- double tap sur un aliment : coché (mis dans le plat), il tombe dans la
+  marmite du titre, qui se remplit, puis passe en bas de la liste, en gris ;
 - conversion de la Cuisine en recette.
 
 ### Recettes

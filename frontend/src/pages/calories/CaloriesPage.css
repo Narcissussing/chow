@@ -393,9 +393,19 @@
   padding-bottom: calc(28px + env(safe-area-inset-bottom, 0px));
 }
 
+/* Coché : la carte s'éteint en gris (fond, emoji, kcal) pour se distinguer d'un coup d'œil des aliments restants. */
 .journal-item.ajoute {
-  opacity: 0.55;
-  transition: opacity 0.25s ease 0.3s;
+  background: color-mix(in srgb, var(--border) 45%, var(--bg));
+  border-color: transparent;
+  box-shadow: none;
+  filter: grayscale(1);
+  opacity: 0.5;
+  /* Seule l'opacité est animée (composée par le GPU) ; le gris s'applique d'un coup sous le fondu. */
+  transition: opacity 0.3s ease 0.3s, filter 0s 0.3s, background-color 0s 0.3s, border-color 0s 0.3s;
+}
+
+.journal-item.ajoute .journal-kcal {
+  color: var(--text-muted);
 }
 
 .badge-compteur--cuisine.recoit {

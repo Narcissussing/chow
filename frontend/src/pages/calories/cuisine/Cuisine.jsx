@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api } from "../../../api.js";
 import { arrayMove } from "@dnd-kit/sortable";
 import BoutonEffacer from "../../../components/BoutonEffacer.jsx";
@@ -23,11 +23,17 @@ const SELECTS = [
 ];
 
 const preparer = (ligne, effets = {}) => ({ ...ligne, effets });
+const DELAI_DESCENTE = 600;
+const mouvementReduit = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+// Les aliments cochés passent en bas ; « enPlace » les garde à leur place le temps que l'emoji tombe dans la marmite.
+const enBas = (e) => e.ajoute && !e.effets.enPlace;
+const ordonner = (entrees) => [...entrees.filter((e) => !enBas(e)), ...entrees.filter(enBas)];
 
 function boutonRecetteVisible(entrees, recettes) {
   const ids = [...new Set(entrees.filter((e) => !e.effets.disparait).map((e) => String(e.food_id)))];
   if (ids.length < 3) return false;
-  const tries = [...ids].sort();
+  const tries = ids.toSorted();
   return !recettes.some((r) => {
     const autres = [...(r.food_ids || [])].map(String).sort();
     return autres.length === tries.length && autres.every((id, i) => id === tries[i]);
@@ -45,6 +51,27 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
   const listeSuggestions = useRef(null);
   const [valeursSelects, setValeursSelects] = useState({ plat: "", fraicheur: "" });
   const [aAmenerEnVue, setAAmenerEnVue] = useState(null);
+  const positionsAvant = useRef(null);
+  const affichees = ordonner(entrees);
+  const ordre = affichees.map((e) => e.id).join(",");
+
+  function memoriserPositions() {
+    positionsAvant.current = new Map(Object.entries(elements.current).map(([id, el]) => [id, el.getBoundingClientRect().top]));
+  }
+
+  // Une ligne qui change de place glisse jusqu'à sa nouvelle position.
+  useLayoutEffect(() => {
+    const avant = positionsAvant.current;
+    positionsAvant.current = null;
+    if (!avant || mouvementReduit()) return;
+    Object.entries(elements.current).forEach(([id, el]) => {
+      const depart = avant.get(id);
+      if (depart === undefined || typeof el.animate !== "function") return;
+      const ecart = depart - el.getBoundingClientRect().top;
+      if (Math.abs(ecart) < 1) return;
+      el.animate([{ transform: `translateY(${ecart}px)` }, { transform: "none" }], { duration: 480, easing: "cubic-bezier(.77,0,.175,1)" });
+    });
+  }, [ordre]);
 
   useClicExterieur([zone], () => setListeVisible(false));
 
@@ -133,7 +160,7 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
 
   function deplacer(depuis, vers) {
     const avant = entrees;
-    const suivantes = arrayMove(entrees, depuis, vers);
+    const suivantes = arrayMove(affichees, depuis, vers);
     setEntrees(suivantes);
     api("/calories/reordonner", { method: "POST", body: { ids: suivantes.map((e) => e.id) } })
       .then(({ statut, donnees }) => {
@@ -150,12 +177,20 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
 
   function basculerAjoute(entree) {
     const ajoute = !entree.ajoute;
-    const appliquer = (valeur) => setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, ajoute: valeur } : e)));
-    appliquer(ajoute);
+    const appliquer = (valeur) => {
+      memoriserPositions();
+      setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, ajoute: valeur, effets: { ...e.effets, enPlace: false } } : e)));
+    };
     if (ajoute) {
-      majEffets(entree.id, { saut: false });
+      setEntrees((liste) => liste.map((e) => (e.id === entree.id ? { ...e, ajoute: true, effets: { ...e.effets, enPlace: true, saut: false } } : e)));
       planifier(() => majEffets(entree.id, { saut: true }), 0);
-      planifier(() => majEffets(entree.id, { saut: false }), 700);
+      lancerDansLaMarmite(entree.emoji, elements.current[entree.id]);
+      planifier(() => {
+        memoriserPositions();
+        majEffets(entree.id, { saut: false, enPlace: false });
+      }, DELAI_DESCENTE);
+    } else {
+      appliquer(false);
     }
     api("/calories/ajoute", { method: "POST", body: { idEntree: String(entree.id), ajoute } })
       .then(({ donnees }) => {
@@ -308,8 +343,8 @@ export default function Cuisine({ actif, entrees, setEntrees, aliments, recettes
       ></button>
 
       <div id="listeJournal">
-        <ListeTriable ids={entrees.map((e) => e.id)} onDeplacer={deplacer}>
-          {entrees.map((entree) => (
+        <ListeTriable ids={affichees.map((e) => e.id)} onDeplacer={deplacer}>
+          {affichees.map((entree) => (
             <CuisineItem
               key={entree.id}
               ref={(el) => {

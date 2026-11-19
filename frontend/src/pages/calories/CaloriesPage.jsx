@@ -36,7 +36,7 @@ function Calories({ donnees }) {
     return { plat: etat("plat"), fraicheur: etat("fraicheur") };
   });
 
-  const alimentsTries = [...aliments].sort((a, b) => a.nom.localeCompare(b.nom));
+  const alimentsTries = aliments.toSorted((a, b) => a.nom.localeCompare(b.nom));
 
   useEffect(() => {
     function appliquerCompacte(valeur) {
@@ -82,12 +82,15 @@ function Calories({ donnees }) {
     setOnglet(suivant);
   }
 
-  const nbCuisine = entrees.filter((e) => !e.effets.disparait).length;
+  const enCuisine = entrees.filter((e) => !e.effets.disparait);
+  const nbCuisine = enCuisine.length;
+  // La marmite se remplit à mesure que les aliments sont cochés ; un aliment compte quand il y est tombé.
+  const remplissage = nbCuisine ? enCuisine.filter((e) => e.ajoute && !e.effets.enPlace).length / nbCuisine : 0;
   const badgeTitre =
     onglet === "adapter" ? (
       <BadgeCompteur key="regle" ref={badge} icone="regle" nombre={nbRegleX} label="Ingrédients dans RègleX" className={bascule ? "bascule" : ""} />
     ) : (
-      <BadgeCompteur key="cuisine" ref={badge} icone="cuisine" nombre={nbCuisine} label="Aliments dans la Cuisine du jour" className={bascule ? "bascule" : ""} />
+      <BadgeCompteur key="cuisine" ref={badge} icone="cuisine" nombre={nbCuisine} remplissage={remplissage} label="Aliments dans la Cuisine du jour" className={bascule ? "bascule" : ""} />
     );
 
   const somme = (cle) => entrees.filter((e) => !e.effets.disparait).reduce((total, e) => total + Number(e[cle]), 0);

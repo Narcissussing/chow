@@ -31,9 +31,46 @@
   padding-bottom: 8px;
 }
 
+/* Marmite en deux calques, le pot et son couvercle, pour que le couvercle puisse sauter. */
 .badge-compteur--cuisine::before {
-  -webkit-mask-image: url("/images/svg/marmite.svg");
-  mask-image: url("/images/svg/marmite.svg");
+  -webkit-mask-image: url("/images/svg/marmite-corps.svg");
+  mask-image: url("/images/svg/marmite-corps.svg");
+}
+
+.badge-compteur__couvercle {
+  position: absolute;
+  inset: 0;
+  background-color: var(--accent);
+  -webkit-mask: url("/images/svg/marmite-couvercle.svg") center / contain no-repeat;
+  mask: url("/images/svg/marmite-couvercle.svg") center / contain no-repeat;
+  transform-origin: 50% 30%;
+  pointer-events: none;
+}
+
+.badge-compteur__couvercle.couvercle-saute {
+  animation: couvercleSaute 1.1s cubic-bezier(0.45, 0, 0.55, 1) 0.45s;
+}
+
+/* Le couvercle se soulève en penchant, flotte un instant, retombe et rebondit à peine. */
+@keyframes couvercleSaute {
+  0% {
+    transform: none;
+  }
+  35% {
+    transform: translateY(-10px) rotate(-7deg);
+  }
+  55% {
+    transform: translateY(-11px) rotate(4deg);
+  }
+  80% {
+    transform: none;
+  }
+  90% {
+    transform: translateY(-1.5px);
+  }
+  100% {
+    transform: none;
+  }
 }
 
 .titre-page .badge-compteur--cuisine {
@@ -65,4 +102,49 @@
 
 .titre-page .badge-compteur span {
   line-height: 1;
+}
+
+/* Niveau de la marmite : le pot plein (orange) est révélé de bas en haut par deux translations opposées,
+   transform seul pour rester fluide ; « --vide » va de 91 % (fond du pot) à 42 % (bord), 0 quand tout est coché. */
+.badge-compteur--niveau::before,
+.badge-compteur--plein::before,
+.badge-compteur--niveau .badge-compteur__couvercle {
+  background-color: color-mix(in srgb, var(--text-muted) 75%, var(--border));
+}
+
+.badge-compteur__remplissage,
+.badge-compteur__remplissage > i {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.7s cubic-bezier(0.23, 1, 0.32, 1);
+  will-change: transform;
+}
+
+.badge-compteur__remplissage {
+  overflow: hidden;
+  transform: translateY(var(--vide, 0%));
+}
+
+.badge-compteur__remplissage > i {
+  background-color: var(--accent);
+  -webkit-mask: url("/images/svg/marmite-corps.svg") center / contain no-repeat;
+  mask: url("/images/svg/marmite-corps.svg") center / contain no-repeat;
+  transform: translateY(calc(-1 * var(--vide, 0%)));
+}
+
+.badge-compteur__couvercle {
+  will-change: transform;
+  transition: background-color 0.3s ease 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-compteur__remplissage,
+  .badge-compteur__remplissage > i,
+  .badge-compteur__couvercle {
+    transition: none;
+  }
+
+  .badge-compteur__couvercle.couvercle-saute {
+    animation: none;
+  }
 }

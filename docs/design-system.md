@@ -102,7 +102,9 @@ Les principales familles sont :
   restent collés après un toucher ;
 - pastille de filtre choisie : `filtreChoisi` (icône SVG teintée, en masque) ;
 - compteurs (sac, boîte, marmite, balance), en titre ou dans les totaux :
-  tous 48 px, la hauteur du panier, même chiffre ;
+  tous 48 px, la hauteur du panier, même chiffre ; la marmite est grise et se
+  remplit d'orange à chaque aliment coché (double tap) ; au dernier, le
+  couvercle se colore, saute et retombe dessus ;
 - panier en magasin : titre et panier glissent l'un à la place de l'autre, parts
   qui grandissent, total qui défile, bulle du rayon, ✓ qui entre par la droite,
   confirmation qui surgit et se rétracte, version fine qui se déplie.
