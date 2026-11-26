@@ -53,7 +53,24 @@ test("niveau bas choisi : proposé aux Courses, « Pas maintenant » n'ajoute ri
   fireEvent.click(await screen.findByRole("button", { name: "Modifier la quantité de Lait" }));
   fireEvent.click(screen.getByRole("button", { name: "Presque vide" }));
   expect(await screen.findByText("Aux Courses ?")).toBeInTheDocument();
+  expect(requetes).toEqual([]);
   fireEvent.click(screen.getByRole("button", { name: "Pas maintenant" }));
   expect(screen.queryByText("Aux Courses ?")).not.toBeInTheDocument();
-  expect(requetes.some((r) => r.chemin === "/courses/ajouter")).toBe(false);
+  await waitFor(() => expect(requetes).toEqual([{ chemin: "/stock/modifier", corps: { idStock: 1, nouvelleQuantite: "presque vide" } }]));
+});
+
+test("toucher ailleurs annule la question sans rien enregistrer, même en passant à un autre aliment", async () => {
+  const requetes = ouvrirAccueil();
+  fireEvent.click(await screen.findByRole("button", { name: "Lait : fini" }));
+  expect(await screen.findByText("Aux Courses ?")).toBeInTheDocument();
+  fireEvent.pointerDown(document.body);
+  expect(screen.queryByText("Aux Courses ?")).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Lait : fini" })).toBeInTheDocument();
+
+  fireEvent.click(screen.getByRole("button", { name: "Lait : fini" }));
+  const riz = screen.getByRole("button", { name: "Riz : toujours là" });
+  fireEvent.pointerDown(riz);
+  fireEvent.click(riz);
+  await waitFor(() => expect(requetes).toEqual([{ chemin: "/stock/verifier", corps: { idStock: 2, fini: false } }]));
+  expect(screen.getByRole("button", { name: "Lait : fini" })).toBeInTheDocument();
 });

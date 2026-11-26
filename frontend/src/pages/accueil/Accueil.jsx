@@ -5,7 +5,7 @@ import { afficherToast } from "../../toast.js";
 import { OPTIONS_CL, classeNiveauCL, estQuantiteBasse } from "../../utils/stock.js";
 import { jeterAuxCourses } from "../../utils/animation.js";
 import "../stock/StockItem.css";
-import { useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { usePageData } from "../../hooks/usePageData.js";
 import "./Accueil.css";
 
@@ -128,8 +128,7 @@ export default function Accueil() {
   const { etat, donnees, majDonnees } = usePageData("/accueil");
   const [enEdition, setEnEdition] = useState(null);
   const [sorties, setSorties] = useState({});
-  const [propositions, setPropositions] = useState({});
-  const enAttente = useRef({});
+  const [proposition, setProposition] = useState(null);
 
   // La ligne joue sa sortie pendant l'appel au serveur, puis quitte la liste ; en cas d'erreur elle revient.
   function sortir(article, sens, appel) {
@@ -167,53 +166,48 @@ export default function Accueil() {
   }
 
   // Fini ou presque : la ligne propose les Courses avant de sortir (sauf si l'aliment y est déjà).
-  function conclure(article, sens, appel, bas) {
-    if (!bas || article.deja_en_courses || !article.food_id) return sortir(article, sens, appel);
-    enAttente.current[article.id] = { sens, appel };
-    setPropositions((p) => ({ ...p, [article.id]: true }));
-    appel
-      .then(({ donnees: reponse }) => {
-        if (reponse?.succes) return;
-        fermerProposition(article.id);
-        afficherToast(reponse?.erreur || "Une erreur est survenue.");
-      })
-      .catch(() => {
-        fermerProposition(article.id);
-        afficherToast("Une erreur est survenue.");
-      });
+  function conclure(article, sens, enregistrer, bas) {
+    if (!bas || article.deja_en_courses || !article.food_id) return sortir(article, sens, enregistrer());
+    setProposition({ id: article.id, sens, enregistrer });
   }
 
-  function fermerProposition(id) {
-    delete enAttente.current[id];
-    setPropositions(({ [id]: _, ...p }) => p);
-  }
-
-  // Réponse à « Aux Courses ? » : l'aliment vole jusqu'au caddie du menu, puis la ligne sort comme prévu.
+  // Réponse à « Aux Courses ? » : rien n'est enregistré avant ce choix. Le caddie fait voler l'aliment
+  // jusqu'à Courses ; « Pas maintenant » enregistre seulement le stock.
   function repondre(article, envoyer, bouton) {
-    const attente = enAttente.current[article.id];
-    if (!attente) return;
-    fermerProposition(article.id);
-    if (!envoyer) return sortir(article, attente.sens, attente.appel);
+    if (proposition?.id !== article.id) return;
+    const { sens, enregistrer } = proposition;
+    setProposition(null);
+    if (!envoyer) return sortir(article, sens, enregistrer());
     const emoji = bouton.closest("li")?.querySelector(".accueil-verifier__emoji");
     const r = (emoji || bouton).getBoundingClientRect();
     const ajout = api("/courses/ajouter", { method: "POST", body: { idAliment: article.food_id } }).then((resultat) => {
       if (resultat.donnees?.succes) jeterAuxCourses({ getBoundingClientRect: () => r }, article.emoji);
       return resultat;
     });
-    sortir(article, attente.sens, Promise.all([attente.appel, ajout]).then(([stock, courses]) => (courses.donnees?.succes ? stock : courses)));
+    sortir(article, sens, Promise.all([enregistrer(), ajout]).then(([stock, courses]) => (courses.donnees?.succes ? stock : courses)));
   }
+
+  // Toucher ailleurs que sur la question l'annule : l'aliment reste tel quel, rien n'est enregistré.
+  useEffect(() => {
+    if (!proposition) return;
+    const annuler = (e) => {
+      if (!e.target.closest?.(".accueil-proposition")) setProposition(null);
+    };
+    document.addEventListener("pointerdown", annuler, true);
+    return () => document.removeEventListener("pointerdown", annuler, true);
+  }, [proposition]);
 
   // Nouvelle quantité : enregistrée comme dans Stock (la date repart d'aujourd'hui), l'article sort de la liste.
   function modifierQuantite(article, nouvelleQuantite) {
     setEnEdition(null);
     conclure(article, nouvelleQuantite === "0" || nouvelleQuantite === "vide" ? "fini" : "garde",
-      api("/stock/modifier", { method: "POST", body: { idStock: article.id, nouvelleQuantite } }),
+      () => api("/stock/modifier", { method: "POST", body: { idStock: article.id, nouvelleQuantite } }),
       estQuantiteBasse(nouvelleQuantite, article.tracking_type));
   }
 
   // « Toujours là » remet la date à aujourd'hui, « Fini » vide l'article : il sort de la liste dans les deux cas.
   function verifier(article, fini) {
-    conclure(article, fini ? "fini" : "garde", api("/stock/verifier", { method: "POST", body: { idStock: article.id, fini } }), fini);
+    conclure(article, fini ? "fini" : "garde", () => api("/stock/verifier", { method: "POST", body: { idStock: article.id, fini } }), fini);
   }
   return (
     <Page titre="Accueil" etat={etat}>
@@ -277,16 +271,16 @@ export default function Accueil() {
                     {donnees.aVerifier.map((a, i) => (
                       <li
                         key={a.id}
-                        className={[enEdition === a.id && "en-edition carte-active", propositions[a.id] && "propose carte-active", sorties[a.id] && "sortie-" + sorties[a.id]].filter(Boolean).join(" ") || undefined}
+                        className={[enEdition === a.id && "en-edition carte-active", proposition?.id === a.id && "propose carte-active", sorties[a.id] && "sortie-" + sorties[a.id]].filter(Boolean).join(" ") || undefined}
                         style={{ "--i": i }}
                         inert={sorties[a.id] ? true : undefined}
                       >
                         <span className="accueil-verifier__emoji" aria-hidden="true">{a.emoji}</span>
                         <span className="accueil-verifier__nom">
                           <b className="nom-defile">{a.nom}</b>
-                          <span className="accueil-verifier__jours">{propositions[a.id] ? "Aux Courses ?" : `il y a ${Math.round(a.jours / 7)} sem.`}</span>
+                          <span className="accueil-verifier__jours">{proposition?.id === a.id ? "Aux Courses ?" : `il y a ${Math.round(a.jours / 7)} sem.`}</span>
                         </span>
-                        {propositions[a.id] ? (
+                        {proposition?.id === a.id ? (
                           <span className="accueil-proposition">
                             <button type="button" className="accueil-proposition__oui" aria-label={`Ajouter ${a.nom} aux Courses`} title="Ajouter aux Courses" onClick={(e) => repondre(a, true, e.currentTarget)}>
                               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
