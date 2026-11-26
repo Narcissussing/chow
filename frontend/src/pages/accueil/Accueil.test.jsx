@@ -74,3 +74,13 @@ test("toucher ailleurs annule la question sans rien enregistrer, même en passan
   await waitFor(() => expect(requetes).toEqual([{ chemin: "/stock/verifier", corps: { idStock: 2, fini: false } }]));
   expect(screen.getByRole("button", { name: "Lait : fini" })).toBeInTheDocument();
 });
+
+test("toucher ailleurs pendant la modification revient à la ligne d'avant, sans rien enregistrer", async () => {
+  const requetes = ouvrirAccueil();
+  fireEvent.click(await screen.findByRole("button", { name: "Modifier la quantité de Riz" }));
+  fireEvent.click(screen.getByRole("button", { name: "Plus" }));
+  fireEvent.pointerDown(document.body);
+  expect(screen.queryByRole("button", { name: "Plus" })).not.toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Modifier la quantité de Riz" })).toHaveTextContent("1");
+  expect(requetes).toEqual([]);
+});

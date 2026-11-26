@@ -197,6 +197,16 @@ export default function Accueil() {
     return () => document.removeEventListener("pointerdown", annuler, true);
   }, [proposition]);
 
+  // Même chose pendant la modification de quantité : toucher ailleurs ferme l'éditeur, rien n'est enregistré.
+  useEffect(() => {
+    if (enEdition == null) return;
+    const annuler = (e) => {
+      if (!e.target.closest?.(".accueil-editeur")) setEnEdition(null);
+    };
+    document.addEventListener("pointerdown", annuler, true);
+    return () => document.removeEventListener("pointerdown", annuler, true);
+  }, [enEdition]);
+
   // Nouvelle quantité : enregistrée comme dans Stock (la date repart d'aujourd'hui), l'article sort de la liste.
   function modifierQuantite(article, nouvelleQuantite) {
     setEnEdition(null);
