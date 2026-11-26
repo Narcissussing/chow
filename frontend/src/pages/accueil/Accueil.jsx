@@ -7,6 +7,7 @@ import { jeterAuxCourses } from "../../utils/animation.js";
 import "../stock/StockItem.css";
 import { useEffect, useState } from "react";
 import { usePageData } from "../../hooks/usePageData.js";
+import { useFermetureAnimee } from "../../hooks/useFermetureAnimee.js";
 import "./Accueil.css";
 
 const ICONES = {
@@ -129,6 +130,8 @@ export default function Accueil() {
   const [enEdition, setEnEdition] = useState(null);
   const [sorties, setSorties] = useState({});
   const [proposition, setProposition] = useState(null);
+  const [bulle, setBulle] = useState(null);
+  const [bulleSort, fermerBulle] = useFermetureAnimee(() => setBulle(null), 140);
 
   // La ligne joue sa sortie pendant l'appel au serveur, puis quitte la liste ; en cas d'erreur elle revient.
   function sortir(article, sens, appel) {
@@ -196,6 +199,16 @@ export default function Accueil() {
     document.addEventListener("pointerdown", annuler, true);
     return () => document.removeEventListener("pointerdown", annuler, true);
   }, [proposition]);
+
+  // Bulle « Déjà dans les Courses » : ouverte au toucher du badge, fermée en touchant ailleurs.
+  useEffect(() => {
+    if (bulle == null) return;
+    const fermer = (e) => {
+      if (!e.target.closest?.(".accueil-verifier__courses")) fermerBulle();
+    };
+    document.addEventListener("pointerdown", fermer, true);
+    return () => document.removeEventListener("pointerdown", fermer, true);
+  }, [bulle, fermerBulle]);
 
   // Même chose pendant la modification de quantité : toucher ailleurs ferme l'éditeur, rien n'est enregistré.
   useEffect(() => {
@@ -285,7 +298,14 @@ export default function Accueil() {
                         style={{ "--i": i }}
                         inert={sorties[a.id] ? true : undefined}
                       >
-                        <span className="accueil-verifier__emoji" aria-hidden="true">{a.emoji}</span>
+                        <span className="accueil-verifier__tuile">
+                          <span className="accueil-verifier__emoji" aria-hidden="true">{a.emoji}</span>
+                          {a.deja_en_courses && (
+                            <button type="button" className="accueil-verifier__courses" aria-label={`${a.nom} : déjà dans les Courses`} title="Déjà dans les Courses" onClick={() => (bulle === a.id ? fermerBulle() : setBulle(a.id))}>
+                              {bulle === a.id && <span className={"accueil-verifier__bulle" + (bulleSort ? " ferme" : "")} role="status">Déjà dans les Courses</span>}
+                            </button>
+                          )}
+                        </span>
                         <span className="accueil-verifier__nom">
                           <b className="nom-defile">{a.nom}</b>
                           <span className="accueil-verifier__jours">{proposition?.id === a.id ? "Aux Courses ?" : `il y a ${Math.round(a.jours / 7)} sem.`}</span>

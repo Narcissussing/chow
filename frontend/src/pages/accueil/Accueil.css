@@ -712,3 +712,95 @@ main:has(.home-links) .hero {
 .accueil-verifier li:not(.propose):not([class*="sortie-"]) > button {
   animation: accueil-proposition-entree 0.25s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
+
+/* Déjà dans les Courses : petit badge caddie vert au coin de la tuile, bulle au toucher */
+.accueil-verifier__tuile {
+  position: relative;
+  display: grid;
+}
+
+.accueil-verifier .accueil-verifier__courses {
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: #2f6f62;
+  animation: accueil-badge-entree 0.35s 0.25s cubic-bezier(0.3, 1.6, 0.5, 1) both;
+}
+
+/* Zone de toucher plus grande que le badge */
+.accueil-verifier__courses::after {
+  content: "";
+  position: absolute;
+  inset: -10px;
+}
+
+.accueil-verifier__courses::before {
+  content: "";
+  position: absolute;
+  inset: 3px 2px 3px 2px;
+  background: #fffdf8;
+  -webkit-mask: url("/images/svg/caddie.svg") center / contain no-repeat;
+  mask: url("/images/svg/caddie.svg") center / contain no-repeat;
+}
+
+.accueil-verifier__bulle {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 5;
+  padding: 5px 9px;
+  border-radius: 8px;
+  background: #1a1a1a;
+  color: #fffdf8;
+  font-size: 0.68rem;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  transform-origin: 0 100%;
+  animation: accueil-bulle-entree 0.18s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  translate: -8px 0;
+}
+
+/* Fini alors qu'il est déjà dans les Courses : le badge sautille en partant, la raison de l'absence de question */
+.accueil-verifier li.sortie-fini .accueil-verifier__courses {
+  animation: accueil-badge-saut 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+}
+
+@keyframes accueil-badge-entree {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+@keyframes accueil-badge-saut {
+  40% {
+    transform: translateY(-6px) scale(1.35);
+  }
+}
+
+@keyframes accueil-bulle-entree {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accueil-verifier .accueil-verifier__courses,
+  .accueil-verifier li.sortie-fini .accueil-verifier__courses,
+  .accueil-verifier__bulle {
+    animation: none;
+  }
+}
+
+.accueil-verifier__bulle.ferme {
+  opacity: 0;
+  transform: scale(0.95) translateY(4px);
+  transition: opacity 0.14s ease-out, transform 0.14s ease-out;
+}

@@ -84,3 +84,13 @@ test("toucher ailleurs pendant la modification revient à la ligne d'avant, sans
   expect(screen.getByRole("button", { name: "Modifier la quantité de Riz" })).toHaveTextContent("1");
   expect(requetes).toEqual([]);
 });
+
+test("badge caddie sur un aliment déjà dans les Courses, bulle au toucher", async () => {
+  ouvrirAccueil();
+  const badge = await screen.findByRole("button", { name: "Riz : déjà dans les Courses" });
+  expect(screen.queryByRole("button", { name: "Lait : déjà dans les Courses" })).not.toBeInTheDocument();
+  fireEvent.click(badge);
+  expect(screen.getByRole("status")).toHaveTextContent("Déjà dans les Courses");
+  fireEvent.pointerDown(document.body);
+  await waitFor(() => expect(screen.queryByRole("status")).not.toBeInTheDocument());
+});
