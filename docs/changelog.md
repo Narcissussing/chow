@@ -6,6 +6,8 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 
 ## 2026-11
 
+- Sirops Monin caramel salé (70 cl), banane (70 cl) et chocolat blanc (25 cl) pour les boissons ;
+  lait concentré aux valeurs de l'étiquette Régilait (non sucré).
 - Tiger Market et Action à Meaux : tickets importés, logos, mode magasin ;
   un article peut être dans plusieurs magasins (liste choisie, sinon tickets
   des 3 derniers mois) ; cocher en mode magasin ne le rattache plus à un seul.

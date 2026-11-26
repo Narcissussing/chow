@@ -1019,7 +1019,9 @@ app.get("/api/accueil", lectureApi(async () => {
          GROUP BY s.debut ORDER BY s.debut`
     );
     const aVerifier = await db.query(
-        `SELECT stock.id, aliments.nom, aliments.emoji, stock.quantite, stock.unite, aliments.tracking_type, (CURRENT_DATE - stock.date_maj)::int AS jours
+        `SELECT stock.id, stock.food_id, aliments.nom, aliments.emoji, stock.quantite, stock.unite, aliments.tracking_type,
+                (CURRENT_DATE - stock.date_maj)::int AS jours,
+                EXISTS (SELECT 1 FROM chow.courses WHERE courses.food_id = stock.food_id AND NOT courses.achete) AS deja_en_courses
          FROM chow.stock JOIN chow.aliments ON aliments.id = stock.food_id
          WHERE ${STOCK_NON_VIDE.replaceAll("quantite", "stock.quantite")} AND stock.date_maj <= CURRENT_DATE - ${JOURS_AVANT_VERIFICATION}
          -- Produits frais et restes ponctuels d'abord, puis le plus ancien sans mise à jour.

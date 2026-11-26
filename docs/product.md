@@ -35,6 +35,10 @@ Trois cartes chiffrées : Stats (dépensé ce mois, cette semaine et le mois
 dernier), Stock (aliments encore présents, dont ceux à vérifier) et Courses
 (articles à acheter et estimation du montant).
 
+« Encore à la maison ? » : un aliment marqué fini ou passé bas (presque vide,
+vide, moins de 2) propose « Aux Courses ? » avant de quitter la liste, sauf
+s'il y est déjà.
+
 ### Dépenses et estimation des Courses
 
 Historique des tickets de caisse (Leclerc, Carrefour, Marché Frais, Tiger

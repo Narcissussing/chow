@@ -654,3 +654,56 @@ main:has(.home-links) .hero {
     animation: none !important;
   }
 }
+
+/* « Aux Courses ? » après Fini ou un niveau bas : la ligne se teinte, le caddie et le ✕ arrivent en rebond */
+.accueil-verifier li.propose {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  background: #eef7f2;
+}
+
+.accueil-verifier li.propose .accueil-verifier__jours {
+  color: #2f6f62;
+  font-weight: 600;
+}
+
+.accueil-proposition {
+  display: inline-flex;
+  gap: 8px;
+}
+
+.accueil-proposition > button {
+  animation: accueil-proposition-entree 0.35s cubic-bezier(0.3, 1.4, 0.5, 1) both;
+}
+
+.accueil-proposition > button + button {
+  animation-delay: 60ms;
+}
+
+.accueil-verifier .accueil-proposition__oui {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 32px;
+  padding: 0;
+  border-radius: 16px;
+  background: #2f6f62;
+  color: #fffdf8;
+}
+
+.accueil-verifier .accueil-proposition__oui svg {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes accueil-proposition-entree {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateX(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .accueil-proposition > button {
+    animation: none;
+  }
+}
