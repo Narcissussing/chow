@@ -6,6 +6,8 @@ futur appartient à Jira ; les choix structurants sont indexés dans
 
 ## 2026-11
 
+- Clémentine séparée de la Mandarine (4 € à 6 € par passage) ; tickets Marché
+  Frais et Leclerc du 26 novembre ; serviettes Nana et Deli'UP bien rangés.
 - Sirops Monin caramel salé (70 cl), banane (70 cl) et chocolat blanc (25 cl) pour les boissons ;
   lait concentré aux valeurs de l'étiquette Régilait (non sucré).
 - Tiger Market et Action à Meaux : tickets importés, logos, mode magasin ;
